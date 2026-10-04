@@ -19,11 +19,17 @@ import { createVariableHandlers } from './ipc/variables'
 import { ENVIRONMENT_CHANNELS, VARIABLE_CHANNELS } from '../shared/variable-management'
 import { SecretStore } from './security/secrets'
 import { WORKSPACE_CHANNELS } from '../shared/workspaces'
+import { MaterializationService } from './services/materialization'
+import { ExecutionService } from './services/execution'
+import { createExecutionHandlers } from './ipc/execution'
+import { EXECUTION_CHANNELS } from '../shared/execution'
 
 let ownedWindow: BrowserWindow | null = null
 let database: Database.Database | null = null
 let secretStore: SecretStore | null = null
+let executionService: ExecutionService | null = null
 app.on('will-quit', () => {
+  executionService?.abort(); executionService = null
   secretStore?.clear(); secretStore = null
   if (database?.open) database.close()
   database = null
@@ -70,6 +76,19 @@ else {
     })
     ownedWindow = window
     const contents = window.webContents
+    executionService = database && secretStore ? new ExecutionService(new MaterializationService(database, secretStore), completion => {
+      if (ownedWindow !== window || window.isDestroyed() || contents.isDestroyed()) return
+      try { contents.send(EXECUTION_CHANNELS.completed, completion) }
+      catch { /* A disappearing renderer cannot undo completion or committed deletion. */ }
+    }) : null
+    const executionHandlers = createExecutionHandlers(() => ownedWindow, trustedUrl, () => executionService)
+    ipcMain.handle(EXECUTION_CHANNELS.send, executionHandlers.send)
+    ipcMain.on(EXECUTION_CHANNELS.start, executionHandlers.start)
+    // Captured requests must not outlive their renderer, including reload/crash.
+    contents.on('render-process-gone', () => executionService?.abort())
+    contents.on('did-start-navigation', (_event, _url, inPlace, mainFrame) => {
+      if (mainFrame && !inPlace) executionService?.abort()
+    })
     contents.session.setPermissionRequestHandler((_contents, _permission, callback) => callback(false))
     contents.session.setPermissionCheckHandler(() => false)
     contents.setWindowOpenHandler(() => ({ action: 'deny' }))
@@ -95,7 +114,7 @@ else {
     const variableHandlers = createVariableHandlers(() => ownedWindow, trustedUrl, () => variableService)
     for (const method of ['list', 'create', 'rename', 'delete', 'select'] as const) ipcMain.handle(ENVIRONMENT_CHANNELS[method], variableHandlers.environments[method])
     for (const method of ['list', 'upsert', 'delete', 'reveal'] as const) ipcMain.handle(VARIABLE_CHANNELS[method], variableHandlers.variables[method])
-    const workspaceService = database ? new WorkspaceService(database, secretStore ?? undefined) : null
+    const workspaceService = database ? new WorkspaceService(database, secretStore ?? undefined, id => executionService?.abortWorkspace(id)) : null
     const workspaceHandlers = createWorkspaceHandlers(() => ownedWindow, trustedUrl, () => workspaceService)
     for (const method of ['list', 'create', 'rename', 'delete', 'select'] as const) {
       ipcMain.handle(WORKSPACE_CHANNELS[method], workspaceHandlers[method])
@@ -108,6 +127,9 @@ else {
     for (const method of ['newRow', 'list', 'get', 'create', 'save', 'duplicate', 'delete'] as const) ipcMain.handle(REQUEST_CHANNELS[method], requestHandlers[method])
     window.on('closed', () => {
       ownedWindow = null
+      executionService?.abort(); executionService = null
+      ipcMain.removeHandler(EXECUTION_CHANNELS.send)
+      ipcMain.removeListener(EXECUTION_CHANNELS.start, executionHandlers.start)
       for (const channel of [...Object.values(ENVIRONMENT_CHANNELS), ...Object.values(VARIABLE_CHANNELS)]) ipcMain.removeHandler(channel)
       ipcMain.removeHandler(IPC_CHANNELS.getBootstrap)
       for (const channel of Object.values(REQUEST_CHANNELS)) ipcMain.removeHandler(channel)

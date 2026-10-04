@@ -1,6 +1,6 @@
 # TASK-016 — Implement single-hop HTTP transport
 
-Status: todo
+Status: done
 Dependencies: TASK-015, TASK-003
 
 ## Read first
@@ -29,3 +29,5 @@ No retries, redirects, cookie jar or renderer fetch.
 ## Completion procedure
 
 Record actual changes, commands/results, environment, evidence and blockers in `docs/task-reports/TASK-016.md`. Update this status and the index together. Mark `done` only when acceptance is verified; otherwise `in_progress` or `blocked`. Stop at this task boundary.
+
+Evidence: [TASK-016 report](../task-reports/TASK-016.md). Native unit and sandboxed Linux Electron checks passed; Windows and installed package acceptance remain untested.

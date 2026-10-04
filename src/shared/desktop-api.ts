@@ -2,6 +2,7 @@ import type { EnvironmentApi, VariableApi } from './variable-management'
 import { z } from 'zod'
 import type { CollectionApi, RequestGroupingApi } from './collections'
 import type { RequestPersistenceApi } from './requests'
+import type { ExecutionApi } from './execution'
 import type { WorkspaceApi } from './workspaces'
 import { resultSchema, type Result } from './results'
 
@@ -23,5 +24,6 @@ export interface DesktopApi {
   readonly workspaces: WorkspaceApi
   readonly collections: CollectionApi
   readonly requests: RequestGroupingApi & RequestPersistenceApi
+  readonly execution: ExecutionApi
   readonly app: { readonly getBootstrap: () => Promise<Result<Bootstrap>> }
 }

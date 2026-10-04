@@ -7,6 +7,8 @@ import { z } from 'zod'
 import { COLLECTION_CHANNELS, collectionInputs, groupingResultSchema } from '../shared/collections'
 import { REQUEST_CHANNELS, requestInputs, requestResultSchema, requestRowResultSchema, type RequestDraft } from '../shared/requests'
 import { validationError } from '../shared/results'
+import { EXECUTION_CHANNELS } from '../shared/execution'
+import { createExecutionApi } from './execution'
 
 // Private allowlisted invocation helper; never exposed to renderer.
 async function workspaceCall<I extends z.ZodType<unknown[]>>(channel: (typeof WORKSPACE_CHANNELS)[keyof typeof WORKSPACE_CHANNELS], schema: I, args: unknown[]): ReturnType<DesktopApi['workspaces']['list']> {
@@ -41,6 +43,12 @@ async function variableCall<I extends z.ZodType<unknown[]>, O extends z.ZodType>
 }
 
 const api: DesktopApi = Object.freeze({
+  execution: createExecutionApi(
+    args => ipcRenderer.invoke(EXECUTION_CHANNELS.send, ...args),
+    id => ipcRenderer.send(EXECUTION_CHANNELS.start, id),
+    listener => ipcRenderer.on(EXECUTION_CHANNELS.completed, listener),
+    listener => ipcRenderer.removeListener(EXECUTION_CHANNELS.completed, listener)
+  ),
   environments: Object.freeze({
     list: (w: string) => variableCall(EC.list, EI.list, environmentResultSchema, [w]),
     create: (w: string, n: string) => variableCall(EC.create, EI.create, environmentResultSchema, [w, n]),
