@@ -1,6 +1,6 @@
 # TASK-012 — Implement pure variable resolution
 
-Status: todo
+Status: done
 Dependencies: TASK-002
 
 ## Read first
