@@ -14,7 +14,7 @@ test('shell fits desktop sizes, traps/restores dialog focus and recovers from bo
     await page.emulateMedia({ colorScheme: 'light' })
     await expect(page.locator('html')).toHaveClass('light')
     await expect(page.getByRole('button', { name: 'Send', exact: true })).toBeDisabled()
-    await expect(page.getByRole('button', { name: 'Create Workspace', exact: true })).toBeDisabled()
+    await expect(page.getByRole('button', { name: 'Create Workspace', exact: true })).toBeEnabled()
     await page.screenshot({ path: '/tmp/api-client-shell-light.png' })
     const about = page.getByRole('button', { name: 'About this shell' })
     await about.focus()

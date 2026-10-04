@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import type { WorkspaceApi } from './workspaces'
 import { resultSchema, type Result } from './results'
 
 export const bootstrapSchema = z.strictObject({
@@ -14,5 +15,6 @@ export const bootstrapInputSchema = z.tuple([])
 export const IPC_CHANNELS = Object.freeze({ getBootstrap: 'app:get-bootstrap' })
 export type Bootstrap = z.infer<typeof bootstrapSchema>
 export interface DesktopApi {
+  readonly workspaces: WorkspaceApi
   readonly app: { readonly getBootstrap: () => Promise<Result<Bootstrap>> }
 }

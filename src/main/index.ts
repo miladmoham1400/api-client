@@ -6,6 +6,9 @@ import type Database from 'better-sqlite3'
 import { openDatabase } from './db/database'
 import type { Bootstrap } from '../shared/desktop-api'
 import { createOwnedHandler } from './ipc/guard'
+import { createWorkspaceHandlers } from './ipc/workspaces'
+import { WorkspaceService } from './services/workspaces'
+import { WORKSPACE_CHANNELS } from '../shared/workspaces'
 
 let ownedWindow: BrowserWindow | null = null
 let database: Database.Database | null = null
@@ -74,9 +77,15 @@ else {
       () => ownedWindow, trustedUrl, bootstrapInputSchema, bootstrapSchema,
       () => bootstrap
     ))
+    const workspaceService = database ? new WorkspaceService(database) : null
+    const workspaceHandlers = createWorkspaceHandlers(() => ownedWindow, trustedUrl, () => workspaceService)
+    for (const method of ['list', 'create', 'rename', 'delete', 'select'] as const) {
+      ipcMain.handle(WORKSPACE_CHANNELS[method], workspaceHandlers[method])
+    }
     window.on('closed', () => {
       ownedWindow = null
       ipcMain.removeHandler(IPC_CHANNELS.getBootstrap)
+      for (const channel of Object.values(WORKSPACE_CHANNELS)) ipcMain.removeHandler(channel)
     })
     await window.loadURL(trustedUrl)
   }).catch(() => {

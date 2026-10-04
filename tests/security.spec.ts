@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { spawn } from 'node:child_process'
 import { _electron, expect, test } from '@playwright/test'
 
-test('owned production window exposes only validated bootstrap and denies browser capabilities', async () => {
+test('owned production window exposes only validated APIs and denies browser capabilities', async () => {
   const directory = mkdtempSync(join(tmpdir(), 'api-client-smoke-'))
   const env = Object.fromEntries(Object.entries(process.env).filter((entry): entry is [string, string] => entry[1] !== undefined && entry[0] !== 'ELECTRON_RUN_AS_NODE' && entry[0] !== 'ELECTRON_RENDERER_URL'))
   env.XDG_CONFIG_HOME = directory
@@ -27,11 +27,11 @@ test('owned production window exposes only validated bootstrap and denies browse
     })
     expect(preferences).toEqual({ nodeIntegration: false, contextIsolation: true, sandbox: true, webSecurity: true, webviewTag: false })
     expect(await page.evaluate(() => ({
-      keys: Object.keys(window.offlineApi), methods: Object.keys(window.offlineApi.app),
-      frozen: Object.isFrozen(window.offlineApi) && Object.isFrozen(window.offlineApi.app),
+      keys: Object.keys(window.offlineApi), methods: Object.keys(window.offlineApi.app), workspaceMethods: Object.keys(window.offlineApi.workspaces),
+      frozen: Object.isFrozen(window.offlineApi) && Object.isFrozen(window.offlineApi.app) && Object.isFrozen(window.offlineApi.workspaces),
       require: typeof Reflect.get(window, 'require'), process: typeof Reflect.get(window, 'process'),
       ipc: typeof Reflect.get(window, 'ipcRenderer')
-    }))).toEqual({ keys: ['app'], methods: ['getBootstrap'], frozen: true, require: 'undefined', process: 'undefined', ipc: 'undefined' })
+    }))).toEqual({ keys: ['workspaces', 'app'], methods: ['getBootstrap'], workspaceMethods: ['list', 'create', 'rename', 'delete', 'select'], frozen: true, require: 'undefined', process: 'undefined', ipc: 'undefined' })
     expect(await page.evaluate(() => window.offlineApi.app.getBootstrap())).toEqual({
       ok: true, data: { stage: 'foundation', capabilities: { database: true, requests: false }, database: { status: 'ready' } }
     })
@@ -57,11 +57,15 @@ test('owned production window exposes only validated bootstrap and denies browse
       } })
       try {
         await other.loadURL(owned.webContents.getURL())
-        const result: unknown = await other.webContents.executeJavaScript('window.offlineApi.app.getBootstrap()')
+        const result: unknown = await other.webContents.executeJavaScript('Promise.all([window.offlineApi.app.getBootstrap(), window.offlineApi.workspaces.create("Unauthorized")])')
         return result
       } finally { other.destroy() }
     })
-    expect(rejected).toEqual({ ok: false, error: { code: 'NOT_FOUND', message: 'Operation unavailable', retryable: false } })
+    expect(rejected).toEqual([
+      { ok: false, error: { code: 'NOT_FOUND', message: 'Operation unavailable', retryable: false } },
+      { ok: false, error: { code: 'NOT_FOUND', message: 'Operation unavailable', retryable: false } }
+    ])
+    expect(await page.evaluate(() => window.offlineApi.workspaces.list())).toEqual({ ok: true, data: { workspaces: [], selectedWorkspaceId: null } })
     const executable = await application.evaluate(({ app }) => app.getPath('exe'))
     const child = spawn(executable, ['.'], { env, stdio: 'ignore' })
     try {

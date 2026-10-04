@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { validationError, type Result } from '../../shared/results'
+import { domainErrorSchema, validationError, type DomainError, type Result } from '../../shared/results'
 
 interface FrameIdentity { readonly url: string }
 interface OwnedWindow {
@@ -8,12 +8,13 @@ interface OwnedWindow {
 }
 interface SenderContext { readonly sender: object; readonly senderFrame: FrameIdentity | null }
 
-export function createOwnedHandler<T extends z.ZodType>(
+export function createOwnedHandler<I extends z.ZodType, T extends z.ZodType>(
   getWindow: () => OwnedWindow | null,
   trustedUrl: string,
-  inputSchema: z.ZodType,
+  inputSchema: I,
   outputSchema: T,
-  operation: () => z.infer<T>
+  operation: (input: z.infer<I>) => z.infer<T>,
+  mapError?: (error: unknown) => DomainError
 ) {
   return (event: SenderContext, ...args: unknown[]): Result<z.infer<T>> => {
     const window = getWindow()
@@ -25,8 +26,12 @@ export function createOwnedHandler<T extends z.ZodType>(
     const input = inputSchema.safeParse(args)
     if (!input.success) return { ok: false, error: validationError(input.error) }
     try {
-      return { ok: true, data: outputSchema.parse(operation()) }
-    } catch {
+      return { ok: true, data: outputSchema.parse(operation(input.data)) }
+    } catch (error) {
+      if (mapError) {
+        const mapped = domainErrorSchema.safeParse(mapError(error))
+        if (mapped.success) return { ok: false, error: mapped.data }
+      }
       return { ok: false, error: { code: 'VALIDATION', message: 'Operation unavailable', retryable: false } }
     }
   }

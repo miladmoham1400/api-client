@@ -4,6 +4,8 @@ import { Box, Button, Dialog, Flex, Heading, Input, NativeSelect, Portal, Tabs, 
 import type { Bootstrap } from '../shared/desktop-api'
 import { LocalProvider } from './theme/provider'
 import './shell.css'
+import { useWorkspaces } from './features/workspaces/use-workspaces'
+import { WorkspaceControls } from './features/workspaces/controls'
 
 type Startup = { status: 'loading' } | { status: 'error' } | { status: 'ready'; data: Bootstrap }
 
@@ -11,6 +13,7 @@ function Shell() {
   const [startup, setStartup] = useState<Startup>({ status: 'loading' })
   const [attempt, setAttempt] = useState(0)
   const closeButton = useRef<HTMLButtonElement>(null)
+  const workspaces = useWorkspaces(startup.status === 'ready' && startup.data.database.status === 'ready')
   useEffect(() => {
     let active = true
     async function load() {
@@ -32,16 +35,15 @@ function Shell() {
   return <Flex direction="column" h="100dvh" bg="bg" color="fg">
     <Flex as="header" gap="3" p="3" borderBottomWidth="1px" align="center" flexWrap="wrap">
       <Heading size="md" mr="2">Offline API Client</Heading>
-      <NativeSelect.Root width="210px" disabled><NativeSelect.Field aria-label="Workspace"><option>Workspaces unavailable</option></NativeSelect.Field><NativeSelect.Indicator /></NativeSelect.Root>
+      <WorkspaceControls controller={workspaces} placement="top" />
       <NativeSelect.Root width="190px" disabled><NativeSelect.Field aria-label="Environment"><option>Environments unavailable</option></NativeSelect.Field><NativeSelect.Indicator /></NativeSelect.Root>
       <Button disabled variant="outline" size="sm">Variables</Button>
       <Button disabled variant="outline" size="sm">System theme</Button>
-      <Button disabled variant="outline" size="sm" aria-label="Workspace menu">Workspace menu</Button>
       <Dialog.Root initialFocusEl={() => closeButton.current}>
         <Dialog.Trigger asChild><Button size="sm" variant="ghost">About this shell</Button></Dialog.Trigger>
         <Portal><Dialog.Backdrop /><Dialog.Positioner><Dialog.Content>
           <Dialog.Header><Dialog.Title>Local desktop shell</Dialog.Title></Dialog.Header>
-          <Dialog.Body><Dialog.Description>Storage is ready. Workspace editing, request editing, sending and variables are not available yet. No sample data has been created or requests sent. Appearance follows your system.</Dialog.Description></Dialog.Body>
+          <Dialog.Body><Dialog.Description>Workspaces can be created, renamed, selected and deleted locally. Request editing, sending and variables are not available yet. No sample data has been created or requests sent. Appearance follows your system.</Dialog.Description></Dialog.Body>
           <Dialog.Footer><Dialog.CloseTrigger asChild><Button ref={closeButton}>Close</Button></Dialog.CloseTrigger></Dialog.Footer>
         </Dialog.Content></Dialog.Positioner></Portal>
       </Dialog.Root>
@@ -49,9 +51,7 @@ function Shell() {
     <Flex flex="1" minH="0">
       <VStack as="aside" aria-label="Collections and requests" align="stretch" gap="4" w="250px" minW="210px" p="4" overflow="auto" borderRightWidth="1px">
         <Heading size="sm">Workspace</Heading>
-        <Text fontSize="sm" color="fg.muted">No workspace selected</Text>
-        <Button disabled>Create Workspace</Button>
-        <Text fontSize="sm">Workspace creation and selection are not available yet.</Text>
+        <WorkspaceControls controller={workspaces} placement="sidebar" />
         <Heading size="sm">Collections</Heading><Button disabled variant="outline" size="sm">Create Collection</Button>
         <Heading size="sm">Root requests</Heading><Button disabled variant="outline" size="sm">Create Request</Button>
       </VStack>
@@ -65,7 +65,7 @@ function Shell() {
           </Flex>
           <Tabs.Root defaultValue="params" size="sm">
             <Tabs.List aria-label="Request fields">{['Params', 'Headers', 'Body', 'Auth', 'Settings'].map(name => <Tabs.Trigger key={name} value={name.toLowerCase()}>{name}</Tabs.Trigger>)}</Tabs.List>
-            {['Params', 'Headers', 'Body', 'Auth', 'Settings'].map(name => <Tabs.Content key={name} value={name.toLowerCase()}><Text color="fg.muted">Request editing is not available yet. Select a request when workspace features become available.</Text></Tabs.Content>)}
+            {['Params', 'Headers', 'Body', 'Auth', 'Settings'].map(name => <Tabs.Content key={name} value={name.toLowerCase()}><Text color="fg.muted">Request editing is not available yet.</Text></Tabs.Content>)}
           </Tabs.Root>
         </Box>
         <Box as="section" aria-label="Response" borderWidth="1px" borderRadius="md" p="4" h="260px" minH="180px" maxH="60vh" flexShrink="0" overflow="auto" resize="vertical">
@@ -78,7 +78,7 @@ function Shell() {
         </Box>
       </Flex>
     </Flex>
-    <Box as="footer" borderTopWidth="1px" px="4" py="2"><Text fontSize="xs" color="fg.muted">Local storage ready · Shell only · No request execution</Text></Box>
+    <Box as="footer" borderTopWidth="1px" px="4" py="2"><Text fontSize="xs" color="fg.muted">Local storage ready · No request execution</Text></Box>
   </Flex>
 }
 
