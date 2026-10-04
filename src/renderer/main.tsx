@@ -5,6 +5,7 @@ import type { Bootstrap } from '../shared/desktop-api'
 import { LocalProvider } from './theme/provider'
 import './shell.css'
 import { useWorkspaces } from './features/workspaces/use-workspaces'
+import { CollectionSidebar } from './features/collections/sidebar'
 import { WorkspaceControls } from './features/workspaces/controls'
 
 type Startup = { status: 'loading' } | { status: 'error' } | { status: 'ready'; data: Bootstrap }
@@ -43,7 +44,7 @@ function Shell() {
         <Dialog.Trigger asChild><Button size="sm" variant="ghost">About this shell</Button></Dialog.Trigger>
         <Portal><Dialog.Backdrop /><Dialog.Positioner><Dialog.Content>
           <Dialog.Header><Dialog.Title>Local desktop shell</Dialog.Title></Dialog.Header>
-          <Dialog.Body><Dialog.Description>Workspaces can be created, renamed, selected and deleted locally. Request editing, sending and variables are not available yet. No sample data has been created or requests sent. Appearance follows your system.</Dialog.Description></Dialog.Body>
+          <Dialog.Body><Dialog.Description>Workspaces and collections can be managed locally. Existing saved requests can move between collections and root. Request editing, sending and variables are not available yet. No sample data has been created or requests sent. Appearance follows your system.</Dialog.Description></Dialog.Body>
           <Dialog.Footer><Dialog.CloseTrigger asChild><Button ref={closeButton}>Close</Button></Dialog.CloseTrigger></Dialog.Footer>
         </Dialog.Content></Dialog.Positioner></Portal>
       </Dialog.Root>
@@ -52,8 +53,7 @@ function Shell() {
       <VStack as="aside" aria-label="Collections and requests" align="stretch" gap="4" w="250px" minW="210px" p="4" overflow="auto" borderRightWidth="1px">
         <Heading size="sm">Workspace</Heading>
         <WorkspaceControls controller={workspaces} placement="sidebar" />
-        <Heading size="sm">Collections</Heading><Button disabled variant="outline" size="sm">Create Collection</Button>
-        <Heading size="sm">Root requests</Heading><Button disabled variant="outline" size="sm">Create Request</Button>
+        <CollectionSidebar key={workspaces.snapshot?.selectedWorkspaceId ?? "none"} workspaceId={workspaces.snapshot?.selectedWorkspaceId ?? null} />
       </VStack>
       <Flex as="main" direction="column" flex="1" minW="0" minH="0" p="4" gap="3" overflow="auto">
         <Box as="section" aria-label="Request editor" flex="1" minH="220px" overflow="auto">

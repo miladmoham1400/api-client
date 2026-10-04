@@ -1,0 +1,106 @@
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { Box, Button, Dialog, Flex, Heading, Input, Menu, NativeSelect, Portal, Text, VStack } from '@chakra-ui/react'
+import type { Grouping } from '../../../shared/collections'
+import type { Result } from '../../../shared/results'
+import { nameSchema } from '../../../shared/primitives'
+
+type Editing = { kind: 'create' } | { kind: 'rename' | 'delete'; id: string; name: string }
+
+/** Mounted with a workspace key so a switch never displays the prior workspace's rows. */
+export function CollectionSidebar({ workspaceId }: { workspaceId: string | null }) {
+  const [snapshot, setSnapshot] = useState<Grouping | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [editing, setEditing] = useState<Editing | null>(null)
+  const [name, setName] = useState('')
+  const [fieldError, setFieldError] = useState<string | null>(null)
+  const generation = useRef(0)
+  const running = useRef(false)
+  const input = useRef<HTMLInputElement>(null)
+  const cancel = useRef<HTMLButtonElement>(null)
+  const create = useRef<HTMLButtonElement>(null)
+  const returnId = useRef<string | null>(null)
+  const triggers = useRef(new Map<string, HTMLButtonElement>())
+  const apply = useCallback(async (operation: () => Promise<Result<Grouping>>) => {
+    if (running.current) return false
+    running.current = true; setBusy(true); setError(null)
+    const current = ++generation.current
+    try {
+      const result = await operation()
+      if (current !== generation.current) return false
+      if (result.ok && result.data.workspaceId === workspaceId) { setSnapshot(result.data); return true }
+      setError(!result.ok && result.error.code === 'NOT_FOUND' ? 'This collection, request or workspace is no longer available. Reload collections.' : 'Collection changes could not be loaded or saved. Your current view has been kept. Try again.')
+      return false
+    } catch {
+      if (current === generation.current) setError('Collection operation unavailable. Try again.')
+      return false
+    } finally {
+      if (current === generation.current) { running.current = false; setBusy(false) }
+    }
+  }, [workspaceId])
+  const reload = useCallback(() => { if (workspaceId) void apply(() => window.offlineApi.collections.list(workspaceId)) }, [apply, workspaceId])
+  useEffect(() => { reload(); return () => { generation.current++; running.current = false } }, [reload])
+  function open(next: Editing) { returnId.current = next.kind === 'create' ? null : next.id; setEditing(next); setName(next.kind === 'create' ? '' : next.name); setFieldError(null) }
+  async function submit() {
+    if (!editing || !workspaceId || busy) return
+    if (editing.kind !== 'delete' && !nameSchema.safeParse(name).success) { setFieldError('Enter a name with 1–100 characters after trimming.'); input.current?.focus(); return }
+    const target = editing
+    if (await apply(() => target.kind === 'create' ? window.offlineApi.collections.create(workspaceId, name) : target.kind === 'rename' ? window.offlineApi.collections.rename(workspaceId, target.id, name) : window.offlineApi.collections.delete(workspaceId, target.id))) setEditing(null)
+  }
+  function requests(collectionId: string | null) {
+    const rows = snapshot?.requests.filter(request => request.collectionId === collectionId) ?? []
+    return rows.length ? rows.map(request => <Box key={request.id} role="group" aria-label={`Request: ${request.name}`} p="2" borderWidth="1px" borderRadius="sm">
+      <Text fontSize="sm" overflowWrap="anywhere">{request.name}</Text>
+      <NativeSelect.Root size="sm" disabled={busy || !workspaceId}>
+        <NativeSelect.Field aria-label={`Collection for ${request.name}`} value={request.collectionId ?? ''} onChange={event => {
+          const destination = event.target.value || null
+          if (workspaceId) void apply(() => window.offlineApi.requests.move(workspaceId, request.id, destination))
+        }}>
+          <option value="">Workspace root</option>
+          {snapshot?.collections.map((collection, index) => <option key={collection.id} value={collection.id}>{collection.name} (collection {index + 1})</option>)}
+        </NativeSelect.Field><NativeSelect.Indicator />
+      </NativeSelect.Root>
+    </Box>) : <Text fontSize="sm" color="fg.muted">{collectionId ? 'No requests in this collection' : 'No root requests'}</Text>
+  }
+  const title = editing?.kind === 'delete' ? 'Delete collection' : editing?.kind === 'rename' ? 'Rename collection' : 'Create collection'
+  return <>
+    <Heading size="sm">Collections</Heading>
+    <Button ref={create} disabled={!snapshot || busy} variant="outline" size="sm" onClick={() => open({ kind: 'create' })}>Create Collection</Button>
+    {!workspaceId ? <Text fontSize="sm" color="fg.muted">Select a workspace to manage collections.</Text> : !snapshot && !error ? <Text role="status" fontSize="sm">Loading collections…</Text> : null}
+    {busy && snapshot && <Text role="status" fontSize="sm">Updating collections…</Text>}
+    {error && <Box role="alert"><Text fontSize="sm">{error}</Text><Button size="sm" disabled={busy} onClick={reload}>Reload collections</Button></Box>}
+    {snapshot && snapshot.collections.length === 0 && <Text fontSize="sm" color="fg.muted">No collections</Text>}
+    {snapshot?.collections.map((collection, index) => <VStack key={collection.id} role="group" aria-label={`Collection ${index + 1}: ${collection.name}`} align="stretch" gap="2">
+      <Flex align="center" gap="2"><Heading size="sm" minW="0" flex="1" overflowWrap="anywhere">{collection.name}</Heading>
+        <Menu.Root><Menu.Trigger asChild><Button ref={element => { if (element) triggers.current.set(collection.id, element); else triggers.current.delete(collection.id) }} size="xs" variant="outline" disabled={busy} aria-label={`Actions for collection ${index + 1}: ${collection.name}`}>Actions</Button></Menu.Trigger>
+          <Portal><Menu.Positioner><Menu.Content>
+            <Menu.Item value="rename" onClick={() => open({ kind: 'rename', id: collection.id, name: collection.name })}>Rename collection</Menu.Item>
+            <Menu.Item value="delete" onClick={() => open({ kind: 'delete', id: collection.id, name: collection.name })}>Delete collection</Menu.Item>
+          </Menu.Content></Menu.Positioner></Portal>
+        </Menu.Root>
+      </Flex>
+      {requests(collection.id)}
+    </VStack>)}
+    <Heading size="sm">Root requests</Heading>
+    {snapshot && requests(null)}
+    <Button disabled variant="outline" size="sm">Create Request</Button>
+    <Text fontSize="sm">Request editing is not available yet.</Text>
+    <Dialog.Root open={editing !== null} onOpenChange={({ open: isOpen }) => { if (!isOpen && !busy) setEditing(null) }}
+      initialFocusEl={() => editing?.kind === 'delete' ? cancel.current : input.current}
+      finalFocusEl={() => returnId.current ? triggers.current.get(returnId.current) ?? create.current : create.current}>
+      <Portal><Dialog.Backdrop /><Dialog.Positioner><Dialog.Content>
+        <Dialog.Header><Dialog.Title>{title}</Dialog.Title></Dialog.Header>
+        <Dialog.Body>
+          {editing?.kind === 'delete' ? <Dialog.Description>Delete “{editing.name}”? Its saved requests will move to workspace root. The requests will not be deleted.</Dialog.Description> : <>
+            <Dialog.Description mb="3">Names are trimmed and may contain 1–100 characters. Duplicate names are allowed.</Dialog.Description>
+            <label htmlFor="collection-name">Collection name</label>
+            <Input ref={input} id="collection-name" value={name} disabled={busy} aria-invalid={fieldError !== null} aria-describedby={fieldError ? 'collection-name-error' : undefined} onChange={event => { setName(event.target.value); setFieldError(null) }} onKeyDown={event => { if (event.key === 'Enter' && !event.nativeEvent.isComposing) { event.preventDefault(); void submit() } }} />
+            {fieldError && <Text id="collection-name-error" role="alert" color="fg.error">{fieldError}</Text>}
+          </>}
+          {error && <Text role="alert" mt="3">{error}</Text>}
+        </Dialog.Body>
+        <Dialog.Footer><Button ref={cancel} variant="outline" disabled={busy} onClick={() => setEditing(null)}>Cancel</Button><Button disabled={busy} onClick={() => { void submit() }}>{busy ? 'Saving…' : editing?.kind === 'delete' ? 'Delete collection' : editing?.kind === 'rename' ? 'Save name' : 'Create collection'}</Button></Dialog.Footer>
+      </Dialog.Content></Dialog.Positioner></Portal>
+    </Dialog.Root>
+  </>
+}

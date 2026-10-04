@@ -1,6 +1,6 @@
 # TASK-008 — Connect collection CRUD and request grouping
 
-Status: todo
+Status: done
 Dependencies: TASK-007
 
 ## Read first
@@ -28,3 +28,5 @@ No nested collections or drag-and-drop requirement.
 ## Completion procedure
 
 Record actual changes, commands/results, environment, evidence and blockers in `docs/task-reports/TASK-008.md`. Update this status and the index together. Mark `done` only when acceptance is verified; otherwise `in_progress` or `blocked`. Stop at this task boundary.
+
+Evidence: [TASK-008 report](../task-reports/TASK-008.md). Linux source-app sidebar/move/delete verified; Windows and packaged-app acceptance remain unverified.

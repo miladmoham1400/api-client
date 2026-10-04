@@ -52,7 +52,6 @@ export function WorkspaceControls({ controller, placement }: { controller: Works
       <Button ref={create} disabled={!snapshot || busy} onClick={() => open({ kind: 'create' })}>Create Workspace</Button>
       {busy && <Text role="status" fontSize="sm">Updating workspaces…</Text>}
       {error && <Box role="alert"><Text fontSize="sm">{error}</Text><Button variant="outline" size="sm" disabled={busy} onClick={() => { void reload() }}>Reload workspaces</Button></Box>}
-      <Text fontSize="sm">Collection and request editing are not available yet.</Text>
     </>}
     <Dialog.Root open={editing !== null} onOpenChange={({ open: isOpen }) => { if (!isOpen && !busy) setEditing(null) }}
       initialFocusEl={() => editing?.kind === 'delete' ? cancel.current : input.current}

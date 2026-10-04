@@ -27,11 +27,11 @@ test('owned production window exposes only validated APIs and denies browser cap
     })
     expect(preferences).toEqual({ nodeIntegration: false, contextIsolation: true, sandbox: true, webSecurity: true, webviewTag: false })
     expect(await page.evaluate(() => ({
-      keys: Object.keys(window.offlineApi), methods: Object.keys(window.offlineApi.app), workspaceMethods: Object.keys(window.offlineApi.workspaces),
-      frozen: Object.isFrozen(window.offlineApi) && Object.isFrozen(window.offlineApi.app) && Object.isFrozen(window.offlineApi.workspaces),
+      keys: Object.keys(window.offlineApi), methods: Object.keys(window.offlineApi.app), workspaceMethods: Object.keys(window.offlineApi.workspaces), collectionMethods: Object.keys(window.offlineApi.collections), requestMethods: Object.keys(window.offlineApi.requests),
+      frozen: Object.isFrozen(window.offlineApi) && Object.isFrozen(window.offlineApi.app) && Object.isFrozen(window.offlineApi.workspaces) && Object.isFrozen(window.offlineApi.collections) && Object.isFrozen(window.offlineApi.requests),
       require: typeof Reflect.get(window, 'require'), process: typeof Reflect.get(window, 'process'),
       ipc: typeof Reflect.get(window, 'ipcRenderer')
-    }))).toEqual({ keys: ['workspaces', 'app'], methods: ['getBootstrap'], workspaceMethods: ['list', 'create', 'rename', 'delete', 'select'], frozen: true, require: 'undefined', process: 'undefined', ipc: 'undefined' })
+    }))).toEqual({ keys: ['collections', 'requests', 'workspaces', 'app'], methods: ['getBootstrap'], workspaceMethods: ['list', 'create', 'rename', 'delete', 'select'], collectionMethods: ['list', 'create', 'rename', 'delete'], requestMethods: ['move'], frozen: true, require: 'undefined', process: 'undefined', ipc: 'undefined' })
     expect(await page.evaluate(() => window.offlineApi.app.getBootstrap())).toEqual({
       ok: true, data: { stage: 'foundation', capabilities: { database: true, requests: false }, database: { status: 'ready' } }
     })

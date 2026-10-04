@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import type { CollectionApi, RequestGroupingApi } from './collections'
 import type { WorkspaceApi } from './workspaces'
 import { resultSchema, type Result } from './results'
 
@@ -16,5 +17,7 @@ export const IPC_CHANNELS = Object.freeze({ getBootstrap: 'app:get-bootstrap' })
 export type Bootstrap = z.infer<typeof bootstrapSchema>
 export interface DesktopApi {
   readonly workspaces: WorkspaceApi
+  readonly collections: CollectionApi
+  readonly requests: RequestGroupingApi
   readonly app: { readonly getBootstrap: () => Promise<Result<Bootstrap>> }
 }

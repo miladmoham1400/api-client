@@ -8,6 +8,9 @@ import type { Bootstrap } from '../shared/desktop-api'
 import { createOwnedHandler } from './ipc/guard'
 import { createWorkspaceHandlers } from './ipc/workspaces'
 import { WorkspaceService } from './services/workspaces'
+import { CollectionService } from './services/collections'
+import { createCollectionHandlers } from './ipc/collections'
+import { COLLECTION_CHANNELS } from '../shared/collections'
 import { WORKSPACE_CHANNELS } from '../shared/workspaces'
 
 let ownedWindow: BrowserWindow | null = null
@@ -82,9 +85,13 @@ else {
     for (const method of ['list', 'create', 'rename', 'delete', 'select'] as const) {
       ipcMain.handle(WORKSPACE_CHANNELS[method], workspaceHandlers[method])
     }
+    const collectionService = database ? new CollectionService(database) : null
+    const collectionHandlers = createCollectionHandlers(() => ownedWindow, trustedUrl, () => collectionService)
+    for (const method of ['list', 'create', 'rename', 'delete', 'move'] as const) ipcMain.handle(COLLECTION_CHANNELS[method], collectionHandlers[method])
     window.on('closed', () => {
       ownedWindow = null
       ipcMain.removeHandler(IPC_CHANNELS.getBootstrap)
+      for (const channel of Object.values(COLLECTION_CHANNELS)) ipcMain.removeHandler(channel)
       for (const channel of Object.values(WORKSPACE_CHANNELS)) ipcMain.removeHandler(channel)
     })
     await window.loadURL(trustedUrl)

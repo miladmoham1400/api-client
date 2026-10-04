@@ -13,7 +13,7 @@ There are 30 tasks: foundation (001–006), local project/request features (007�
 | 5 | [TASK-005 — Implement workspace-scoped repositories](tasks/TASK-005-repositories.md) | TASK-004 | done |
 | 6 | [TASK-006 — Build Chakra desktop shell](tasks/TASK-006-ui-shell.md) | TASK-003 | done |
 | 7 | [TASK-007 — Connect workspace CRUD and selection](tasks/TASK-007-workspace-crud.md) | TASK-005, TASK-006 | done |
-| 8 | [TASK-008 — Connect collection CRUD and request grouping](tasks/TASK-008-collection-crud.md) | TASK-007 | todo |
+| 8 | [TASK-008 — Connect collection CRUD and request grouping](tasks/TASK-008-collection-crud.md) | TASK-007 | done |
 | 9 | [TASK-009 — Implement saved requests and editor drafts](tasks/TASK-009-request-persistence.md) | TASK-008, TASK-002 | todo |
 | 10 | [TASK-010 — Build query/header/settings editors](tasks/TASK-010-request-fields.md) | TASK-009 | todo |
 | 11 | [TASK-011 — Build JSON/raw body editing](tasks/TASK-011-text-body-editor.md) | TASK-010 | todo |
