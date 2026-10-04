@@ -4,8 +4,8 @@ import { requestDraftSchema } from '../../../shared/requests'
 import { formatFieldPath } from '../../../shared/primitives'
 
 export type RowGroup = 'queryRows' | 'headerRows'
-export function copyDraft(source: RequestDraft): RequestDraft {
-  return { name: source.name, method: source.method, urlTemplate: source.urlTemplate, queryRows: (source.queryRows ?? []).map(row => ({ ...row })), headerRows: (source.headerRows ?? []).map(row => ({ ...row })), timeoutMs: source.timeoutMs ?? 30000, followRedirects: source.followRedirects ?? false }
+export function copyDraft(source: Omit<RequestDraft, 'body'> & { body?: RequestDraft['body'] | null }): RequestDraft {
+  return { ...(source.body === undefined || source.body === null ? {} : { body: { ...source.body } }), name: source.name, method: source.method, urlTemplate: source.urlTemplate, queryRows: (source.queryRows ?? []).map(row => ({ ...row })), headerRows: (source.headerRows ?? []).map(row => ({ ...row })), timeoutMs: source.timeoutMs ?? 30000, followRedirects: source.followRedirects ?? false }
 }
 export function updateRow(draft: RequestDraft, group: RowGroup, id: string, patch: Partial<Pick<TextRow, 'key' | 'value' | 'enabled'>>): RequestDraft {
   return { ...draft, [group]: (draft[group] ?? []).map(row => row.id === id ? { ...row, ...patch } : row) }
@@ -17,7 +17,7 @@ export function fieldErrors(draft: RequestDraft): Record<string, string> {
   for (const issue of result.error.issues) {
     const path = formatFieldPath(issue.path)
     if (!path) continue
-    errors[path] = path === 'timeoutMs' ? 'Timeout must be an integer from 100 to 300,000 ms.' : path === 'name' ? 'Name must contain 1–100 characters after trimming.' : path.endsWith('.key') || path.endsWith('.value') || path === 'urlTemplate' ? 'Use at most 10,000 characters.' : path === 'queryRows' || path === 'headerRows' ? 'Use at most 200 rows with distinct row IDs.' : 'Invalid field value.'
+    errors[path] = path === 'body' ? 'GET and HEAD cannot have a body. Select None or change the method.' : path === 'body.text' ? 'Body must be at most 5 MiB of UTF-8 text.' : path === 'body.mediaType' ? 'Enter a valid media type, such as text/plain.' : path === 'timeoutMs' ? 'Timeout must be an integer from 100 to 300,000 ms.' : path === 'name' ? 'Name must contain 1–100 characters after trimming.' : path.endsWith('.key') || path.endsWith('.value') || path === 'urlTemplate' ? 'Use at most 10,000 characters.' : path === 'queryRows' || path === 'headerRows' ? 'Use at most 200 rows with distinct row IDs.' : 'Invalid field value.'
   }
   return errors
 }

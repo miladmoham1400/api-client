@@ -25,7 +25,7 @@ export class RequestService {
     this.active(workspace)
     const selected = this.r.getState(workspace).selectedRequestId
     const request = selected ? this.r.getRequest(workspace, selected) : null
-    const editor = request ? { id: request.id, workspaceId: request.workspaceId, collectionId: request.collectionId, name: request.name, createdAt: request.createdAt, updatedAt: request.updatedAt, method: request.config.method, urlTemplate: request.config.urlTemplate, queryRows: request.config.queryRows, headerRows: request.config.headerRows, timeoutMs: request.config.timeoutMs, followRedirects: request.config.followRedirects } : null
+    const editor = request ? { id: request.id, workspaceId: request.workspaceId, collectionId: request.collectionId, name: request.name, createdAt: request.createdAt, updatedAt: request.updatedAt, method: request.config.method, urlTemplate: request.config.urlTemplate, queryRows: request.config.queryRows, headerRows: request.config.headerRows, timeoutMs: request.config.timeoutMs, followRedirects: request.config.followRedirects, body: ['none', 'json', 'raw'].includes(request.config.body.kind) ? request.config.body : null } : null
     return requestSnapshotSchema.parse({ workspaceId: workspace, requests: this.r.listRequests(workspace), editor })
   }
   private select(workspace: string, id: string) { const state = this.r.getState(workspace); this.r.setState(workspace, state.activeEnvironmentId, id) }
@@ -50,7 +50,7 @@ export class RequestService {
     })
   }
   private fields(draft: RequestDraft) {
-    return { ...(draft.queryRows === undefined ? {} : { queryRows: draft.queryRows }), ...(draft.headerRows === undefined ? {} : { headerRows: draft.headerRows }), ...(draft.timeoutMs === undefined ? {} : { timeoutMs: draft.timeoutMs }), ...(draft.followRedirects === undefined ? {} : { followRedirects: draft.followRedirects }) }
+    return { ...(draft.body === undefined ? {} : { body: draft.body }), ...(draft.queryRows === undefined ? {} : { queryRows: draft.queryRows }), ...(draft.headerRows === undefined ? {} : { headerRows: draft.headerRows }), ...(draft.timeoutMs === undefined ? {} : { timeoutMs: draft.timeoutMs }), ...(draft.followRedirects === undefined ? {} : { followRedirects: draft.followRedirects }) }
   }
   save(workspace: string, id: string, input: RequestDraft) {
     id = uuidSchema.parse(id); const draft = requestDraftSchema.parse(input)

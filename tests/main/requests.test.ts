@@ -111,3 +111,24 @@ it('invalid fields are rejected with sanitized payload paths before database wri
   expect(f.handlers.newRow(f.event, f.b)).toMatchObject({ ok: false, error: { code: 'NOT_FOUND' } })
   expect(f.service.list(f.a)).toEqual(created)
 })
+
+it('persists only the active text body unchanged and preserves it on partial saves and restart', () => {
+  const f = fixture(), text = ' {\n "message": "سلام 🌍", "value": "{{value}}"\n}  '
+  const created = f.service.create(f.a, { ...input(), method: 'POST', body: { kind: 'json', text } }), id = created.editor?.id
+  if (!id) throw new Error('Missing request')
+  expect(created.editor?.body).toEqual({ kind: 'json', text })
+  f.service.save(f.a, id, { name: 'Renamed', method: 'POST', urlTemplate: '' })
+  expect(f.service.list(f.a).editor?.body).toEqual({ kind: 'json', text })
+  expect(f.handlers.save(f.event, f.a, id, { name: 'Bad', method: 'HEAD', urlTemplate: '', body: { kind: 'json', text: '' } })).toMatchObject({ ok: false, error: { field: 'body' } })
+  expect(f.service.list(f.a).editor?.body).toEqual({ kind: 'json', text })
+  f.service.save(f.a, id, { name: 'Raw', method: 'POST', urlTemplate: '', body: { kind: 'raw', text: 'سلام 🌍\n', mediaType: 'text/plain; charset=utf-8' } })
+  f.db.close(); const reopened = openDatabase(f.path)
+  try { expect(new RequestService(reopened).list(f.a).editor?.body).toEqual({ kind: 'raw', text: 'سلام 🌍\n', mediaType: 'text/plain; charset=utf-8' }) } finally { reopened.close() }
+})
+it('keeps unsupported stored form configuration in main on basic saves without exposing an editor for it', () => {
+  const f = fixture(), body = { kind: 'urlencoded' as const, rows: [{ ...f.service.newRow(f.a), key: 'field', value: 'saved' }] }
+  const request = f.r.createRequest(f.a, 'Existing', null, { ...createDefaultRequestConfig(), method: 'POST', body, auth: { mode: 'none' } })
+  expect(f.service.get(f.a, request.id).editor?.body).toBeNull()
+  f.service.save(f.a, request.id, { name: 'Renamed', method: 'POST', urlTemplate: '' })
+  expect(f.r.getRequest(f.a, request.id).config.body).toEqual(body)
+})

@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { RequestDraft, RequestSnapshot } from '../../../shared/requests'
 import { requestDraftSchema } from '../../../shared/requests'
+import { initialBodyDrafts, switchBody } from './body-state'
+import type { EditableBody } from '../../../shared/requests'
 import { copyDraft, fieldErrors, type RowGroup } from './fields-state'
 import type { Result } from '../../../shared/results'
 
@@ -13,9 +15,10 @@ export function useRequests(workspace: string | null) {
   const [error, setError] = useState<string | null>(null)
   const [validation, setValidation] = useState<Record<string, string>>({})
   const [revision, setRevision] = useState(0)
+  const bodyCache = useRef(initialBodyDrafts())
   const running = useRef(false), generation = useRef(0)
   const dirty = currentWorkspace && draft !== null && (!saved || JSON.stringify(copyDraft(draft)) !== JSON.stringify(copyDraft(saved)))
-  const apply = useCallback(async (operation: () => Promise<Result<RequestSnapshot>>, refresh = false) => {
+  const apply = useCallback(async (operation: () => Promise<Result<RequestSnapshot>>, refresh = false, preserveBody = false) => {
     if (running.current) return false
     running.current = true; setBusy(true); setError(null); setValidation({})
     const current = ++generation.current
@@ -25,6 +28,7 @@ export function useRequests(workspace: string | null) {
       if (result.ok && result.data.workspaceId === workspace) {
         const editor = result.data.editor
         setSaved(editor); setDraft(editor ? copyDraft(editor) : null)
+        if (!preserveBody) bodyCache.current = initialBodyDrafts(editor?.body ?? undefined)
         if (refresh) setRevision(value => value + 1)
         return true
       }
@@ -43,7 +47,7 @@ export function useRequests(workspace: string | null) {
     if (!currentWorkspace || !workspace || !draft) return false
     const parsed = requestDraftSchema.safeParse(draft)
     if (!parsed.success) { setValidation(fieldErrors(draft)); setError('Correct the highlighted fields before saving. Your draft has been kept.'); return false }
-    return apply(() => saved ? window.offlineApi.requests.save(workspace, saved.id, parsed.data) : window.offlineApi.requests.create(workspace, { ...parsed.data, collectionId: null }), true)
+    return apply(() => saved ? window.offlineApi.requests.save(workspace, saved.id, parsed.data) : window.offlineApi.requests.create(workspace, { ...parsed.data, collectionId: null }), true, true)
   }, [currentWorkspace, workspace, draft, saved, apply])
   useEffect(() => {
     function shortcut(event: KeyboardEvent) {
@@ -65,9 +69,9 @@ export function useRequests(workspace: string | null) {
     finally { if (current === generation.current) { running.current = false; setBusy(false) } }
   }
   return {
-    saved: currentWorkspace ? saved : null, draft: currentWorkspace ? draft : null, busy: currentWorkspace ? busy : workspace !== null, dirty, error: currentWorkspace ? error : null, revision, validation, addRow, setDraft: (value: RequestDraft) => { setDraft(value); setValidation({}) }, save,
-    create: () => { if (!workspace || busy || dirty) return; setSaved(null); setDraft(copyDraft({ name: 'New request', method: 'GET', urlTemplate: '' })); setError(null) },
-    discard: () => { if (!busy) { setDraft(saved ? copyDraft(saved) : null); setError(null); setValidation({}) } },
+    saved: currentWorkspace ? saved : null, draft: currentWorkspace ? draft : null, busy: currentWorkspace ? busy : workspace !== null, dirty, error: currentWorkspace ? error : null, revision, validation, addRow, changeBody: (kind: EditableBody['kind']) => { if (!draft || busy) return; const result = switchBody(bodyCache.current, draft.body, kind); bodyCache.current = result.cache; setDraft({ ...draft, body: result.body }); setValidation({}) }, setDraft: (value: RequestDraft) => { setDraft(value); setValidation({}) }, save,
+    create: () => { if (!workspace || busy || dirty) return; bodyCache.current = initialBodyDrafts(); setSaved(null); setDraft(copyDraft({ name: 'New request', method: 'GET', urlTemplate: '', body: { kind: 'none' } })); setError(null) },
+    discard: () => { if (!busy) { bodyCache.current = initialBodyDrafts(saved?.body ?? undefined); setDraft(saved ? copyDraft(saved) : null); setError(null); setValidation({}) } },
     open: (id: string) => { if (workspace && !dirty) void apply(() => window.offlineApi.requests.get(workspace, id)) },
     duplicate: () => { if (workspace && saved && !dirty) void apply(() => window.offlineApi.requests.duplicate(workspace, saved.id), true) },
     delete: () => workspace && saved && !dirty ? apply(() => window.offlineApi.requests.delete(workspace, saved.id), true) : Promise.resolve(false)

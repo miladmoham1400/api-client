@@ -1,6 +1,6 @@
 # TASK-011 — Build JSON/raw body editing
 
-Status: todo
+Status: done
 Dependencies: TASK-010
 
 ## Read first
