@@ -1,7 +1,13 @@
+import { mkdtempSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { test, expect, _electron } from '@playwright/test'
 
 test('built local Electron window renders Chakra without remote resources', async () => {
+  const directory = mkdtempSync(join(tmpdir(), 'api-client-smoke-'))
   const env = Object.fromEntries(Object.entries(process.env).filter((entry): entry is [string, string] => entry[1] !== undefined && entry[0] !== 'ELECTRON_RUN_AS_NODE'))
+  env.XDG_CONFIG_HOME = directory
+  env.APPDATA = directory
   const electron = await _electron.launch({ args: ['.'], chromiumSandbox: true, env })
   try {
     const page = await electron.firstWindow()
@@ -18,5 +24,6 @@ test('built local Electron window renders Chakra without remote resources', asyn
     console.log('Embedded runtime:', await electron.evaluate(() => process.versions))
   } finally {
     await electron.close()
+    rmSync(directory, { recursive: true, force: true })
   }
 })

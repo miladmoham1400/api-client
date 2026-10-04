@@ -1,8 +1,14 @@
+import { mkdtempSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { spawn } from 'node:child_process'
 import { _electron, expect, test } from '@playwright/test'
 
 test('owned production window exposes only validated bootstrap and denies browser capabilities', async () => {
+  const directory = mkdtempSync(join(tmpdir(), 'api-client-smoke-'))
   const env = Object.fromEntries(Object.entries(process.env).filter((entry): entry is [string, string] => entry[1] !== undefined && entry[0] !== 'ELECTRON_RUN_AS_NODE' && entry[0] !== 'ELECTRON_RENDERER_URL'))
+  env.XDG_CONFIG_HOME = directory
+  env.APPDATA = directory
   const application = await _electron.launch({ args: ['.'], chromiumSandbox: true, env })
   try {
     const page = await application.firstWindow()
@@ -27,10 +33,10 @@ test('owned production window exposes only validated bootstrap and denies browse
       ipc: typeof Reflect.get(window, 'ipcRenderer')
     }))).toEqual({ keys: ['app'], methods: ['getBootstrap'], frozen: true, require: 'undefined', process: 'undefined', ipc: 'undefined' })
     expect(await page.evaluate(() => window.offlineApi.app.getBootstrap())).toEqual({
-      ok: true, data: { stage: 'foundation', capabilities: { database: false, requests: false } }
+      ok: true, data: { stage: 'foundation', capabilities: { database: true, requests: false }, database: { status: 'ready' } }
     })
     expect(await page.evaluate(() => Reflect.apply(window.offlineApi.app.getBootstrap, null, [{ script: 'synthetic' }]))).toEqual({
-      ok: true, data: { stage: 'foundation', capabilities: { database: false, requests: false } }
+      ok: true, data: { stage: 'foundation', capabilities: { database: true, requests: false }, database: { status: 'ready' } }
     }) // Bridge method never forwards renderer-selected arguments/channels.
     const csp = await page.locator('meta[http-equiv="Content-Security-Policy"]').getAttribute('content')
     expect(csp).toContain("connect-src 'none'")
@@ -83,5 +89,5 @@ test('owned production window exposes only validated bootstrap and denies browse
     await expect.poll(() => application.evaluate(() => Reflect.get(globalThis, 'navigationDeniedObserved'))).toBe(true)
     expect(page.url()).toBe(original)
     expect((await page.evaluate(() => window.offlineApi.app.getBootstrap())).ok).toBe(true)
-  } finally { await application.close() }
+  } finally { await application.close(); rmSync(directory, { recursive: true, force: true }) }
 })

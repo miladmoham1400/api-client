@@ -2,9 +2,17 @@ import { app, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { bootstrapInputSchema, bootstrapSchema, IPC_CHANNELS } from '../shared/desktop-api'
+import type Database from 'better-sqlite3'
+import { openDatabase } from './db/database'
+import type { Bootstrap } from '../shared/desktop-api'
 import { createOwnedHandler } from './ipc/guard'
 
 let ownedWindow: BrowserWindow | null = null
+let database: Database.Database | null = null
+app.on('will-quit', () => {
+  if (database?.open) database.close()
+  database = null
+})
 app.enableSandbox()
 const hasLock = app.requestSingleInstanceLock()
 if (!hasLock) app.quit()
@@ -15,6 +23,14 @@ else {
     ownedWindow.focus()
   })
   void app.whenReady().then(async () => {
+    const databasePath = join(app.getPath('userData'), 'offline-api-client.sqlite')
+    let bootstrap: Bootstrap
+    try {
+      database = openDatabase(databasePath)
+      bootstrap = { stage: 'foundation', capabilities: { database: true, requests: false }, database: { status: 'ready' } }
+    } catch {
+      bootstrap = { stage: 'foundation', capabilities: { database: false, requests: false }, database: { status: 'unavailable', path: databasePath, message: 'The local database could not be opened. Your existing data has not been replaced. Close the app and check access to the database location.' } }
+    }
     const localEntry = pathToFileURL(join(__dirname, '../renderer/index.html')).href
     const devUrl = !app.isPackaged ? process.env.ELECTRON_RENDERER_URL : undefined
     // Only the configured loopback tooling URL can be a development entry.
@@ -56,7 +72,7 @@ else {
     })
     ipcMain.handle(IPC_CHANNELS.getBootstrap, createOwnedHandler(
       () => ownedWindow, trustedUrl, bootstrapInputSchema, bootstrapSchema,
-      () => ({ stage: 'foundation', capabilities: { database: false, requests: false } } as const)
+      () => bootstrap
     ))
     window.on('closed', () => {
       ownedWindow = null

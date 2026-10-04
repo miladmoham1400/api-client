@@ -1,6 +1,6 @@
 # TASK-004 — Implement SQLite bootstrap and migrations
 
-Status: todo
+Status: done
 Dependencies: TASK-003
 
 ## Read first
@@ -29,3 +29,7 @@ No renderer CRUD or alternate database server.
 ## Completion procedure
 
 Record actual changes, commands/results, environment, evidence and blockers in `docs/task-reports/TASK-004.md`. Update this status and the index together. Mark `done` only when acceptance is verified; otherwise `in_progress` or `blocked`. Stop at this task boundary.
+
+## Evidence
+
+Completed 2026-10-04 on Linux x64. Clean install, strict typecheck, lint, 89 unit/integration tests, production build and 3 Electron smoke tests pass. Native SQLite loads under Electron ABI 149; migration rollback, composite FK rejection, reopen and corrupt-file recovery have evidence in [TASK-004 report](../task-reports/TASK-004.md). Windows and packaged-app verification remain untested.
