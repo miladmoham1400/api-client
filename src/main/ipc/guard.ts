@@ -24,7 +24,7 @@ export function createOwnedHandler<I extends z.ZodType, T extends z.ZodType>(
       return { ok: false, error: { code: 'NOT_FOUND', message: 'Operation unavailable', retryable: false } }
     }
     const input = inputSchema.safeParse(args)
-    if (!input.success) return { ok: false, error: validationError(input.error) }
+    if (!input.success) return { ok: false, error: validationError(input.error, true) }
     try {
       return { ok: true, data: outputSchema.parse(operation(input.data)) }
     } catch (error) {

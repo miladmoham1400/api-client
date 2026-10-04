@@ -93,7 +93,7 @@ else {
     for (const method of ['list', 'create', 'rename', 'delete', 'move'] as const) ipcMain.handle(COLLECTION_CHANNELS[method], collectionHandlers[method])
     const requestService = database ? new RequestService(database) : null
     const requestHandlers = createRequestHandlers(() => ownedWindow, trustedUrl, () => requestService)
-    for (const method of ['list', 'get', 'create', 'save', 'duplicate', 'delete'] as const) ipcMain.handle(REQUEST_CHANNELS[method], requestHandlers[method])
+    for (const method of ['newRow', 'list', 'get', 'create', 'save', 'duplicate', 'delete'] as const) ipcMain.handle(REQUEST_CHANNELS[method], requestHandlers[method])
     window.on('closed', () => {
       ownedWindow = null
       ipcMain.removeHandler(IPC_CHANNELS.getBootstrap)

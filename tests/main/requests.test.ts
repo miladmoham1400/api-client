@@ -89,3 +89,25 @@ it('staged secret changes roll back when selection/deletion fails and never upda
   expect(() => service.delete(f.a, id)).toThrow()
   expect(commits).toBe(0); expect(rollbacks).toBe(2); expect(f.service.list(f.a)).toEqual(created)
 })
+it('ordered duplicate rows and settings save/reopen; omitted fields preserve existing settings', () => {
+  const f = fixture(), a = f.service.newRow(f.a), b = f.service.newRow(f.a), header = f.service.newRow(f.a)
+  expect(a.id).not.toBe(b.id); expect(f.r.listRequests(f.a)).toEqual([])
+  const fields = { ...input(), queryRows: [{ ...a, key: 'same', value: 'one' }, { ...b, key: 'same', value: '', enabled: false }], headerRows: [{ ...header, key: 'X-Fixture', value: 'saved', enabled: false }], timeoutMs: 300000, followRedirects: true }
+  const created = f.service.create(f.a, fields), id = created.editor?.id
+  if (!id) throw new Error('Missing request')
+  expect(created.editor).toMatchObject(fields)
+  f.service.save(f.a, id, { name: 'Basic-only rename', method: 'GET', urlTemplate: '' })
+  expect(f.r.getRequest(f.a, id).config).toMatchObject({ queryRows: fields.queryRows, headerRows: fields.headerRows, timeoutMs: 300000, followRedirects: true })
+  f.db.close()
+  const reopened = openDatabase(f.path)
+  try { expect(new RequestService(reopened).list(f.a).editor).toMatchObject({ queryRows: fields.queryRows, headerRows: fields.headerRows, timeoutMs: 300000, followRedirects: true }) } finally { reopened.close() }
+})
+it('invalid fields are rejected with sanitized payload paths before database writes', () => {
+  const f = fixture(), created = f.service.create(f.a, input()), id = created.editor?.id
+  if (!id) throw new Error('Missing request')
+  const rejected = f.handlers.save(f.event, f.a, id, { name: 'Saved', method: 'GET', urlTemplate: '', headerRows: [{ ...f.service.newRow(f.a), value: 'x'.repeat(10001) }] })
+  expect(rejected).toMatchObject({ ok: false, error: { code: 'VALIDATION', field: 'headerRows[0].value' } })
+  expect(f.handlers.save(f.event, f.a, id, { name: 'Saved', method: 'GET', urlTemplate: '', timeoutMs: 99 })).toMatchObject({ ok: false, error: { code: 'VALIDATION', field: 'timeoutMs' } })
+  expect(f.handlers.newRow(f.event, f.b)).toMatchObject({ ok: false, error: { code: 'NOT_FOUND' } })
+  expect(f.service.list(f.a)).toEqual(created)
+})

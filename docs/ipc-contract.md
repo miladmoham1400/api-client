@@ -14,12 +14,14 @@ Runtime-validate incoming payloads and outgoing shared DTOs. Do not return stack
 | collections | list(workspaceId), create(workspaceId,name), rename(workspaceId,id,name), delete(workspaceId,id) |
 | environments | list(workspaceId), create(workspaceId,name), rename(workspaceId,id,name), delete(workspaceId,id), select(workspaceId,idOrNull) |
 | variables | list(workspaceId,environmentIdOrNull), upsert(workspaceId,scope,key,value,isSensitive), delete(workspaceId,id), reveal(workspaceId,id) |
-| requests | list(workspaceId), get(workspaceId,id), create(workspaceId,input), save(workspaceId,id,input), duplicate(workspaceId,id), delete(workspaceId,id), move(workspaceId,id,collectionIdOrNull) |
+| requests | newRow(workspaceId), list(workspaceId), get(workspaceId,id), create(workspaceId,input), save(workspaceId,id,input), duplicate(workspaceId,id), delete(workspaceId,id), move(workspaceId,id,collectionIdOrNull) |
 | files | chooseUpload(workspaceId) -> opaque file ID + name + size; releaseUpload(workspaceId,fileId) |
 | execution | send(workspaceId,requestIdOrNull,draft,environmentIdOrNull), cancel(executionId), onCompleted(callback) -> unsubscribe |
 | transfer | exportWorkspace(workspaceId) using native save dialog; chooseImport() -> validated preview token; importWorkspace(previewToken) |
 
 These are API shapes, not instructions to expose a generic `invoke(channel,args)` function. Use explicit contextBridge functions and schema allowlists.
+
+`requests.newRow` returns a main-generated UUID and a blank enabled key/value row for a draft in the active owned workspace. It does not persist a request or row. Query/header arrays and timeout/redirect settings are validated on explicit create/save; omitted settings in a partial save preserve their stored values.
 
 Sensitive variables list returns presence, masked display and persistence capability, not plaintext. Reveal/edit happens only on explicit user action. Draft auth inputs may contain templates or ephemeral literals. Main stores credential literals through the secret store and redacts list responses. Requests.get for editing can return decrypted credentials only to the owned window and only for the selected request.
 

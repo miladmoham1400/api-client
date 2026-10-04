@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import type Database from 'better-sqlite3'
 import { Repositories, RepositoryError } from '../db/repositories'
 import { createDefaultRequestConfig } from '../../shared/request-config'
@@ -19,11 +20,12 @@ export class RequestService {
     uuidSchema.parse(workspace)
     if (this.r.getSelectedWorkspace() !== workspace) throw new RepositoryError('NOT_FOUND')
   }
+  newRow(workspace: string) { this.active(workspace); return { id: randomUUID(), key: '', value: '', enabled: true } }
   list(workspace: string) {
     this.active(workspace)
     const selected = this.r.getState(workspace).selectedRequestId
     const request = selected ? this.r.getRequest(workspace, selected) : null
-    const editor = request ? { id: request.id, workspaceId: request.workspaceId, collectionId: request.collectionId, name: request.name, createdAt: request.createdAt, updatedAt: request.updatedAt, method: request.config.method, urlTemplate: request.config.urlTemplate } : null
+    const editor = request ? { id: request.id, workspaceId: request.workspaceId, collectionId: request.collectionId, name: request.name, createdAt: request.createdAt, updatedAt: request.updatedAt, method: request.config.method, urlTemplate: request.config.urlTemplate, queryRows: request.config.queryRows, headerRows: request.config.headerRows, timeoutMs: request.config.timeoutMs, followRedirects: request.config.followRedirects } : null
     return requestSnapshotSchema.parse({ workspaceId: workspace, requests: this.r.listRequests(workspace), editor })
   }
   private select(workspace: string, id: string) { const state = this.r.getState(workspace); this.r.setState(workspace, state.activeEnvironmentId, id) }
@@ -42,16 +44,19 @@ export class RequestService {
   create(workspace: string, input: unknown) {
     const draft = requestCreateSchema.parse(input)
     return this.mutate(workspace, () => {
-      const config = { ...createDefaultRequestConfig(), method: draft.method, urlTemplate: draft.urlTemplate, auth: { mode: 'none' as const } }
+      const config = { ...createDefaultRequestConfig(), method: draft.method, urlTemplate: draft.urlTemplate, ...this.fields(draft), auth: { mode: 'none' as const } }
       const request = this.r.createRequest(workspace, draft.name, draft.collectionId, config)
       this.select(workspace, request.id)
     })
+  }
+  private fields(draft: RequestDraft) {
+    return { ...(draft.queryRows === undefined ? {} : { queryRows: draft.queryRows }), ...(draft.headerRows === undefined ? {} : { headerRows: draft.headerRows }), ...(draft.timeoutMs === undefined ? {} : { timeoutMs: draft.timeoutMs }), ...(draft.followRedirects === undefined ? {} : { followRedirects: draft.followRedirects }) }
   }
   save(workspace: string, id: string, input: RequestDraft) {
     id = uuidSchema.parse(id); const draft = requestDraftSchema.parse(input)
     return this.mutate(workspace, () => {
       const previous = this.r.getRequest(workspace, id)
-      this.r.saveRequest(workspace, id, draft.name, { ...previous.config, method: draft.method, urlTemplate: draft.urlTemplate })
+      this.r.saveRequest(workspace, id, draft.name, { ...previous.config, method: draft.method, urlTemplate: draft.urlTemplate, ...this.fields(draft) })
       this.select(workspace, id)
     })
   }

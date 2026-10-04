@@ -3,6 +3,7 @@ import { createOwnedHandler } from './guard'
 import { RepositoryError } from '../db/repositories'
 import type { RequestService } from '../services/requests'
 import { requestInputs, requestSnapshotSchema } from '../../shared/requests'
+import { textRowSchema } from '../../shared/request-config'
 import type { DomainError } from '../../shared/results'
 
 function operationError(error: unknown): DomainError {
@@ -14,6 +15,7 @@ export function createRequestHandlers(getWindow: Parameters<typeof createOwnedHa
     return createOwnedHandler(getWindow, trustedUrl, input, requestSnapshotSchema, args => { const service = getService(); if (!service) throw new RepositoryError('DATABASE_UNAVAILABLE'); return operation(service, args) }, operationError)
   }
   return {
+    newRow: createOwnedHandler(getWindow, trustedUrl, requestInputs.newRow, textRowSchema, ([workspace]) => { const service = getService(); if (!service) throw new RepositoryError('DATABASE_UNAVAILABLE'); return service.newRow(workspace) }, operationError),
     list: handler(requestInputs.list, (service, [workspace]) => service.list(workspace)),
     get: handler(requestInputs.get, (service, [workspace, id]) => service.get(workspace, id)),
     create: handler(requestInputs.create, (service, [workspace, input]) => service.create(workspace, input)),

@@ -31,7 +31,7 @@ test('owned production window exposes only validated APIs and denies browser cap
       frozen: Object.isFrozen(window.offlineApi) && Object.isFrozen(window.offlineApi.app) && Object.isFrozen(window.offlineApi.workspaces) && Object.isFrozen(window.offlineApi.collections) && Object.isFrozen(window.offlineApi.requests),
       require: typeof Reflect.get(window, 'require'), process: typeof Reflect.get(window, 'process'),
       ipc: typeof Reflect.get(window, 'ipcRenderer')
-    }))).toEqual({ keys: ['collections', 'requests', 'workspaces', 'app'], methods: ['getBootstrap'], workspaceMethods: ['list', 'create', 'rename', 'delete', 'select'], collectionMethods: ['list', 'create', 'rename', 'delete'], requestMethods: ['list', 'get', 'create', 'save', 'duplicate', 'delete', 'move'], frozen: true, require: 'undefined', process: 'undefined', ipc: 'undefined' })
+    }))).toEqual({ keys: ['collections', 'requests', 'workspaces', 'app'], methods: ['getBootstrap'], workspaceMethods: ['list', 'create', 'rename', 'delete', 'select'], collectionMethods: ['list', 'create', 'rename', 'delete'], requestMethods: ['newRow', 'list', 'get', 'create', 'save', 'duplicate', 'delete', 'move'], frozen: true, require: 'undefined', process: 'undefined', ipc: 'undefined' })
     expect(await page.evaluate(() => window.offlineApi.app.getBootstrap())).toEqual({
       ok: true, data: { stage: 'foundation', capabilities: { database: true, requests: false }, database: { status: 'ready' } }
     })

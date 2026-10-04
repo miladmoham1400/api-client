@@ -4,13 +4,13 @@ import { IPC_CHANNELS, bootstrapResultSchema, type DesktopApi } from '../shared/
 import { WORKSPACE_CHANNELS, workspaceInputs, workspaceResultSchema } from '../shared/workspaces'
 import { z } from 'zod'
 import { COLLECTION_CHANNELS, collectionInputs, groupingResultSchema } from '../shared/collections'
-import { REQUEST_CHANNELS, requestInputs, requestResultSchema, type RequestDraft } from '../shared/requests'
+import { REQUEST_CHANNELS, requestInputs, requestResultSchema, requestRowResultSchema, type RequestDraft } from '../shared/requests'
 import { validationError } from '../shared/results'
 
 // Private allowlisted invocation helper; never exposed to renderer.
 async function workspaceCall<I extends z.ZodType<unknown[]>>(channel: (typeof WORKSPACE_CHANNELS)[keyof typeof WORKSPACE_CHANNELS], schema: I, args: unknown[]): ReturnType<DesktopApi['workspaces']['list']> {
   const input = schema.safeParse(args)
-  if (!input.success) return { ok: false, error: validationError(input.error) }
+  if (!input.success) return { ok: false, error: validationError(input.error, true) }
   try {
     return workspaceResultSchema.parse(await ipcRenderer.invoke(channel, ...input.data))
   } catch {
@@ -20,14 +20,14 @@ async function workspaceCall<I extends z.ZodType<unknown[]>>(channel: (typeof WO
 
 async function collectionCall<I extends z.ZodType<unknown[]>>(channel: (typeof COLLECTION_CHANNELS)[keyof typeof COLLECTION_CHANNELS], schema: I, args: unknown[]): ReturnType<DesktopApi['collections']['list']> {
   const input = schema.safeParse(args)
-  if (!input.success) return { ok: false, error: validationError(input.error) }
+  if (!input.success) return { ok: false, error: validationError(input.error, true) }
   try { return groupingResultSchema.parse(await ipcRenderer.invoke(channel, ...input.data)) }
   catch { return { ok: false, error: { code: 'VALIDATION', message: 'Operation unavailable', retryable: false } } }
 }
 
 async function requestCall<I extends z.ZodType<unknown[]>>(channel: (typeof REQUEST_CHANNELS)[keyof typeof REQUEST_CHANNELS], schema: I, args: unknown[]): ReturnType<DesktopApi['requests']['list']> {
   const input = schema.safeParse(args)
-  if (!input.success) return { ok: false, error: validationError(input.error) }
+  if (!input.success) return { ok: false, error: validationError(input.error, true) }
   try { return requestResultSchema.parse(await ipcRenderer.invoke(channel, ...input.data)) }
   catch { return { ok: false, error: { code: 'VALIDATION', message: 'Operation unavailable', retryable: false } } }
 }
@@ -40,6 +40,12 @@ const api: DesktopApi = Object.freeze({
     delete: (workspace: string, id: string) => collectionCall(COLLECTION_CHANNELS.delete, collectionInputs.delete, [workspace, id])
   }),
   requests: Object.freeze({
+    newRow: async (workspace: string): ReturnType<DesktopApi['requests']['newRow']> => {
+      const input = requestInputs.newRow.safeParse([workspace])
+      if (!input.success) return { ok: false, error: validationError(input.error, true) }
+      try { return requestRowResultSchema.parse(await ipcRenderer.invoke(REQUEST_CHANNELS.newRow, ...input.data)) }
+      catch { return { ok: false, error: { code: 'VALIDATION', message: 'Operation unavailable', retryable: false } } }
+    },
     list: (workspace: string) => requestCall(REQUEST_CHANNELS.list, requestInputs.list, [workspace]),
     get: (workspace: string, id: string) => requestCall(REQUEST_CHANNELS.get, requestInputs.get, [workspace, id]),
     create: (workspace: string, input: z.infer<typeof requestInputs.create>[1]) => requestCall(REQUEST_CHANNELS.create, requestInputs.create, [workspace, input]),

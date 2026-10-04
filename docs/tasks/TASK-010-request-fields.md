@@ -1,6 +1,6 @@
 # TASK-010 — Build query/header/settings editors
 
-Status: todo
+Status: done
 Dependencies: TASK-009
 
 ## Read first

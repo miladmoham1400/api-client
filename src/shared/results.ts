@@ -24,8 +24,9 @@ export function resultSchema<T extends z.ZodType>(dataSchema: T) {
 }
 
 // Never relay Zod messages/received payloads: unknown fields or credentials may be embedded.
-export function validationError(error: z.ZodError): DomainError {
-  const field = formatFieldPath(error.issues[0]?.path ?? [])
+export function validationError(error: z.ZodError, argumentTuple = false): DomainError {
+  const path = error.issues[0]?.path ?? []
+  const field = formatFieldPath(argumentTuple && typeof path[0] === 'number' ? path.slice(1) : path)
   return {
     code: 'VALIDATION', message: 'Invalid input', retryable: false,
     ...(field === undefined ? {} : { field })
