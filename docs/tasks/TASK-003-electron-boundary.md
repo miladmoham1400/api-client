@@ -1,6 +1,6 @@
 # TASK-003 — Secure Electron lifecycle and preload boundary
 
-Status: todo
+Status: done
 Dependencies: TASK-002
 
 ## Read first
@@ -28,3 +28,7 @@ No data features or HTTP sends; database initialization is connected later.
 ## Completion procedure
 
 Record actual changes, commands/results, environment, evidence and blockers in `docs/task-reports/TASK-003.md`. Update this status and the index together. Mark `done` only when acceptance is verified; otherwise `in_progress` or `blocked`. Stop at this task boundary.
+
+## Evidence
+
+Completed 2026-10-04 on Linux. Strict typecheck, lint, production build, 83 unit tests and 2 sandbox-enabled Electron smoke tests pass, including live invalid-sender and single-instance checks. See [TASK-003 report](../task-reports/TASK-003.md). Windows and packaged-app acceptance remain untested.
