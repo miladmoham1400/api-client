@@ -1,6 +1,6 @@
 # TASK-014 — Build environments and variables management
 
-Status: todo
+Status: done
 Dependencies: TASK-007, TASK-012, TASK-013
 
 ## Read first

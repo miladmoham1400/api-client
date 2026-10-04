@@ -1,6 +1,6 @@
 import { StrictMode, useEffect, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
-import { Box, Button, Dialog, Flex, Heading, NativeSelect, Portal, Tabs, Text, VStack } from '@chakra-ui/react'
+import { Box, Button, Dialog, Flex, Heading, Portal, Tabs, Text, VStack } from '@chakra-ui/react'
 import type { Bootstrap } from '../shared/desktop-api'
 import { LocalProvider } from './theme/provider'
 import './shell.css'
@@ -8,6 +8,7 @@ import { useWorkspaces } from './features/workspaces/use-workspaces'
 import { CollectionSidebar } from './features/collections/sidebar'
 import { WorkspaceControls } from './features/workspaces/controls'
 import { useRequests } from './features/requests/controller'
+import { VariableControls } from './features/variables/controls'
 import { RequestEditor } from './features/requests/editor'
 import type { WorkspaceController } from './features/workspaces/use-workspaces'
 
@@ -44,14 +45,13 @@ function Desktop({ workspaces }: { workspaces: WorkspaceController }) {
     <Flex as="header" gap="3" p="3" borderBottomWidth="1px" align="center" flexWrap="wrap">
       <Heading size="md" mr="2">Offline API Client</Heading>
       <WorkspaceControls controller={workspaces} locked={requests.dirty || requests.busy} placement="top" />
-      <NativeSelect.Root width="190px" disabled><NativeSelect.Field aria-label="Environment"><option>Environments unavailable</option></NativeSelect.Field><NativeSelect.Indicator /></NativeSelect.Root>
-      <Button disabled variant="outline" size="sm">Variables</Button>
+      <VariableControls key={workspaces.snapshot?.selectedWorkspaceId ?? 'none'} workspace={workspaces.snapshot?.selectedWorkspaceId ?? null} />
       <Button disabled variant="outline" size="sm">System theme</Button>
       <Dialog.Root initialFocusEl={() => closeButton.current}>
         <Dialog.Trigger asChild><Button size="sm" variant="ghost">About this shell</Button></Dialog.Trigger>
         <Portal><Dialog.Backdrop /><Dialog.Positioner><Dialog.Content>
           <Dialog.Header><Dialog.Title>Local desktop shell</Dialog.Title></Dialog.Header>
-          <Dialog.Body><Dialog.Description>Workspaces and collections can be managed locally. Existing saved requests can move between collections and root. Request fields, JSON/raw bodies and timeout/redirect settings support explicit Save. Sending and auth editing and variables are not available yet. No sample data has been created or requests sent. Appearance follows your system.</Dialog.Description></Dialog.Body>
+          <Dialog.Body><Dialog.Description>Workspaces and collections can be managed locally. Existing saved requests can move between collections and root. Request fields, JSON/raw bodies and timeout/redirect settings support explicit Save. Environments and variables can be managed locally. Sending and auth editing are not available yet. No sample data has been created or requests sent. Appearance follows your system.</Dialog.Description></Dialog.Body>
           <Dialog.Footer><Dialog.CloseTrigger asChild><Button ref={closeButton}>Close</Button></Dialog.CloseTrigger></Dialog.Footer>
         </Dialog.Content></Dialog.Positioner></Portal>
       </Dialog.Root>

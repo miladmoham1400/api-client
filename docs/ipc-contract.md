@@ -27,6 +27,8 @@ Request create/save accepts an optional active text body (`none`, `json` with so
 
 Sensitive variables list returns presence, masked display and persistence capability, not plaintext. Reveal/edit happens only on explicit user action. Draft auth inputs may contain templates or ephemeral literals. Main stores credential literals through the secret store and redacts list responses. Requests.get for editing can return decrypted credentials only to the owned window and only for the selected request.
 
+Environment snapshots include owned environments, active selection and current secure/session storage capability. Variable lists include the requested owned scope and a masked effective preview from workspace plus selected environment, with source environment IDs. Preview does not decrypt or interpolate values. `variables.upsert` accepts an optional final variable ID: omit/null for a new key (duplicates in that scope fail), or supply the owned existing ID to edit that key's value/sensitive designation. Existing keys are fixed during edit. Reveal returns only `{value}` to the owned window; no secret ID or ciphertext is returned.
+
 `execution.send` returns `{executionId}` after validation and snapshot materialization; actual network operation starts asynchronously. `onCompleted` receives `{executionId,result:HttpResponse|ExecutionError}` once. Emit completion after the invocation result is delivered or maintain a main-side retrievable completion record so very fast responses cannot race subscription setup. Register listener before enabling Send. Listener cleanup prevents accumulation.
 
 ## Domain errors

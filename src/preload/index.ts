@@ -1,3 +1,4 @@
+import { ENVIRONMENT_CHANNELS as EC, VARIABLE_CHANNELS as VC, environmentInputs as EI, variableInputs as VI, environmentResultSchema, variableResultSchema, revealResultSchema } from '../shared/variable-management'
 import { contextBridge, ipcRenderer } from 'electron'
 import { IPC_CHANNELS, bootstrapResultSchema, type DesktopApi } from '../shared/desktop-api'
 
@@ -32,7 +33,27 @@ async function requestCall<I extends z.ZodType<unknown[]>>(channel: (typeof REQU
   catch { return { ok: false, error: { code: 'VALIDATION', message: 'Operation unavailable', retryable: false } } }
 }
 
+async function variableCall<I extends z.ZodType<unknown[]>, O extends z.ZodType>(channel: (typeof EC)[keyof typeof EC] | (typeof VC)[keyof typeof VC], schema: I, output: O, args: unknown[]) {
+  const input = schema.safeParse(args)
+  if (!input.success) return { ok: false as const, error: validationError(input.error, true) }
+  try { return output.parse(await ipcRenderer.invoke(channel, ...input.data)) }
+  catch { return { ok: false as const, error: { code: 'VALIDATION' as const, message: 'Operation unavailable', retryable: false } } }
+}
+
 const api: DesktopApi = Object.freeze({
+  environments: Object.freeze({
+    list: (w: string) => variableCall(EC.list, EI.list, environmentResultSchema, [w]),
+    create: (w: string, n: string) => variableCall(EC.create, EI.create, environmentResultSchema, [w, n]),
+    rename: (w: string, id: string, n: string) => variableCall(EC.rename, EI.rename, environmentResultSchema, [w, id, n]),
+    delete: (w: string, id: string) => variableCall(EC.delete, EI.delete, environmentResultSchema, [w, id]),
+    select: (w: string, id: string | null) => variableCall(EC.select, EI.select, environmentResultSchema, [w, id])
+  }),
+  variables: Object.freeze({
+    list: (w: string, scope: string | null) => variableCall(VC.list, VI.list, variableResultSchema, [w, scope]),
+    upsert: (w: string, scope: string | null, k: string, v: string, sensitive: boolean, id?: string | null) => variableCall(VC.upsert, VI.upsert, variableResultSchema, [w, scope, k, v, sensitive, id]),
+    delete: (w: string, id: string) => variableCall(VC.delete, VI.delete, variableResultSchema, [w, id]),
+    reveal: (w: string, id: string) => variableCall(VC.reveal, VI.reveal, revealResultSchema, [w, id])
+  }),
   collections: Object.freeze({
     list: (workspace: string) => collectionCall(COLLECTION_CHANNELS.list, collectionInputs.list, [workspace]),
     create: (workspace: string, name: string) => collectionCall(COLLECTION_CHANNELS.create, collectionInputs.create, [workspace, name]),

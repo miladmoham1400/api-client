@@ -19,7 +19,7 @@ There are 30 tasks: foundation (001–006), local project/request features (007�
 | 11 | [TASK-011 — Build JSON/raw body editing](tasks/TASK-011-text-body-editor.md) | TASK-010 | done |
 | 12 | [TASK-012 — Implement pure variable resolution](tasks/TASK-012-variable-resolver.md) | TASK-002 | done |
 | 13 | [TASK-013 — Implement secure and session-only secret store](tasks/TASK-013-secret-store.md) | TASK-005 | done |
-| 14 | [TASK-014 — Build environments and variables management](tasks/TASK-014-variables-ui.md) | TASK-007, TASK-012, TASK-013 | todo |
+| 14 | [TASK-014 — Build environments and variables management](tasks/TASK-014-variables-ui.md) | TASK-007, TASK-012, TASK-013 | done |
 | 15 | [TASK-015 — Implement auth editing and request materialization](tasks/TASK-015-request-materialization.md) | TASK-011, TASK-012, TASK-013, TASK-014 | todo |
 | 16 | [TASK-016 — Implement single-hop HTTP transport](tasks/TASK-016-http-transport.md) | TASK-015, TASK-003 | todo |
 | 17 | [TASK-017 — Implement documented redirect policy](tasks/TASK-017-redirect-policy.md) | TASK-016 | todo |

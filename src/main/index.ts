@@ -14,6 +14,9 @@ import { COLLECTION_CHANNELS } from '../shared/collections'
 import { RequestService } from './services/requests'
 import { createRequestHandlers } from './ipc/requests'
 import { REQUEST_CHANNELS } from '../shared/requests'
+import { VariableService } from './services/variables'
+import { createVariableHandlers } from './ipc/variables'
+import { ENVIRONMENT_CHANNELS, VARIABLE_CHANNELS } from '../shared/variable-management'
 import { SecretStore } from './security/secrets'
 import { WORKSPACE_CHANNELS } from '../shared/workspaces'
 
@@ -88,6 +91,10 @@ else {
       () => ownedWindow, trustedUrl, bootstrapInputSchema, bootstrapSchema,
       () => bootstrap
     ))
+    const variableService = database && secretStore ? new VariableService(database, secretStore) : null
+    const variableHandlers = createVariableHandlers(() => ownedWindow, trustedUrl, () => variableService)
+    for (const method of ['list', 'create', 'rename', 'delete', 'select'] as const) ipcMain.handle(ENVIRONMENT_CHANNELS[method], variableHandlers.environments[method])
+    for (const method of ['list', 'upsert', 'delete', 'reveal'] as const) ipcMain.handle(VARIABLE_CHANNELS[method], variableHandlers.variables[method])
     const workspaceService = database ? new WorkspaceService(database, secretStore ?? undefined) : null
     const workspaceHandlers = createWorkspaceHandlers(() => ownedWindow, trustedUrl, () => workspaceService)
     for (const method of ['list', 'create', 'rename', 'delete', 'select'] as const) {
@@ -101,6 +108,7 @@ else {
     for (const method of ['newRow', 'list', 'get', 'create', 'save', 'duplicate', 'delete'] as const) ipcMain.handle(REQUEST_CHANNELS[method], requestHandlers[method])
     window.on('closed', () => {
       ownedWindow = null
+      for (const channel of [...Object.values(ENVIRONMENT_CHANNELS), ...Object.values(VARIABLE_CHANNELS)]) ipcMain.removeHandler(channel)
       ipcMain.removeHandler(IPC_CHANNELS.getBootstrap)
       for (const channel of Object.values(REQUEST_CHANNELS)) ipcMain.removeHandler(channel)
       for (const channel of Object.values(COLLECTION_CHANNELS)) ipcMain.removeHandler(channel)

@@ -1,3 +1,4 @@
+import type { EnvironmentApi, VariableApi } from './variable-management'
 import { z } from 'zod'
 import type { CollectionApi, RequestGroupingApi } from './collections'
 import type { RequestPersistenceApi } from './requests'
@@ -17,6 +18,8 @@ export const bootstrapInputSchema = z.tuple([])
 export const IPC_CHANNELS = Object.freeze({ getBootstrap: 'app:get-bootstrap' })
 export type Bootstrap = z.infer<typeof bootstrapSchema>
 export interface DesktopApi {
+  readonly environments: EnvironmentApi
+  readonly variables: VariableApi
   readonly workspaces: WorkspaceApi
   readonly collections: CollectionApi
   readonly requests: RequestGroupingApi & RequestPersistenceApi
