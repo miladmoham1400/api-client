@@ -1,6 +1,6 @@
 # TASK-002 — Define shared validated domain contracts
 
-Status: todo
+Status: done
 Dependencies: TASK-001
 
 ## Read first
@@ -30,3 +30,7 @@ No IPC handlers or networking.
 ## Completion procedure
 
 Record actual changes, commands/results, environment, evidence and blockers in `docs/task-reports/TASK-002.md`. Update this status and the index together. Mark `done` only when acceptance is verified; otherwise `in_progress` or `blocked`. Stop at this task boundary.
+
+## Evidence
+
+Completed 2026-10-04. Strict typecheck, lint, clean lockfile installation, production build, 76 focused schema tests and the existing Linux Electron smoke pass. See [TASK-002 report](../task-reports/TASK-002.md). Windows/package and future IPC/transport integration acceptance are not claimed.

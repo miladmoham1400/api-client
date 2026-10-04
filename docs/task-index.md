@@ -6,8 +6,8 @@ There are 30 tasks: foundation (001–006), local project/request features (007�
 
 | Order | Task | Dependencies | Status |
 |---|---|---|---|
-| 1 | [TASK-001 — Establish compatible toolchain and build skeleton](tasks/TASK-001-toolchain-baseline.md) | None | todo |
-| 2 | [TASK-002 — Define shared validated domain contracts](tasks/TASK-002-shared-contracts.md) | TASK-001 | todo |
+| 1 | [TASK-001 — Establish compatible toolchain and build skeleton](tasks/TASK-001-toolchain-baseline.md) | None | done |
+| 2 | [TASK-002 — Define shared validated domain contracts](tasks/TASK-002-shared-contracts.md) | TASK-001 | done |
 | 3 | [TASK-003 — Secure Electron lifecycle and preload boundary](tasks/TASK-003-electron-boundary.md) | TASK-002 | todo |
 | 4 | [TASK-004 — Implement SQLite bootstrap and migrations](tasks/TASK-004-sqlite-migrations.md) | TASK-003 | todo |
 | 5 | [TASK-005 — Implement workspace-scoped repositories](tasks/TASK-005-repositories.md) | TASK-004 | todo |
