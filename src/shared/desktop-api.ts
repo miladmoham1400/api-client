@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import type { CollectionApi, RequestGroupingApi } from './collections'
+import type { RequestPersistenceApi } from './requests'
 import type { WorkspaceApi } from './workspaces'
 import { resultSchema, type Result } from './results'
 
@@ -18,6 +19,6 @@ export type Bootstrap = z.infer<typeof bootstrapSchema>
 export interface DesktopApi {
   readonly workspaces: WorkspaceApi
   readonly collections: CollectionApi
-  readonly requests: RequestGroupingApi
+  readonly requests: RequestGroupingApi & RequestPersistenceApi
   readonly app: { readonly getBootstrap: () => Promise<Result<Bootstrap>> }
 }

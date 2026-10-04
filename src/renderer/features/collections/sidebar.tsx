@@ -2,12 +2,14 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Box, Button, Dialog, Flex, Heading, Input, Menu, NativeSelect, Portal, Text, VStack } from '@chakra-ui/react'
 import type { Grouping } from '../../../shared/collections'
 import type { Result } from '../../../shared/results'
+import type { RequestController } from '../requests/controller'
 import { nameSchema } from '../../../shared/primitives'
 
 type Editing = { kind: 'create' } | { kind: 'rename' | 'delete'; id: string; name: string }
 
 /** Mounted with a workspace key so a switch never displays the prior workspace's rows. */
-export function CollectionSidebar({ workspaceId }: { workspaceId: string | null }) {
+export function CollectionSidebar({ workspaceId, requestController }: { workspaceId: string | null; requestController: RequestController }) {
+  const locked = requestController.dirty || requestController.busy
   const [snapshot, setSnapshot] = useState<Grouping | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -39,7 +41,7 @@ export function CollectionSidebar({ workspaceId }: { workspaceId: string | null 
     }
   }, [workspaceId])
   const reload = useCallback(() => { if (workspaceId) void apply(() => window.offlineApi.collections.list(workspaceId)) }, [apply, workspaceId])
-  useEffect(() => { reload(); return () => { generation.current++; running.current = false } }, [reload])
+  useEffect(() => { reload(); return () => { generation.current++; running.current = false } }, [reload, requestController.revision])
   function open(next: Editing) { returnId.current = next.kind === 'create' ? null : next.id; setEditing(next); setName(next.kind === 'create' ? '' : next.name); setFieldError(null) }
   async function submit() {
     if (!editing || !workspaceId || busy) return
@@ -50,8 +52,8 @@ export function CollectionSidebar({ workspaceId }: { workspaceId: string | null 
   function requests(collectionId: string | null) {
     const rows = snapshot?.requests.filter(request => request.collectionId === collectionId) ?? []
     return rows.length ? rows.map(request => <Box key={request.id} role="group" aria-label={`Request: ${request.name}`} p="2" borderWidth="1px" borderRadius="sm">
-      <Text fontSize="sm" overflowWrap="anywhere">{request.name}</Text>
-      <NativeSelect.Root size="sm" disabled={busy || !workspaceId}>
+      <Button variant="ghost" size="sm" whiteSpace="normal" h="auto" py="2" disabled={locked || busy} onClick={() => requestController.open(request.id)}>{request.name}</Button>
+      <NativeSelect.Root size="sm" disabled={busy || locked || !workspaceId}>
         <NativeSelect.Field aria-label={`Collection for ${request.name}`} value={request.collectionId ?? ''} onChange={event => {
           const destination = event.target.value || null
           if (workspaceId) void apply(() => window.offlineApi.requests.move(workspaceId, request.id, destination))
@@ -65,14 +67,14 @@ export function CollectionSidebar({ workspaceId }: { workspaceId: string | null 
   const title = editing?.kind === 'delete' ? 'Delete collection' : editing?.kind === 'rename' ? 'Rename collection' : 'Create collection'
   return <>
     <Heading size="sm">Collections</Heading>
-    <Button ref={create} disabled={!snapshot || busy} variant="outline" size="sm" onClick={() => open({ kind: 'create' })}>Create Collection</Button>
+    <Button ref={create} disabled={!snapshot || busy || locked} variant="outline" size="sm" onClick={() => open({ kind: 'create' })}>Create Collection</Button>
     {!workspaceId ? <Text fontSize="sm" color="fg.muted">Select a workspace to manage collections.</Text> : !snapshot && !error ? <Text role="status" fontSize="sm">Loading collections…</Text> : null}
     {busy && snapshot && <Text role="status" fontSize="sm">Updating collections…</Text>}
     {error && <Box role="alert"><Text fontSize="sm">{error}</Text><Button size="sm" disabled={busy} onClick={reload}>Reload collections</Button></Box>}
     {snapshot && snapshot.collections.length === 0 && <Text fontSize="sm" color="fg.muted">No collections</Text>}
     {snapshot?.collections.map((collection, index) => <VStack key={collection.id} role="group" aria-label={`Collection ${index + 1}: ${collection.name}`} align="stretch" gap="2">
       <Flex align="center" gap="2"><Heading size="sm" minW="0" flex="1" overflowWrap="anywhere">{collection.name}</Heading>
-        <Menu.Root><Menu.Trigger asChild><Button ref={element => { if (element) triggers.current.set(collection.id, element); else triggers.current.delete(collection.id) }} size="xs" variant="outline" disabled={busy} aria-label={`Actions for collection ${index + 1}: ${collection.name}`}>Actions</Button></Menu.Trigger>
+        <Menu.Root><Menu.Trigger asChild><Button ref={element => { if (element) triggers.current.set(collection.id, element); else triggers.current.delete(collection.id) }} size="xs" variant="outline" disabled={busy || locked} aria-label={`Actions for collection ${index + 1}: ${collection.name}`}>Actions</Button></Menu.Trigger>
           <Portal><Menu.Positioner><Menu.Content>
             <Menu.Item value="rename" onClick={() => open({ kind: 'rename', id: collection.id, name: collection.name })}>Rename collection</Menu.Item>
             <Menu.Item value="delete" onClick={() => open({ kind: 'delete', id: collection.id, name: collection.name })}>Delete collection</Menu.Item>
@@ -83,8 +85,7 @@ export function CollectionSidebar({ workspaceId }: { workspaceId: string | null 
     </VStack>)}
     <Heading size="sm">Root requests</Heading>
     {snapshot && requests(null)}
-    <Button disabled variant="outline" size="sm">Create Request</Button>
-    <Text fontSize="sm">Request editing is not available yet.</Text>
+    <Button data-create-request disabled={!workspaceId || !snapshot || busy || locked} variant="outline" size="sm" onClick={requestController.create}>Create Request</Button>
     <Dialog.Root open={editing !== null} onOpenChange={({ open: isOpen }) => { if (!isOpen && !busy) setEditing(null) }}
       initialFocusEl={() => editing?.kind === 'delete' ? cancel.current : input.current}
       finalFocusEl={() => returnId.current ? triggers.current.get(returnId.current) ?? create.current : create.current}>

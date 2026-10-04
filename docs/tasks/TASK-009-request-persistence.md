@@ -1,6 +1,6 @@
 # TASK-009 — Implement saved requests and editor drafts
 
-Status: todo
+Status: done
 Dependencies: TASK-008, TASK-002
 
 ## Read first
@@ -29,3 +29,5 @@ No HTTP send or final dirty-navigation guard (TASK-023).
 ## Completion procedure
 
 Record actual changes, commands/results, environment, evidence and blockers in `docs/task-reports/TASK-009.md`. Update this status and the index together. Mark `done` only when acceptance is verified; otherwise `in_progress` or `blocked`. Stop at this task boundary.
+
+Evidence: [TASK-009 report](../task-reports/TASK-009.md). Linux source-app persistence/draft/reopen verified; Windows and packaged-app acceptance remain unverified.

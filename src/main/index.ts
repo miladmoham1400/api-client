@@ -11,6 +11,9 @@ import { WorkspaceService } from './services/workspaces'
 import { CollectionService } from './services/collections'
 import { createCollectionHandlers } from './ipc/collections'
 import { COLLECTION_CHANNELS } from '../shared/collections'
+import { RequestService } from './services/requests'
+import { createRequestHandlers } from './ipc/requests'
+import { REQUEST_CHANNELS } from '../shared/requests'
 import { WORKSPACE_CHANNELS } from '../shared/workspaces'
 
 let ownedWindow: BrowserWindow | null = null
@@ -88,9 +91,13 @@ else {
     const collectionService = database ? new CollectionService(database) : null
     const collectionHandlers = createCollectionHandlers(() => ownedWindow, trustedUrl, () => collectionService)
     for (const method of ['list', 'create', 'rename', 'delete', 'move'] as const) ipcMain.handle(COLLECTION_CHANNELS[method], collectionHandlers[method])
+    const requestService = database ? new RequestService(database) : null
+    const requestHandlers = createRequestHandlers(() => ownedWindow, trustedUrl, () => requestService)
+    for (const method of ['list', 'get', 'create', 'save', 'duplicate', 'delete'] as const) ipcMain.handle(REQUEST_CHANNELS[method], requestHandlers[method])
     window.on('closed', () => {
       ownedWindow = null
       ipcMain.removeHandler(IPC_CHANNELS.getBootstrap)
+      for (const channel of Object.values(REQUEST_CHANNELS)) ipcMain.removeHandler(channel)
       for (const channel of Object.values(COLLECTION_CHANNELS)) ipcMain.removeHandler(channel)
       for (const channel of Object.values(WORKSPACE_CHANNELS)) ipcMain.removeHandler(channel)
     })

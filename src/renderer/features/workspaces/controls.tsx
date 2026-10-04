@@ -5,7 +5,7 @@ import type { WorkspaceController } from './use-workspaces'
 
 type Editing = { kind: 'create' } | { kind: 'rename' | 'delete'; id: string; name: string }
 
-export function WorkspaceControls({ controller, placement }: { controller: WorkspaceController; placement: 'top' | 'sidebar' }) {
+export function WorkspaceControls({ controller, placement, locked = false }: { controller: WorkspaceController; placement: 'top' | 'sidebar'; locked?: boolean }) {
   const { snapshot, busy, error, apply, reload } = controller
   const selected = snapshot?.workspaces.find(workspace => workspace.id === snapshot.selectedWorkspaceId)
   const [editing, setEditing] = useState<Editing | null>(null)
@@ -35,13 +35,13 @@ export function WorkspaceControls({ controller, placement }: { controller: Works
   const title = editing?.kind === 'delete' ? 'Delete workspace' : editing?.kind === 'rename' ? 'Rename workspace' : 'Create workspace'
   return <>
     {placement === 'top' ? <>
-      <NativeSelect.Root width="210px" disabled={!snapshot || busy}>
+      <NativeSelect.Root width="210px" disabled={!snapshot || busy || locked}>
         <NativeSelect.Field ref={selector} aria-label="Workspace" value={snapshot?.selectedWorkspaceId ?? ''} onChange={event => { void apply(() => window.offlineApi.workspaces.select(event.target.value || null)) }}>
           <option value="">{snapshot ? 'No workspace selected' : 'Loading workspaces…'}</option>
           {snapshot?.workspaces.map(workspace => <option key={workspace.id} value={workspace.id}>{workspace.name}</option>)}
         </NativeSelect.Field><NativeSelect.Indicator />
       </NativeSelect.Root>
-      <Menu.Root><Menu.Trigger asChild><Button ref={menu} disabled={!selected || busy} size="sm" variant="outline" aria-label="Workspace menu">Workspace menu</Button></Menu.Trigger>
+      <Menu.Root><Menu.Trigger asChild><Button ref={menu} disabled={!selected || busy || locked} size="sm" variant="outline" aria-label="Workspace menu">Workspace menu</Button></Menu.Trigger>
         <Portal><Menu.Positioner><Menu.Content>
           <Menu.Item value="rename" onClick={() => { if (selected) open({ kind: 'rename', id: selected.id, name: selected.name }) }}>Rename workspace</Menu.Item>
           <Menu.Item value="delete" onClick={() => { if (selected) open({ kind: 'delete', id: selected.id, name: selected.name }) }}>Delete workspace</Menu.Item>
@@ -49,7 +49,7 @@ export function WorkspaceControls({ controller, placement }: { controller: Works
       </Menu.Root>
     </> : <>
       <Text fontSize="sm" color="fg.muted" overflowWrap="anywhere">{selected?.name ?? (snapshot ? 'No workspace selected' : 'Loading workspaces…')}</Text>
-      <Button ref={create} disabled={!snapshot || busy} onClick={() => open({ kind: 'create' })}>Create Workspace</Button>
+      <Button ref={create} disabled={!snapshot || busy || locked} onClick={() => open({ kind: 'create' })}>Create Workspace</Button>
       {busy && <Text role="status" fontSize="sm">Updating workspaces…</Text>}
       {error && <Box role="alert"><Text fontSize="sm">{error}</Text><Button variant="outline" size="sm" disabled={busy} onClick={() => { void reload() }}>Reload workspaces</Button></Box>}
     </>}
