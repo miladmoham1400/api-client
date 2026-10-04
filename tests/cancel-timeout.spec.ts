@@ -56,6 +56,6 @@ test('Send/Cancel and Ctrl+Enter execute unsaved snapshots, release busy state a
     const saved = await page.evaluate(w => window.offlineApi.requests.list(w), workspace)
     expect(saved).toMatchObject({ ok: true, data: { requests: [], editor: null } })
     expect(urls).toEqual(['/hold', '/hold', '/echo']); expect(browserRequests).toEqual([])
-    await expect(page.getByText('Response preview is not available yet.', { exact: true })).toBeVisible()
+    await expect(page.getByLabel('Response body text')).toContainText('bodyLength')
   } finally { await application.close(); await fixture.close(); rmSync(directory, { recursive: true, force: true }) }
 })

@@ -1,6 +1,6 @@
 import { StrictMode, useEffect, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
-import { Box, Button, Dialog, Flex, Heading, Portal, Tabs, Text, VStack } from '@chakra-ui/react'
+import { Box, Button, Dialog, Flex, Heading, Portal, Text, VStack } from '@chakra-ui/react'
 import type { Bootstrap } from '../shared/desktop-api'
 import { LocalProvider } from './theme/provider'
 import './shell.css'
@@ -9,6 +9,7 @@ import { CollectionSidebar } from './features/collections/sidebar'
 import { WorkspaceControls } from './features/workspaces/controls'
 import { useRequests } from './features/requests/controller'
 import { VariableControls } from './features/variables/controls'
+import { ResponseViewer } from './features/response/viewer'
 import { RequestEditor } from './features/requests/editor'
 import type { WorkspaceController } from './features/workspaces/use-workspaces'
 
@@ -51,7 +52,7 @@ function Desktop({ workspaces }: { workspaces: WorkspaceController }) {
         <Dialog.Trigger asChild><Button size="sm" variant="ghost">About this shell</Button></Dialog.Trigger>
         <Portal><Dialog.Backdrop /><Dialog.Positioner><Dialog.Content>
           <Dialog.Header><Dialog.Title>Local desktop shell</Dialog.Title></Dialog.Header>
-          <Dialog.Body><Dialog.Description>Workspaces and collections can be managed locally. Existing saved requests can move between collections and root. Request fields, JSON/raw bodies and timeout/redirect settings support explicit Save. Environments and variables can be managed locally. Auth editing supports explicit Save. Send and Cancel execute the current draft without saving it. Response preview is not available yet. No sample data or automatic requests are created. Appearance follows your system.</Dialog.Description></Dialog.Body>
+          <Dialog.Body><Dialog.Description>Workspaces and collections can be managed locally. Existing saved requests can move between collections and root. Request fields, JSON/raw bodies and timeout/redirect settings support explicit Save. Environments and variables can be managed locally. Auth editing supports explicit Save. Send and Cancel execute the current draft without saving it. Responses are shown as safe text, with raw headers and optional JSON formatting. No sample data or automatic requests are created. Appearance follows your system.</Dialog.Description></Dialog.Body>
           <Dialog.Footer><Dialog.CloseTrigger asChild><Button ref={closeButton}>Close</Button></Dialog.CloseTrigger></Dialog.Footer>
         </Dialog.Content></Dialog.Positioner></Portal>
       </Dialog.Root>
@@ -64,14 +65,7 @@ function Desktop({ workspaces }: { workspaces: WorkspaceController }) {
       </VStack>
       <Flex as="main" direction="column" flex="1" minW="0" minH="0" p="4" gap="3" overflow="auto">
         <RequestEditor key={workspaces.snapshot?.selectedWorkspaceId ?? "none"} controller={requests} />
-        <Box as="section" aria-label="Response" borderWidth="1px" borderRadius="md" p="4" h="260px" minH="180px" maxH="60vh" flexShrink="0" overflow="auto" resize="vertical">
-          <Flex justify="space-between" mb="3" align="center"><Heading size="sm">Response</Heading><Text fontSize="sm" color="fg.muted">Status — · Duration — · Size —</Text></Flex>
-          <Tabs.Root defaultValue="body" size="sm">
-            <Flex justify="space-between" align="center"><Tabs.List aria-label="Response views"><Tabs.Trigger value="body">Body</Tabs.Trigger><Tabs.Trigger value="headers">Headers</Tabs.Trigger></Tabs.List><Button disabled size="xs" variant="outline">Raw / Pretty</Button></Flex>
-            <Tabs.Content value="body"><Text>Response preview is not available yet.</Text></Tabs.Content>
-            <Tabs.Content value="headers"><Text>No response headers.</Text></Tabs.Content>
-          </Tabs.Root>
-        </Box>
+        <ResponseViewer controller={requests} />
       </Flex>
     </Flex>
     <Box as="footer" borderTopWidth="1px" px="4" py="2"><Text fontSize="xs" color="fg.muted">Local storage ready</Text></Box>
