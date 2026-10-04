@@ -1,0 +1,16 @@
+import { Box, Input, NativeSelect, Text, VStack } from '@chakra-ui/react'
+import type { AuthDraft } from '../../../shared/auth-editor'
+import type { RequestController } from './controller'
+export function AuthEditor({ controller: c }: { controller: RequestController }) {
+  const auth = c.draft?.auth ?? { mode: 'none' as const }
+  const field = (label: string, value: Extract<AuthDraft, { mode: 'bearer' }>['token'], change: (value: Extract<AuthDraft, { mode: 'bearer' }>['token']) => void) => <Box><label htmlFor={`auth-${label}`}>{label}</label><Input id={`auth-${label}`} type="password" autoComplete="off" value={value.kind === 'value' ? value.value : ''} placeholder={value.kind === 'keep' ? 'Stored credential: leave unchanged or enter replacement' : 'Literal or {{variable}}'} disabled={c.busy} onChange={event => change({ kind: 'value', value: event.target.value })} />{value.kind === 'keep' && <Text fontSize="sm">Stored value is kept unless replaced. Missing session values must be re-entered.</Text>}</Box>
+  return <VStack align="stretch" gap="3">
+    <label htmlFor="auth-mode">Auth mode</label><NativeSelect.Root disabled={!c.draft || c.busy}><NativeSelect.Field id="auth-mode" value={auth.mode} onChange={event => { if (!c.draft) return; const mode = event.target.value; c.setDraft({ ...c.draft, auth: mode === 'bearer' ? { mode, token: { kind: 'value', value: '' } } : mode === 'basic' ? { mode, username: { kind: 'value', value: '' }, password: { kind: 'value', value: '' } } : { mode: 'none' } }) }}><option value="none">None</option><option value="bearer">Bearer</option><option value="basic">Basic</option></NativeSelect.Field><NativeSelect.Indicator /></NativeSelect.Root>
+    {auth.mode === 'bearer' && field('Bearer token', auth.token, token => { if (c.draft) c.setDraft({ ...c.draft, auth: { ...auth, token } }) })}
+    {auth.mode === 'basic' && <>{field('Basic username', auth.username, username => { if (c.draft) c.setDraft({ ...c.draft, auth: { ...auth, username } }) })}{field('Basic password', auth.password, password => { if (c.draft) c.setDraft({ ...c.draft, auth: { ...auth, password } }) })}</>}
+    <Text fontSize="sm">Literal credentials use protected storage when available; otherwise session only: re-enter after restart. Templates are resolved in main when sending becomes available.</Text>
+    {c.saved?.auth.mode !== 'none' && c.saved?.auth.mode === auth.mode && Object.values(c.saved.auth).some(value => typeof value === 'object' && value.kind === 'stored') && <Text fontSize="sm">{Object.values(c.saved.auth).some(value => typeof value === 'object' && value.kind === 'stored' && !value.hasValue) ? 'Missing stored credential: re-enter it.' : c.saved.credentialStorage === 'session' ? 'Session only: re-enter after restart' : 'Secure storage available'}</Text>}
+    <Text fontSize="sm">Credential protection does not cover ordinary URL/query/body/custom-header values. Use sensitive variables for credentials. No auth inheritance.</Text>
+    {Object.entries(c.validation).filter(([path]) => path.startsWith('auth')).map(([path, error]) => <Text key={path} role="alert" color="fg.error">{path}: {error}</Text>)}
+  </VStack>
+}

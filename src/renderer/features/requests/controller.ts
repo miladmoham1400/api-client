@@ -70,7 +70,7 @@ export function useRequests(workspace: string | null) {
   }
   return {
     saved: currentWorkspace ? saved : null, draft: currentWorkspace ? draft : null, busy: currentWorkspace ? busy : workspace !== null, dirty, error: currentWorkspace ? error : null, revision, validation, addRow, changeBody: (kind: EditableBody['kind']) => { if (!draft || busy) return; const result = switchBody(bodyCache.current, draft.body, kind); bodyCache.current = result.cache; setDraft({ ...draft, body: result.body }); setValidation({}) }, setDraft: (value: RequestDraft) => { setDraft(value); setValidation({}) }, save,
-    create: () => { if (!workspace || busy || dirty) return; bodyCache.current = initialBodyDrafts(); setSaved(null); setDraft(copyDraft({ name: 'New request', method: 'GET', urlTemplate: '', body: { kind: 'none' } })); setError(null) },
+    create: () => { if (!workspace || busy || dirty) return; bodyCache.current = initialBodyDrafts(); setSaved(null); setDraft(copyDraft({ name: 'New request', method: 'GET', urlTemplate: '', body: { kind: 'none' }, auth: { mode: 'none' } })); setError(null) },
     discard: () => { if (!busy) { bodyCache.current = initialBodyDrafts(saved?.body ?? undefined); setDraft(saved ? copyDraft(saved) : null); setError(null); setValidation({}) } },
     open: (id: string) => { if (workspace && !dirty) void apply(() => window.offlineApi.requests.get(workspace, id)) },
     duplicate: () => { if (workspace && saved && !dirty) void apply(() => window.offlineApi.requests.duplicate(workspace, saved.id), true) },

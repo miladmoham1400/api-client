@@ -42,7 +42,7 @@ it('basic-field save preserves advanced configuration and credential references 
   const request = f.r.createRequest(f.a, 'Configured', null, config)
   const result = f.service.save(f.a, request.id, { name: 'Renamed', method: 'POST', urlTemplate: 'http://127.0.0.1/example' })
   expect(f.r.getRequest(f.a, request.id).config).toEqual({ ...config, method: 'POST', urlTemplate: 'http://127.0.0.1/example' })
-  expect(JSON.stringify(result)).not.toContain(secret.id); expect(JSON.stringify(result)).not.toContain('ciphertext'); expect(JSON.stringify(result)).not.toContain('auth')
+  expect(JSON.stringify(result)).not.toContain(secret.id); expect(JSON.stringify(result)).not.toContain('ciphertext'); expect(result.editor?.auth).toMatchObject({ mode: 'bearer', token: { kind: 'stored' } })
 })
 it('duplicates with new request and independently owned secret IDs and main-only lifecycle mappings; deletion clears selection', () => {
   const f = fixture(), secret = f.r.createSecret(f.a, 'session', null)

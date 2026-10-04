@@ -4,6 +4,7 @@ import { mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type Database from 'better-sqlite3'
+import { MaterializationService } from '../../src/main/services/materialization'
 import { SecretStore, type StorageBackend } from '../../src/main/security/secrets'
 import { openDatabase } from '../../src/main/db/database'
 import { Repositories } from '../../src/main/db/repositories'
@@ -128,4 +129,51 @@ it('masked presence never decrypts and Windows availability does not call Linux 
   expect(f.store.presence(f.a, handle.secretId).hasValue).toBe(true)
   f.provider.getSelectedStorageBackend = () => { throw new Error('Linux-only backend call') }
   expect(new SecretStore(f.db, f.provider, 'win32').capability()).toBe('secure')
+})
+
+it('auth editor persists literals as owned handles and keeps/replaces/removes them transactionally', () => {
+  const f = fixture(backend(false)), service = new RequestService(f.db, f.store, f.store)
+  const result = service.create(f.a, { name: 'Auth', method: 'POST', urlTemplate: 'http://localhost/', collectionId: null, auth: { mode: 'basic', username: { kind: 'value', value: 'synthetic-user' }, password: { kind: 'value', value: synthetic } } })
+  const id = result.editor!.id
+  expect(result.editor?.auth).toMatchObject({ mode: 'basic', username: { kind: 'stored', hasValue: true }, password: { kind: 'stored', storageMode: 'session' } })
+  expect(JSON.stringify(result)).not.toContain(synthetic); expect(JSON.stringify(f.r.getRequest(f.a, id))).not.toContain(synthetic)
+  const auth = f.r.getRequest(f.a, id).config.auth
+  if (auth.mode !== 'basic' || auth.password.kind !== 'secret') throw new Error('Missing password handle')
+  service.save(f.a, id, { name: 'Keep', method: 'POST', urlTemplate: 'http://localhost/', auth: { mode: 'basic', username: { kind: 'keep' }, password: { kind: 'keep' } } })
+  expect(f.r.getRequest(f.a, id).config.auth).toEqual(auth)
+  f.db.exec("CREATE TRIGGER fail_auth BEFORE UPDATE ON requests BEGIN SELECT RAISE(ABORT,'synthetic failure'); END;")
+  expect(() => service.save(f.a, id, { name: 'Replace', method: 'POST', urlTemplate: '', auth: { mode: 'bearer', token: { kind: 'value', value: 'synthetic-new' } } })).toThrow()
+  expect(f.store.reveal(f.a, auth.password.secretId)).toBe(synthetic)
+  expect(f.db.prepare('SELECT count(*) AS count FROM secrets').get()).toEqual({ count: 2 })
+  f.db.exec('DROP TRIGGER fail_auth')
+  service.save(f.a, id, { name: 'None', method: 'POST', urlTemplate: '', auth: { mode: 'none' } })
+  expect(f.db.prepare('SELECT count(*) AS count FROM secrets').get()).toEqual({ count: 0 })
+})
+it('captures selected owned variables and auth in main without changing saved templates or exposing resolved secrets in editor DTOs', () => {
+  const f = fixture(backend(false)), service = new RequestService(f.db, f.store, f.store)
+  const environment = f.r.createEnvironment(f.a, 'Active').id
+  f.r.upsertVariable(f.a, null, 'host', { isSensitive: false, plainValue: 'http://workspace.invalid', secretId: null })
+  f.r.upsertVariable(f.a, environment, 'host', { isSensitive: false, plainValue: 'http://localhost', secretId: null })
+  f.store.transaction(() => { const secret = f.store.create(f.a, 'synthetic-variable-token'); f.r.upsertVariable(f.a, environment, 'fixture', { isSensitive: true, plainValue: null, secretId: secret.secretId }) })
+  const created = service.create(f.a, { name: 'Template', method: 'POST', urlTemplate: '{{host}}/echo', collectionId: null, auth: { mode: 'bearer', token: { kind: 'value', value: '{{fixture}}' } } }), id = created.editor!.id
+  expect(created.editor?.auth).toEqual({ mode: 'bearer', token: { kind: 'value', value: '{{fixture}}' } })
+  f.r.setState(f.a, environment, id)
+  const before = f.r.getRequest(f.a, id), capture = new MaterializationService(f.db, f.store)
+  const result = capture.capture(f.a, id, { name: 'Template', method: 'POST', urlTemplate: '{{host}}/echo', auth: { mode: 'bearer', token: { kind: 'keep' } } }, environment)
+  expect(result).toMatchObject({ ok: true, data: { url: 'http://localhost/echo', headers: [{ name: 'Authorization', value: 'Bearer synthetic-variable-token' }, { name: 'Accept-Encoding', value: 'gzip, deflate, br' }] } })
+  expect(f.r.getRequest(f.a, id)).toEqual(before); expect(JSON.stringify(service.list(f.a))).not.toContain('synthetic-variable-token')
+  f.r.upsertVariable(f.a, environment, 'host', { isSensitive: false, plainValue: 'http://changed.invalid', secretId: null })
+  expect(result.ok && result.data.url).toBe('http://localhost/echo')
+  f.r.setState(f.a, null, id)
+  expect(capture.capture(f.a, id, { name: 'Template', method: 'POST', urlTemplate: '{{host}}/echo' }, null)).toMatchObject({ ok: false, error: { code: 'VARIABLE_MISSING' } })
+  const foreign = f.r.createEnvironment(f.b, 'Foreign').id
+  expect(capture.capture(f.a, id, { name: 'Template', method: 'POST', urlTemplate: 'http://localhost/' }, foreign)).toMatchObject({ ok: false, error: { code: 'NOT_FOUND' } })
+})
+it('missing session auth stays masked after restart and cannot materialize until explicitly replaced', () => {
+  const f = fixture(backend(false)), service = new RequestService(f.db, f.store, f.store)
+  const created = service.create(f.a, { name: 'Auth', method: 'POST', urlTemplate: 'http://localhost/', collectionId: null, auth: { mode: 'bearer', token: { kind: 'value', value: 'synthetic-literal' } } }), id = created.editor!.id
+  const restarted = new SecretStore(f.db, f.provider, 'linux'), fresh = new RequestService(f.db, restarted, restarted)
+  expect(fresh.list(f.a).editor?.auth).toMatchObject({ mode: 'bearer', token: { kind: 'stored', hasValue: false } })
+  expect(new MaterializationService(f.db, restarted).capture(f.a, id, { name: 'Auth', method: 'POST', urlTemplate: 'http://localhost/', auth: { mode: 'bearer', token: { kind: 'keep' } } }, null)).toMatchObject({ ok: false, error: { code: 'SECRET_UNAVAILABLE' } })
+  expect(() => fresh.create(f.a, { name: 'Invalid', method: 'GET', urlTemplate: '', collectionId: null, auth: { mode: 'bearer', token: { kind: 'keep' } } })).toThrow()
 })

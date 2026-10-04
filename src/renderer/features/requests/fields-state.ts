@@ -1,11 +1,12 @@
+import { authDraft, type AuthDraft, type AuthEditor } from '../../../shared/auth-editor'
 import type { RequestDraft } from '../../../shared/requests'
 import type { TextRow } from '../../../shared/request-config'
 import { requestDraftSchema } from '../../../shared/requests'
 import { formatFieldPath } from '../../../shared/primitives'
 
 export type RowGroup = 'queryRows' | 'headerRows'
-export function copyDraft(source: Omit<RequestDraft, 'body'> & { body?: RequestDraft['body'] | null }): RequestDraft {
-  return { ...(source.body === undefined || source.body === null ? {} : { body: { ...source.body } }), name: source.name, method: source.method, urlTemplate: source.urlTemplate, queryRows: (source.queryRows ?? []).map(row => ({ ...row })), headerRows: (source.headerRows ?? []).map(row => ({ ...row })), timeoutMs: source.timeoutMs ?? 30000, followRedirects: source.followRedirects ?? false }
+export function copyDraft(source: Omit<RequestDraft, 'body' | 'auth'> & { body?: RequestDraft['body'] | null; auth?: AuthDraft | AuthEditor | undefined }): RequestDraft {
+  return { ...(source.auth ? { auth: authDraft(source.auth) } : {}), ...(source.body === undefined || source.body === null ? {} : { body: { ...source.body } }), name: source.name, method: source.method, urlTemplate: source.urlTemplate, queryRows: (source.queryRows ?? []).map(row => ({ ...row })), headerRows: (source.headerRows ?? []).map(row => ({ ...row })), timeoutMs: source.timeoutMs ?? 30000, followRedirects: source.followRedirects ?? false }
 }
 export function updateRow(draft: RequestDraft, group: RowGroup, id: string, patch: Partial<Pick<TextRow, 'key' | 'value' | 'enabled'>>): RequestDraft {
   return { ...draft, [group]: (draft[group] ?? []).map(row => row.id === id ? { ...row, ...patch } : row) }

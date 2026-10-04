@@ -51,7 +51,7 @@ function Desktop({ workspaces }: { workspaces: WorkspaceController }) {
         <Dialog.Trigger asChild><Button size="sm" variant="ghost">About this shell</Button></Dialog.Trigger>
         <Portal><Dialog.Backdrop /><Dialog.Positioner><Dialog.Content>
           <Dialog.Header><Dialog.Title>Local desktop shell</Dialog.Title></Dialog.Header>
-          <Dialog.Body><Dialog.Description>Workspaces and collections can be managed locally. Existing saved requests can move between collections and root. Request fields, JSON/raw bodies and timeout/redirect settings support explicit Save. Environments and variables can be managed locally. Sending and auth editing are not available yet. No sample data has been created or requests sent. Appearance follows your system.</Dialog.Description></Dialog.Body>
+          <Dialog.Body><Dialog.Description>Workspaces and collections can be managed locally. Existing saved requests can move between collections and root. Request fields, JSON/raw bodies and timeout/redirect settings support explicit Save. Environments and variables can be managed locally. Auth editing supports explicit Save. Sending is not available yet. No sample data has been created or requests sent. Appearance follows your system.</Dialog.Description></Dialog.Body>
           <Dialog.Footer><Dialog.CloseTrigger asChild><Button ref={closeButton}>Close</Button></Dialog.CloseTrigger></Dialog.Footer>
         </Dialog.Content></Dialog.Positioner></Portal>
       </Dialog.Root>

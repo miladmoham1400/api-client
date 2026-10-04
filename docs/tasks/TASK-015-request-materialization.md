@@ -1,6 +1,6 @@
 # TASK-015 — Implement auth editing and request materialization
 
-Status: todo
+Status: done
 Dependencies: TASK-011, TASK-012, TASK-013, TASK-014
 
 ## Read first

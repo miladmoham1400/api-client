@@ -1,4 +1,4 @@
-import { variableKeySchema, type FieldPath } from './primitives'
+import { variableKeySchema, utf8ByteLength, type FieldPath } from './primitives'
 import type { RuntimeRequestConfig, TextRow } from './request-config'
 import type { DomainError, ErrorCode, Result } from './results'
 
@@ -19,20 +19,26 @@ export function mergeVariables(workspaceId: string, environmentId: string | null
   }
   return { ok: true, data: new Map([...workspace, ...environment]) }
 }
-export function interpolate(template: string, variables: EffectiveVariables, field: FieldPath): Result<string> {
-  let error: DomainError | undefined
-  const text = template.replace(/\{\{([\s\S]*?)\}\}/g, (placeholder: string, inner: string) => {
-    const key = inner.trim()
-    if (!variableKeySchema.safeParse(key).success) { error ??= failure('VALIDATION', 'Invalid placeholder key', field).error; return placeholder }
-    if (!variables.has(key)) { error ??= failure('VARIABLE_MISSING', `Missing variable: ${key}`, field).error; return placeholder }
+export function interpolate(template: string, variables: EffectiveVariables, field: FieldPath, maxOutputBytes?: number): Result<string> {
+  const chunks: string[] = []; let bytes = 0, offset = 0
+  const append = (value: string) => { bytes += utf8ByteLength(value); if (maxOutputBytes !== undefined && bytes > maxOutputBytes) return false; chunks.push(value); return true }
+  for (const match of template.matchAll(/\{\{([\s\S]*?)\}\}/g)) {
+    if (!append(template.slice(offset, match.index))) return failure('VALIDATION', 'Resolved field exceeds size limit', field)
+    const key = match[1]!.trim()
+    if (!variableKeySchema.safeParse(key).success) return failure('VALIDATION', 'Invalid placeholder key', field)
+    if (!variables.has(key)) return failure('VARIABLE_MISSING', `Missing variable: ${key}`, field)
     const value = variables.get(key)
-    if (value === null || value === undefined) { error ??= failure('SECRET_UNAVAILABLE', `Variable value unavailable: ${key}`, field).error; return placeholder }
-    return value
-  })
-  return error ? { ok: false, error } : { ok: true, data: text }
+    if (value === null || value === undefined) return failure('SECRET_UNAVAILABLE', `Variable value unavailable: ${key}`, field)
+    if (!append(value)) return failure('VALIDATION', 'Resolved field exceeds size limit', field)
+    offset = match.index + match[0].length
+  }
+  if (!append(template.slice(offset))) return failure('VALIDATION', 'Resolved field exceeds size limit', field)
+  return { ok: true, data: chunks.join('') }
 }
+
 class ResolutionFailure { constructor(readonly error: DomainError) {} }
 export interface ResolutionValidationHooks {
+  maxBytes?: (field: FieldPath) => number
   url?: (text: string) => boolean
   header?: (key: string, value: string) => boolean
   json?: (text: string) => boolean
@@ -41,7 +47,7 @@ export interface ResolutionValidationHooks {
 export function resolveRequestTemplates(config: RuntimeRequestConfig, variables: EffectiveVariables, hooks: ResolutionValidationHooks = {}): Result<RuntimeRequestConfig> {
   // Local failures terminate resolution without exposing an intermediate sensitive snapshot.
   const text = (value: string, field: FieldPath): string => {
-    const result = interpolate(value, variables, field)
+    const result = interpolate(value, variables, field, hooks.maxBytes?.(field))
     if (!result.ok) throw new ResolutionFailure(result.error)
     return result.data
   }

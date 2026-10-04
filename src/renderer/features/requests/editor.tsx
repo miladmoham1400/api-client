@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { Box, Button, Dialog, Flex, Heading, Input, NativeSelect, Portal, Tabs, Text } from '@chakra-ui/react'
 import { httpMethodSchema } from '../../../shared/primitives'
+import { AuthEditor } from './auth'
 import { BodyEditor } from './body'
 import { RowsEditor, SettingsEditor } from './fields'
 import type { RequestController } from './controller'
@@ -33,7 +34,7 @@ export function RequestEditor({ controller: c }: { controller: RequestController
       <Tabs.Content value="headers"><RowsEditor controller={c} group="headerRows" /></Tabs.Content>
       <Tabs.Content value="settings"><SettingsEditor controller={c} /></Tabs.Content>
       <Tabs.Content value="body"><BodyEditor controller={c} /></Tabs.Content>
-      {['Auth'].map(name => <Tabs.Content key={name} value={name.toLowerCase()}><Text color="fg.muted">{name} editing is not available yet. Existing saved configuration is preserved.</Text></Tabs.Content>)}
+      <Tabs.Content value="auth"><AuthEditor controller={c} /></Tabs.Content>
     </Tabs.Root>
     <Dialog.Root open={deleting} onOpenChange={({ open }) => { if (!c.busy) setDeleting(open) }} initialFocusEl={() => cancel.current} finalFocusEl={() => remove.current?.disabled ? document.querySelector<HTMLButtonElement>('[data-create-request]') : remove.current}>
       <Portal><Dialog.Backdrop /><Dialog.Positioner><Dialog.Content><Dialog.Header><Dialog.Title>Delete request</Dialog.Title></Dialog.Header><Dialog.Body><Dialog.Description>Delete “{c.saved?.name}”? This permanently removes the saved request and its owned credentials. This cannot be undone.</Dialog.Description>{c.error && <Text role="alert">{c.error}</Text>}</Dialog.Body><Dialog.Footer><Button ref={cancel} disabled={c.busy} variant="outline" onClick={() => setDeleting(false)}>Cancel</Button><Button disabled={c.busy} onClick={() => { void c.delete().then(ok => { if (ok) setDeleting(false) }) }}>Delete permanently</Button></Dialog.Footer></Dialog.Content></Dialog.Positioner></Portal>
