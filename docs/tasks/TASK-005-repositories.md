@@ -1,6 +1,6 @@
 # TASK-005 — Implement workspace-scoped repositories
 
-Status: todo
+Status: done
 Dependencies: TASK-004
 
 ## Read first
@@ -28,3 +28,7 @@ No HTTP, UI, or plaintext secret fallback.
 ## Completion procedure
 
 Record actual changes, commands/results, environment, evidence and blockers in `docs/task-reports/TASK-005.md`. Update this status and the index together. Mark `done` only when acceptance is verified; otherwise `in_progress` or `blocked`. Stop at this task boundary.
+
+## Evidence
+
+Completed 2026-10-04. Strict typecheck, lint, build, 102 unit/integration tests (13 repository cases) and 3 existing Linux Electron smoke tests pass. Ownership, selection persistence, transactional deletion/duplication and injected-failure rollback are recorded in [TASK-005 report](../task-reports/TASK-005.md). Encryption/session-value integration remains TASK-013; Windows/packages are not claimed tested.

@@ -10,7 +10,7 @@ There are 30 tasks: foundation (001–006), local project/request features (007�
 | 2 | [TASK-002 — Define shared validated domain contracts](tasks/TASK-002-shared-contracts.md) | TASK-001 | done |
 | 3 | [TASK-003 — Secure Electron lifecycle and preload boundary](tasks/TASK-003-electron-boundary.md) | TASK-002 | done |
 | 4 | [TASK-004 — Implement SQLite bootstrap and migrations](tasks/TASK-004-sqlite-migrations.md) | TASK-003 | done |
-| 5 | [TASK-005 — Implement workspace-scoped repositories](tasks/TASK-005-repositories.md) | TASK-004 | todo |
+| 5 | [TASK-005 — Implement workspace-scoped repositories](tasks/TASK-005-repositories.md) | TASK-004 | done |
 | 6 | [TASK-006 — Build Chakra desktop shell](tasks/TASK-006-ui-shell.md) | TASK-003 | todo |
 | 7 | [TASK-007 — Connect workspace CRUD and selection](tasks/TASK-007-workspace-crud.md) | TASK-005, TASK-006 | todo |
 | 8 | [TASK-008 — Connect collection CRUD and request grouping](tasks/TASK-008-collection-crud.md) | TASK-007 | todo |
