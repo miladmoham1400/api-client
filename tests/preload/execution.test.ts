@@ -11,7 +11,7 @@ it('requires subscription, returns validated acceptance before start, strips eve
   const api = createExecutionApi(invoke, () => {
     expect(accepted).toBe(true)
     for (const listener of listeners) listener({ secretEvent: true }, { executionId: id, result: { code: 'NETWORK_FAILURE', message: 'Network request failed', retryable: true } })
-  }, listener => listeners.add(listener), listener => listeners.delete(listener))
+  }, listener => listeners.add(listener), listener => listeners.delete(listener), async () => ({ ok: true, data: null }))
   const args = [randomUUID(), null, { name: 'Fixture', method: 'GET', urlTemplate: 'http://localhost/' }, null] as const
   expect(await api.send(...args)).toMatchObject({ ok: false, error: { code: 'VALIDATION' } }); expect(invoke).not.toHaveBeenCalled()
   const stop = api.onCompleted(value => received.push(value)), stopOther = api.onCompleted(() => {})
@@ -28,7 +28,7 @@ it('requires subscription, returns validated acceptance before start, strips eve
 })
 it('rejects malformed input/output and invocation failures without acknowledging a start', async () => {
   const ack = vi.fn(), invoke = vi.fn(async (): Promise<unknown> => ({ ok: true, data: { executionId: 'bad' } }))
-  const api = createExecutionApi(invoke, ack, () => {}, () => {}), stop = api.onCompleted(() => {})
+  const api = createExecutionApi(invoke, ack, () => {}, () => {}, async () => ({ ok: true, data: null })), stop = api.onCompleted(() => {})
   const args = [randomUUID(), null, { name: 'Fixture', method: 'GET', urlTemplate: 'http://localhost/' }, null] as const
   expect(await api.send('bad', args[1], args[2], args[3])).toMatchObject({ ok: false, error: { code: 'VALIDATION' } }); expect(invoke).not.toHaveBeenCalled()
   expect(await api.send(...args)).toMatchObject({ ok: false, error: { code: 'VALIDATION' } })
@@ -36,4 +36,16 @@ it('rejects malformed input/output and invocation failures without acknowledging
   const result = await api.send(...args)
   expect(result).toMatchObject({ ok: false, error: { code: 'VALIDATION' } }); expect(JSON.stringify(result)).not.toContain('synthetic')
   expect(ack).not.toHaveBeenCalled(); stop()
+})
+
+it('cancel validates IDs and its result, sanitizes failures and requires no completion subscription', async () => {
+  const invokeCancel = vi.fn(async (): Promise<unknown> => ({ ok: true, data: null }))
+  const api = createExecutionApi(async () => null, () => {}, () => {}, () => {}, invokeCancel)
+  expect(await api.cancel('invalid')).toMatchObject({ ok: false, error: { code: 'VALIDATION' } }); expect(invokeCancel).not.toHaveBeenCalled()
+  const id = randomUUID()
+  expect(await api.cancel(id)).toEqual({ ok: true, data: null }); expect(invokeCancel).toHaveBeenCalledWith(id)
+  invokeCancel.mockResolvedValue({ ok: true, data: 'invalid' })
+  expect(await api.cancel(id)).toMatchObject({ ok: false, error: { code: 'VALIDATION' } })
+  invokeCancel.mockRejectedValue(new Error('synthetic secret /private/path'))
+  expect(JSON.stringify(await api.cancel(id))).not.toContain('synthetic')
 })

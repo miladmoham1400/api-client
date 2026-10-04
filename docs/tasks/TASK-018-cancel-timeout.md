@@ -1,6 +1,6 @@
 # TASK-018 — Implement overall timeout and cancellation
 
-Status: todo
+Status: done
 Dependencies: TASK-017
 
 ## Read first
@@ -29,3 +29,5 @@ No infinite timeout or automatic retry.
 ## Completion procedure
 
 Record actual changes, commands/results, environment, evidence and blockers in `docs/task-reports/TASK-018.md`. Update this status and the index together. Mark `done` only when acceptance is verified; otherwise `in_progress` or `blocked`. Stop at this task boundary.
+
+Evidence: [TASK-018 report](../task-reports/TASK-018.md). Deadline/cancel races, native fixture cleanup and sandboxed Linux UI cancel checks passed. Windows and installed package acceptance remain untested.

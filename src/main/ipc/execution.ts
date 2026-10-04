@@ -14,6 +14,7 @@ export function createExecutionHandlers(getWindow: Parameters<typeof createOwned
       if (!result.ok) throw new SendError(result.error)
       return result.data
     }, error => error instanceof SendError ? error.detail : { code: 'VALIDATION', message: 'Operation unavailable', retryable: false }),
-    start: createOwnedHandler(getWindow, trustedUrl, executionInputs.start, z.null(), ([id]) => { getService()?.start(id); return null })
+    start: createOwnedHandler(getWindow, trustedUrl, executionInputs.start, z.null(), ([id]) => { getService()?.start(id); return null }),
+    cancel: createOwnedHandler(getWindow, trustedUrl, executionInputs.cancel, z.null(), ([id]) => { getService()?.cancel(id); return null })
   }
 }

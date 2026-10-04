@@ -78,6 +78,6 @@ test('explicit Save/Ctrl+S persists independent drafts; failed save, duplicate a
     await expect(page.getByLabel('Request name', { exact: true })).toHaveValue('Echo')
     const remaining = await page.evaluate(workspace => window.offlineApi.requests.list(workspace), id)
     expect(remaining.ok && remaining.data.requests.map(request => request.id)).toEqual([requestId])
-    await expect(page.getByRole('button', { name: 'Send', exact: true })).toBeDisabled()
+    await expect(page.getByRole('button', { name: 'Send', exact: true })).toBeEnabled()
   } finally { await application.close(); rmSync(directory, { recursive: true, force: true }) }
 })

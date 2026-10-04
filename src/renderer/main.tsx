@@ -44,14 +44,14 @@ function Desktop({ workspaces }: { workspaces: WorkspaceController }) {
   return <Flex direction="column" h="100dvh" bg="bg" color="fg">
     <Flex as="header" gap="3" p="3" borderBottomWidth="1px" align="center" flexWrap="wrap">
       <Heading size="md" mr="2">Offline API Client</Heading>
-      <WorkspaceControls controller={workspaces} locked={requests.dirty || requests.busy} placement="top" />
+      <WorkspaceControls controller={workspaces} locked={requests.dirty || requests.busy || requests.sending} placement="top" />
       <VariableControls key={workspaces.snapshot?.selectedWorkspaceId ?? 'none'} workspace={workspaces.snapshot?.selectedWorkspaceId ?? null} />
       <Button disabled variant="outline" size="sm">System theme</Button>
       <Dialog.Root initialFocusEl={() => closeButton.current}>
         <Dialog.Trigger asChild><Button size="sm" variant="ghost">About this shell</Button></Dialog.Trigger>
         <Portal><Dialog.Backdrop /><Dialog.Positioner><Dialog.Content>
           <Dialog.Header><Dialog.Title>Local desktop shell</Dialog.Title></Dialog.Header>
-          <Dialog.Body><Dialog.Description>Workspaces and collections can be managed locally. Existing saved requests can move between collections and root. Request fields, JSON/raw bodies and timeout/redirect settings support explicit Save. Environments and variables can be managed locally. Auth editing supports explicit Save. Sending is not available yet. No sample data has been created or requests sent. Appearance follows your system.</Dialog.Description></Dialog.Body>
+          <Dialog.Body><Dialog.Description>Workspaces and collections can be managed locally. Existing saved requests can move between collections and root. Request fields, JSON/raw bodies and timeout/redirect settings support explicit Save. Environments and variables can be managed locally. Auth editing supports explicit Save. Send and Cancel execute the current draft without saving it. Response preview is not available yet. No sample data or automatic requests are created. Appearance follows your system.</Dialog.Description></Dialog.Body>
           <Dialog.Footer><Dialog.CloseTrigger asChild><Button ref={closeButton}>Close</Button></Dialog.CloseTrigger></Dialog.Footer>
         </Dialog.Content></Dialog.Positioner></Portal>
       </Dialog.Root>
@@ -59,7 +59,7 @@ function Desktop({ workspaces }: { workspaces: WorkspaceController }) {
     <Flex flex="1" minH="0">
       <VStack as="aside" aria-label="Collections and requests" align="stretch" gap="4" w="250px" minW="210px" p="4" overflow="auto" borderRightWidth="1px">
         <Heading size="sm">Workspace</Heading>
-        <WorkspaceControls controller={workspaces} locked={requests.dirty || requests.busy} placement="sidebar" />
+        <WorkspaceControls controller={workspaces} locked={requests.dirty || requests.busy || requests.sending} placement="sidebar" />
         <CollectionSidebar key={workspaces.snapshot?.selectedWorkspaceId ?? "none"} workspaceId={workspaces.snapshot?.selectedWorkspaceId ?? null} requestController={requests} />
       </VStack>
       <Flex as="main" direction="column" flex="1" minW="0" minH="0" p="4" gap="3" overflow="auto">
@@ -68,13 +68,13 @@ function Desktop({ workspaces }: { workspaces: WorkspaceController }) {
           <Flex justify="space-between" mb="3" align="center"><Heading size="sm">Response</Heading><Text fontSize="sm" color="fg.muted">Status — · Duration — · Size —</Text></Flex>
           <Tabs.Root defaultValue="body" size="sm">
             <Flex justify="space-between" align="center"><Tabs.List aria-label="Response views"><Tabs.Trigger value="body">Body</Tabs.Trigger><Tabs.Trigger value="headers">Headers</Tabs.Trigger></Tabs.List><Button disabled size="xs" variant="outline">Raw / Pretty</Button></Flex>
-            <Tabs.Content value="body"><Text>No response. Request execution is not available yet.</Text></Tabs.Content>
+            <Tabs.Content value="body"><Text>Response preview is not available yet.</Text></Tabs.Content>
             <Tabs.Content value="headers"><Text>No response headers.</Text></Tabs.Content>
           </Tabs.Root>
         </Box>
       </Flex>
     </Flex>
-    <Box as="footer" borderTopWidth="1px" px="4" py="2"><Text fontSize="xs" color="fg.muted">Local storage ready · No request execution</Text></Box>
+    <Box as="footer" borderTopWidth="1px" px="4" py="2"><Text fontSize="xs" color="fg.muted">Local storage ready</Text></Box>
   </Flex>
 }
 

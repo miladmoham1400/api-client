@@ -47,7 +47,8 @@ const api: DesktopApi = Object.freeze({
     args => ipcRenderer.invoke(EXECUTION_CHANNELS.send, ...args),
     id => ipcRenderer.send(EXECUTION_CHANNELS.start, id),
     listener => ipcRenderer.on(EXECUTION_CHANNELS.completed, listener),
-    listener => ipcRenderer.removeListener(EXECUTION_CHANNELS.completed, listener)
+    listener => ipcRenderer.removeListener(EXECUTION_CHANNELS.completed, listener),
+    id => ipcRenderer.invoke(EXECUTION_CHANNELS.cancel, id)
   ),
   environments: Object.freeze({
     list: (w: string) => variableCall(EC.list, EI.list, environmentResultSchema, [w]),

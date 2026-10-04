@@ -50,7 +50,7 @@ else {
       database = openDatabase(databasePath)
       secretStore = new SecretStore(database, safeStorage, process.platform)
       secretStore.capability()
-      bootstrap = { stage: 'foundation', capabilities: { database: true, requests: false }, database: { status: 'ready' } }
+      bootstrap = { stage: 'foundation', capabilities: { database: true, requests: true }, database: { status: 'ready' } }
     } catch {
       bootstrap = { stage: 'foundation', capabilities: { database: false, requests: false }, database: { status: 'unavailable', path: databasePath, message: 'The local database could not be opened. Your existing data has not been replaced. Close the app and check access to the database location.' } }
     }
@@ -83,6 +83,7 @@ else {
     }) : null
     const executionHandlers = createExecutionHandlers(() => ownedWindow, trustedUrl, () => executionService)
     ipcMain.handle(EXECUTION_CHANNELS.send, executionHandlers.send)
+    ipcMain.handle(EXECUTION_CHANNELS.cancel, executionHandlers.cancel)
     ipcMain.on(EXECUTION_CHANNELS.start, executionHandlers.start)
     // Captured requests must not outlive their renderer, including reload/crash.
     contents.on('render-process-gone', () => executionService?.abort())
@@ -129,6 +130,7 @@ else {
       ownedWindow = null
       executionService?.abort(); executionService = null
       ipcMain.removeHandler(EXECUTION_CHANNELS.send)
+      ipcMain.removeHandler(EXECUTION_CHANNELS.cancel)
       ipcMain.removeListener(EXECUTION_CHANNELS.start, executionHandlers.start)
       for (const channel of [...Object.values(ENVIRONMENT_CHANNELS), ...Object.values(VARIABLE_CHANNELS)]) ipcMain.removeHandler(channel)
       ipcMain.removeHandler(IPC_CHANNELS.getBootstrap)

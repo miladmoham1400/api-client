@@ -14,7 +14,7 @@ import type { ExecutionCompleted, HttpResponse, Result } from '../../src/shared/
 import { createDefaultRequestConfig } from '../../src/shared/request-config'
 
 const cleanups: (() => void)[] = []
-afterEach(() => { for (const cleanup of cleanups.splice(0)) cleanup() })
+afterEach(() => { for (const cleanup of cleanups.splice(0)) cleanup(); vi.useRealTimers() })
 const draft = { name: 'Fixture', method: 'GET' as const, urlTemplate: 'http://127.0.0.1/echo' }
 const response: HttpResponse = { statusCode: 200, statusMessage: 'OK', finalUrl: draft.urlTemplate, redirectCount: 0, durationMs: 1, bodySizeBytes: 0, headers: [], body: { kind: 'text', text: '', charset: 'utf-8' } }
 function fixture(transport: ConstructorParameters<typeof ExecutionService>[2] = async () => ({ ok: true, data: response })) {
@@ -96,4 +96,44 @@ it('accepts redirect-enabled drafts and passes the captured setting to execution
   f.handlers.start(f.event, id)
   await vi.waitFor(() => expect(f.completed).toHaveLength(1))
   expect(transport.mock.calls[0]).toMatchObject([{ followRedirects: true }, expect.any(AbortSignal), expect.any(Number)])
+})
+
+it('expires from acceptance even before acknowledgement, then emits once without starting I/O', async () => {
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'performance'] })
+  const transport = vi.fn(async () => ({ ok: true as const, data: response })), f = fixture(transport)
+  const id = accepted(f.service.send(f.a, null, { ...draft, timeoutMs: 100 }, null))
+  await vi.advanceTimersByTimeAsync(100)
+  expect(f.completed).toEqual([]); expect(transport).not.toHaveBeenCalled(); expect(vi.getTimerCount()).toBe(0)
+  f.service.start(id)
+  expect(f.completed).toMatchObject([{ executionId: id, result: { code: 'TIMEOUT' } }]); expect(transport).not.toHaveBeenCalled()
+  f.service.start(id); f.service.cancel(id); expect(f.completed).toHaveLength(1)
+  expect(f.service.send(f.a, null, draft, null).ok).toBe(true)
+})
+it('cancel validates ownership, ignores wrong/stale IDs, is idempotent and cannot cancel a newer execution', async () => {
+  const f = fixture(async () => new Promise(() => {})), id = accepted(f.service.send(f.a, null, draft, null))
+  expect(f.handlers.cancel({ sender: {}, senderFrame: f.frame }, id)).toMatchObject({ ok: false, error: { code: 'NOT_FOUND' } })
+  expect(f.handlers.cancel(f.event, 'bad')).toMatchObject({ ok: false, error: { code: 'VALIDATION' } })
+  expect(f.handlers.cancel(f.event, randomUUID())).toEqual({ ok: true, data: null }); expect(f.completed).toEqual([])
+  f.handlers.cancel(f.event, id); f.handlers.cancel(f.event, id)
+  expect(f.completed).toEqual([]) // Acceptance acknowledgement precedes terminal delivery.
+  f.service.start(id); expect(f.completed).toMatchObject([{ executionId: id, result: { code: 'CANCELLED' } }])
+  const next = accepted(f.service.send(f.a, null, draft, null)); f.service.start(next)
+  await Promise.resolve(); f.handlers.cancel(f.event, id)
+  expect(f.completed).toHaveLength(1)
+  f.handlers.cancel(f.event, next); f.handlers.cancel(f.event, next); expect(f.completed).toHaveLength(2)
+})
+it.each(['cancel', 'timeout', 'response'] as const)('first terminal outcome wins %s races and clears its timer', async winner => {
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'performance'] })
+  let settle: ((result: Result<HttpResponse>) => void) | undefined, signal: AbortSignal | undefined
+  const f = fixture((_plan, activeSignal) => { signal = activeSignal; return new Promise(resolve => { settle = resolve }) })
+  const id = accepted(f.service.send(f.a, null, { ...draft, timeoutMs: 100 }, null)); f.service.start(id)
+  await Promise.resolve()
+  if (winner === 'timeout') await vi.advanceTimersByTimeAsync(100)
+  if (winner === 'cancel') f.service.cancel(id)
+  settle?.({ ok: true, data: response }); await vi.advanceTimersByTimeAsync(0)
+  f.service.cancel(id); await vi.advanceTimersByTimeAsync(1000)
+  expect(f.completed).toHaveLength(1); expect(vi.getTimerCount()).toBe(0)
+  expect(f.completed[0]?.result).toMatchObject(winner === 'response' ? { statusCode: 200 } : { code: winner === 'timeout' ? 'TIMEOUT' : 'CANCELLED' })
+  expect(signal?.aborted).toBe(winner !== 'response')
+  expect(f.service.send(f.a, null, draft, null).ok).toBe(true)
 })

@@ -23,7 +23,7 @@ There are 30 tasks: foundation (001–006), local project/request features (007�
 | 15 | [TASK-015 — Implement auth editing and request materialization](tasks/TASK-015-request-materialization.md) | TASK-011, TASK-012, TASK-013, TASK-014 | done |
 | 16 | [TASK-016 — Implement single-hop HTTP transport](tasks/TASK-016-http-transport.md) | TASK-015, TASK-003 | done |
 | 17 | [TASK-017 — Implement documented redirect policy](tasks/TASK-017-redirect-policy.md) | TASK-016 | done |
-| 18 | [TASK-018 — Implement overall timeout and cancellation](tasks/TASK-018-cancel-timeout.md) | TASK-017 | todo |
+| 18 | [TASK-018 — Implement overall timeout and cancellation](tasks/TASK-018-cancel-timeout.md) | TASK-017 | done |
 | 19 | [TASK-019 — Build response viewer and execution feedback](tasks/TASK-019-response-viewer.md) | TASK-018, TASK-006 | todo |
 | 20 | [TASK-020 — Add URL-encoded form requests](tasks/TASK-020-urlencoded-body.md) | TASK-019 | todo |
 | 21 | [TASK-021 — Implement upload file capabilities](tasks/TASK-021-upload-capabilities.md) | TASK-013, TASK-019 | todo |

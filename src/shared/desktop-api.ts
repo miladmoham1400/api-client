@@ -12,7 +12,7 @@ export const bootstrapSchema = z.strictObject({
     z.strictObject({ status: z.literal('ready') }),
     z.strictObject({ status: z.literal('unavailable'), message: z.literal('The local database could not be opened. Your existing data has not been replaced. Close the app and check access to the database location.'), path: z.string() })
   ]),
-  capabilities: z.strictObject({ database: z.boolean(), requests: z.literal(false) })
+  capabilities: z.strictObject({ database: z.boolean(), requests: z.boolean() })
 })
 export const bootstrapResultSchema = resultSchema(bootstrapSchema)
 export const bootstrapInputSchema = z.tuple([])

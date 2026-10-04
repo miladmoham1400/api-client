@@ -1,4 +1,4 @@
-import { executionAcceptedResultSchema, executionInputs, type ExecutionApi } from '../shared/execution'
+import { executionAcceptedResultSchema, executionCancelResultSchema, executionInputs, type ExecutionApi } from '../shared/execution'
 import { executionCompletedSchema, validationError } from '../shared/results'
 import { subscribeValidated } from './listeners'
 
@@ -6,7 +6,8 @@ export function createExecutionApi(
   invokeSend: (args: unknown[]) => Promise<unknown>,
   acknowledge: (id: string) => void,
   add: (listener: (event: unknown, payload: unknown) => void) => void,
-  remove: (listener: (event: unknown, payload: unknown) => void) => void
+  remove: (listener: (event: unknown, payload: unknown) => void) => void,
+  invokeCancel: (id: string) => Promise<unknown>
 ): ExecutionApi {
   let subscriptions = 0
   const api: ExecutionApi = {
@@ -23,6 +24,12 @@ export function createExecutionApi(
         }
         return result
       } catch { return { ok: false, error: { code: 'VALIDATION', message: 'Operation unavailable', retryable: false } } }
+    },
+    cancel: async id => {
+      const input = executionInputs.cancel.safeParse([id])
+      if (!input.success) return { ok: false, error: validationError(input.error, true) }
+      try { return executionCancelResultSchema.parse(await invokeCancel(input.data[0])) }
+      catch { return { ok: false, error: { code: 'VALIDATION', message: 'Operation unavailable', retryable: false } } }
     },
     onCompleted: callback => {
       if (typeof callback !== 'function') throw new TypeError('Completion callback required')

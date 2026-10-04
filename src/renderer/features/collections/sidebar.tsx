@@ -9,7 +9,7 @@ type Editing = { kind: 'create' } | { kind: 'rename' | 'delete'; id: string; nam
 
 /** Mounted with a workspace key so a switch never displays the prior workspace's rows. */
 export function CollectionSidebar({ workspaceId, requestController }: { workspaceId: string | null; requestController: RequestController }) {
-  const locked = requestController.dirty || requestController.busy
+  const locked = requestController.dirty || requestController.busy || requestController.sending
   const [snapshot, setSnapshot] = useState<Grouping | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
