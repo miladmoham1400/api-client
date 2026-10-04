@@ -1,6 +1,6 @@
 # TASK-013 — Implement secure and session-only secret store
 
-Status: todo
+Status: done
 Dependencies: TASK-005
 
 ## Read first

@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron'
+import { app, BrowserWindow, ipcMain, safeStorage } from 'electron'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { bootstrapInputSchema, bootstrapSchema, IPC_CHANNELS } from '../shared/desktop-api'
@@ -14,11 +14,14 @@ import { COLLECTION_CHANNELS } from '../shared/collections'
 import { RequestService } from './services/requests'
 import { createRequestHandlers } from './ipc/requests'
 import { REQUEST_CHANNELS } from '../shared/requests'
+import { SecretStore } from './security/secrets'
 import { WORKSPACE_CHANNELS } from '../shared/workspaces'
 
 let ownedWindow: BrowserWindow | null = null
 let database: Database.Database | null = null
+let secretStore: SecretStore | null = null
 app.on('will-quit', () => {
+  secretStore?.clear(); secretStore = null
   if (database?.open) database.close()
   database = null
 })
@@ -36,6 +39,8 @@ else {
     let bootstrap: Bootstrap
     try {
       database = openDatabase(databasePath)
+      secretStore = new SecretStore(database, safeStorage, process.platform)
+      secretStore.capability()
       bootstrap = { stage: 'foundation', capabilities: { database: true, requests: false }, database: { status: 'ready' } }
     } catch {
       bootstrap = { stage: 'foundation', capabilities: { database: false, requests: false }, database: { status: 'unavailable', path: databasePath, message: 'The local database could not be opened. Your existing data has not been replaced. Close the app and check access to the database location.' } }
@@ -83,7 +88,7 @@ else {
       () => ownedWindow, trustedUrl, bootstrapInputSchema, bootstrapSchema,
       () => bootstrap
     ))
-    const workspaceService = database ? new WorkspaceService(database) : null
+    const workspaceService = database ? new WorkspaceService(database, secretStore ?? undefined) : null
     const workspaceHandlers = createWorkspaceHandlers(() => ownedWindow, trustedUrl, () => workspaceService)
     for (const method of ['list', 'create', 'rename', 'delete', 'select'] as const) {
       ipcMain.handle(WORKSPACE_CHANNELS[method], workspaceHandlers[method])
@@ -91,7 +96,7 @@ else {
     const collectionService = database ? new CollectionService(database) : null
     const collectionHandlers = createCollectionHandlers(() => ownedWindow, trustedUrl, () => collectionService)
     for (const method of ['list', 'create', 'rename', 'delete', 'move'] as const) ipcMain.handle(COLLECTION_CHANNELS[method], collectionHandlers[method])
-    const requestService = database ? new RequestService(database) : null
+    const requestService = database ? new RequestService(database, secretStore ?? undefined) : null
     const requestHandlers = createRequestHandlers(() => ownedWindow, trustedUrl, () => requestService)
     for (const method of ['newRow', 'list', 'get', 'create', 'save', 'duplicate', 'delete'] as const) ipcMain.handle(REQUEST_CHANNELS[method], requestHandlers[method])
     window.on('closed', () => {
