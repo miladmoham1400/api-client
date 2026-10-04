@@ -1,6 +1,6 @@
 # TASK-006 — Build Chakra desktop shell
 
-Status: todo
+Status: done
 Dependencies: TASK-003
 
 ## Read first
@@ -28,3 +28,5 @@ No request execution, variable management or full theme persistence.
 ## Completion procedure
 
 Record actual changes, commands/results, environment, evidence and blockers in `docs/task-reports/TASK-006.md`. Update this status and the index together. Mark `done` only when acceptance is verified; otherwise `in_progress` or `blocked`. Stop at this task boundary.
+
+Evidence: [TASK-006 report](../task-reports/TASK-006.md). Linux source-app shell verified; Windows and packaged-app testing remain unverified.

@@ -13,10 +13,8 @@ test('built local Electron window renders Chakra without remote resources', asyn
     const page = await electron.firstWindow()
     const errors: string[] = []
     page.on('pageerror', error => errors.push(error.message))
-    await expect(page.getByRole('button', { name: 'Check local UI' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'No request selected' })).toBeVisible()
     expect(page.url()).toMatch(/^file:/)
-    await page.getByRole('button', { name: 'Check local UI' }).click()
-    await expect(page.getByRole('status')).toHaveText('Local UI ready')
     expect(await page.evaluate(() => typeof Reflect.get(window, 'process'))).toBe('undefined')
     const resources = await page.evaluate(() => performance.getEntriesByType('resource').map(entry => entry.name))
     expect(resources.every(url => url.startsWith('file:') || url.startsWith('data:'))).toBe(true)

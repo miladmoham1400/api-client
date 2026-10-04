@@ -42,7 +42,7 @@ else {
     }
     const trustedUrl = devUrl ? new URL(devUrl).href : localEntry
     const window = new BrowserWindow({
-      width: 900, height: 600,
+      width: 1280, height: 720, minWidth: 1000, minHeight: 700,
       webPreferences: {
         preload: join(__dirname, '../preload/index.js'),
         partition: 'offline-api-client',

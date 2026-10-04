@@ -12,7 +12,7 @@ test('owned production window exposes only validated bootstrap and denies browse
   const application = await _electron.launch({ args: ['.'], chromiumSandbox: true, env })
   try {
     const page = await application.firstWindow()
-    await expect(page.getByRole('button', { name: 'Check local UI' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'No request selected' })).toBeVisible()
     const preferences = await application.evaluate(({ BrowserWindow }) => {
       const window = BrowserWindow.getAllWindows()[0]
       if (!window) throw new Error('Missing window')

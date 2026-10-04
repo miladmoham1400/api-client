@@ -10,7 +10,7 @@ test('native SQLite loads in Electron, reopens saved data and reports corrupt st
   let application = await _electron.launch({ args: ['.'], chromiumSandbox: true, env })
   try {
     const page = await application.firstWindow()
-    await expect(page.getByRole('button', { name: 'Check local UI' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'No request selected' })).toBeVisible()
     expect((await page.evaluate(() => window.offlineApi.app.getBootstrap())).ok).toBe(true)
     const id = randomUUID()
     const location = await application.evaluate(({ app }) => `${app.getPath('userData')}/offline-api-client.sqlite`)
