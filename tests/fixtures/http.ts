@@ -49,8 +49,8 @@ function respond(request: IncomingMessage, response: ServerResponse): void {
     response.end(JSON.stringify({ method: request.method, url: request.url, rawHeaders: request.rawHeaders, bodyBase64: bytes.toString('base64'), bodyLength: bytes.length }))
   })
 }
-export async function startFixture(tls = false): Promise<{ server: Server; url: string; close: () => Promise<void> }> {
-  const server = tls ? createHttpsServer(tlsFixture, respond) : createServer(respond)
+export async function startFixture(tls = false, handler: (request: IncomingMessage, response: ServerResponse) => void = respond): Promise<{ server: Server; url: string; close: () => Promise<void> }> {
+  const server = tls ? createHttpsServer(tlsFixture, handler) : createServer(handler)
   await new Promise<void>((resolve, reject) => { server.once('error', reject); server.listen(0, '127.0.0.1', () => { server.removeListener('error', reject); resolve() }) })
   const address = server.address()
   if (!address || typeof address === 'string') throw new Error('Missing fixture address')

@@ -33,7 +33,6 @@ it('requires owned main frame, active workspace, owned request/environment and v
   for (const [w, request, env] of [[f.b, null, null], [f.a, foreign, null], [f.a, null, environment], [f.a, randomUUID(), null]] as const) expect(f.handlers.send(f.event, w, request, draft, env)).toMatchObject({ ok: false, error: { code: 'NOT_FOUND' } })
   for (const event of [{ sender: {}, senderFrame: f.frame }, { sender: f.contents, senderFrame: { url: f.frame.url } }, { sender: f.contents, senderFrame: null }]) expect(f.handlers.send(event, f.a, null, draft, null)).toMatchObject({ ok: false, error: { code: 'NOT_FOUND' } })
   expect(f.handlers.send(f.event, f.a, null, { ...draft, arbitrary: 'synthetic' }, null)).toMatchObject({ ok: false, error: { code: 'VALIDATION' } })
-  expect(f.handlers.send(f.event, f.a, null, { ...draft, followRedirects: true }, null)).toMatchObject({ ok: false, error: { code: 'VALIDATION', field: 'followRedirects' } })
   expect(f.handlers.send(f.event, f.a, null, draft, null).ok).toBe(true)
   const unavailable = createExecutionHandlers(() => f.window, f.frame.url, () => null)
   expect(unavailable.send(f.event, f.a, null, draft, null)).toMatchObject({ ok: false, error: { code: 'DATABASE_UNAVAILABLE' } })
@@ -89,4 +88,12 @@ it('aborts only after a successful owning workspace deletion; failed deletion ke
   expect(() => service.delete(f.a)).toThrow(); expect(f.completed).toEqual([])
   f.db.exec('DROP TRIGGER fail_delete'); service.delete(f.a)
   expect(f.completed).toMatchObject([{ executionId: id, result: { code: 'CANCELLED' } }])
+})
+
+it('accepts redirect-enabled drafts and passes the captured setting to execution', async () => {
+  const transport = vi.fn(async () => ({ ok: true as const, data: response })), f = fixture(transport)
+  const id = accepted(f.handlers.send(f.event, f.a, null, { ...draft, followRedirects: true }, null))
+  f.handlers.start(f.event, id)
+  await vi.waitFor(() => expect(f.completed).toHaveLength(1))
+  expect(transport.mock.calls[0]).toMatchObject([{ followRedirects: true }, expect.any(AbortSignal), expect.any(Number)])
 })

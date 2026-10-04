@@ -1,6 +1,6 @@
 # TASK-017 — Implement documented redirect policy
 
-Status: todo
+Status: done
 Dependencies: TASK-016
 
 ## Read first
@@ -27,3 +27,5 @@ No cookie jar or user-defined redirect scripts.
 ## Completion procedure
 
 Record actual changes, commands/results, environment, evidence and blockers in `docs/task-reports/TASK-017.md`. Update this status and the index together. Mark `done` only when acceptance is verified; otherwise `in_progress` or `blocked`. Stop at this task boundary.
+
+Evidence: [TASK-017 report](../task-reports/TASK-017.md). Local two-origin and verified HTTPS checks passed on developer Node and sandboxed Linux Electron. Windows and installed package acceptance remain untested.

@@ -51,7 +51,7 @@ test('sandboxed preload sends captured native requests, receives immediate compl
       expect(value.completion?.result).toMatchObject(expected); expect(value.acceptanceFirst).toBe(true); expect(value.count).toBe(1)
     }
     expect((await send({ name: 'TLS', method: 'GET', urlTemplate: tls.url })).completion?.result).toMatchObject({ code: 'TLS_FAILURE' })
-    expect((await send({ name: 'Redirect', method: 'GET', urlTemplate: fixture.url + '/redirect', followRedirects: true })).accepted).toMatchObject({ ok: false, error: { code: 'VALIDATION', field: 'followRedirects' } })
+    expect((await send({ name: 'Redirect', method: 'GET', urlTemplate: fixture.url + '/redirect', followRedirects: true })).completion?.result).toMatchObject({ statusCode: 200, finalUrl: fixture.url + '/echo', redirectCount: 1 })
     const lifecycle = await page.evaluate(async ({ w, base }) => {
       let resolveCompletion: ((value: import('../src/shared/results').ExecutionCompleted) => void) | undefined
       const completion = new Promise<import('../src/shared/results').ExecutionCompleted>(resolve => { resolveCompletion = resolve })

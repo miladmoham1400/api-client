@@ -1,4 +1,5 @@
-import { request as httpRequest, type ClientRequest, type IncomingMessage } from 'node:http'
+import { request as httpRequest, type ClientRequest, type IncomingMessage, type RequestOptions } from 'node:http'
+import type { ConnectionOptions } from 'node:tls'
 import { request as httpsRequest } from 'node:https'
 import { Transform, Writable, type Duplex } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
@@ -35,8 +36,10 @@ function classify(bytes: Buffer, contentType: string | undefined, unsupportedEnc
   return { kind: 'text', text: bytes.toString('utf8'), charset: 'utf-8' }
 }
 
-/** Main-only HTTP/1.1; no Electron, database, retries, redirect handling or ambient cookie state. */
-export function executeSingleHop(snapshot: MaterializedRequest, signal: AbortSignal, startedAt = performance.now()): Promise<Result<HttpResponse>> {
+type RequestFactory = (url: URL, options: RequestOptions & ConnectionOptions, callback: (response: IncomingMessage) => void) => ClientRequest
+const nativeRequest: RequestFactory = (url, options, callback) => (url.protocol === 'https:' ? httpsRequest : httpRequest)(url, options, callback)
+/** Main-only HTTP/1.1; factory injection is private test infrastructure, never an IPC option. */
+export function executeSingleHop(snapshot: MaterializedRequest, signal: AbortSignal, startedAt = performance.now(), send: RequestFactory = nativeRequest): Promise<Result<HttpResponse>> {
   if (snapshot.followRedirects) return Promise.resolve(failure('VALIDATION', 'Redirect following is not available yet'))
   return new Promise(resolve => {
     let settled = false, request: ClientRequest | undefined, response: IncomingMessage | undefined, decoder: Duplex | undefined
@@ -55,7 +58,6 @@ export function executeSingleHop(snapshot: MaterializedRequest, signal: AbortSig
       const url = new URL(snapshot.url)
       const headers = snapshot.headers.flatMap(header => [header.name, header.value])
       headers.push('Host', url.host, 'Connection', 'close')
-      const send = url.protocol === 'https:' ? httpsRequest : httpRequest
       request = send(url, { method: snapshot.method, headers, agent: false, rejectUnauthorized: true }, incoming => {
         if (settled) { incoming.destroy(); return }
         response = incoming
