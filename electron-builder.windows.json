@@ -1,0 +1,18 @@
+{
+  "extends": "./electron-builder.json",
+  "directories": {
+    "output": "dist/windows"
+  },
+  "forceCodeSigning": false,
+  "win": {
+    "target": [{ "target": "nsis", "arch": ["x64"] }],
+    "artifactName": "${name}-${version}-${arch}-setup.${ext}",
+    "signExecutable": false
+  },
+  "nsis": {
+    "oneClick": true,
+    "perMachine": false,
+    "deleteAppDataOnUninstall": false,
+    "runAfterFinish": false
+  }
+}

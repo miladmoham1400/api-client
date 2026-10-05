@@ -1,7 +1,9 @@
 # TASK-029 — Package and verify Windows build
 
-Status: todo
+Status: blocked
 Dependencies: TASK-027
+
+Packaging configuration/scripts are prepared and locally checked. Actual Windows 11 x64 build, install, offline matrix and uninstall/reinstall preservation are blocked: this session provides only a Linux host and no Windows runner/machine. See [TASK-029 report](../task-reports/TASK-029.md). No Windows acceptance is marked passed.
 
 ## Read first
 

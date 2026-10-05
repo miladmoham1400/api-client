@@ -23,7 +23,8 @@
     "predev": "npm run rebuild:electron",
     "prestart": "npm run rebuild:electron",
     "test:offline": "npm run rebuild:electron && npm run build && bash scripts/test-offline.sh",
-    "package:linux": "node scripts/clean-linux.mjs && npm run build && electron-builder --config electron-builder.json --linux AppImage deb --x64 --publish never"
+    "package:linux": "node scripts/clean-linux.mjs && npm run build && electron-builder --config electron-builder.json --linux AppImage deb --x64 --publish never",
+    "package:win": "node scripts/package-windows.mjs"
   },
   "dependencies": {
     "@chakra-ui/react": "3.37.0",

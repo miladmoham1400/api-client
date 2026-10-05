@@ -50,3 +50,25 @@ Current actual artifacts, hashes, checks and installation blockers are recorded 
 The dedicated preservation check is separate from ordinary desktop smoke. Create a new `/tmp/api-client-task028-preservation-<alphanumeric suffix>` directory; set `API_CLIENT_PRESERVATION_DIR` to it, `API_CLIENT_EXECUTABLE=/opt/offline-api-client/offline-api-client`, and `API_CLIENT_PRESERVATION_PHASE=seed`, then run `bash scripts/test-offline.sh --config playwright.linux-preservation.config.ts`. After the seed closes normally, remove only the installed app package through the system package manager; verify the recorded database SHA-256 still matches. Reinstall the same hashed deb, set phase to `verify` and run the same check. It checks exact bytes before startup and logical saved workspace/request/environment/variable/theme after reopening. Authentication belongs in the OS prompt; never pass a password through commands, reports or chat. Keep these steps sequential and use only synthetic userData. Remove the temporary test directory after verification, never real user data.
 
 TASK-028 has now verified actual deb install, installed offline suite, package removal and reinstall/reopen with identical synthetic userData. The application remains installed on the tested host; default AppImage FUSE mount mode and all Windows checks remain unverified. See the task report for exact evidence.
+
+## Windows packaging preparation (TASK-029 — blocked on Windows verification)
+
+On a native Windows 11 x64 machine, use the pinned developer Node/npm from `docs/toolchain-lock.md`. Install Visual Studio C++ Build Tools and Python if native SQLite compilation is needed. In PowerShell, from a clean checkout:
+
+```powershell
+npm ci
+npm run lint
+npm run test:unit
+npm run package:win
+Get-FileHash .\dist\windows\offline-api-client-0.1.0-x64-setup.exe -Algorithm SHA256
+```
+
+These are pending Windows procedures, not executed evidence. `package:win` refuses non-Windows or non-x64 hosts before changing outputs. Its Node script removes only generated `out/` and `dist/windows/`, runs TypeScript and production bundling, then invokes the installed builder with publishing disabled. The Windows configuration extends the existing packaging configuration and keeps ASAR, SQLite unpacking and sequential builder-managed native rebuild for Electron. Never run native rebuilds concurrently; the packaging rebuild follows developer-Node unit tests.
+
+The configuration selects a per-user, one-click NSIS installer, leaves the app closed after installation and explicitly disables signing. Internal installers are unsigned and may trigger Windows reputation prompts. No code signing or successful Windows installation is claimed; do not disable antivirus or system protections. Current default Electron icon and reserved internal metadata remain as documented above. Options were checked against the installed pinned builder's schema/source and its official [Windows documentation](https://www.electron.build/win/) and [NSIS documentation](https://www.electron.build/nsis/).
+
+Install the hashed artifact, then launch the installed executable as a regular user. Record Windows version, developer and embedded Node versions, Electron ABI, actual native rebuild output, installer hash and installed executable path. Disconnect internet while keeping loopback available and verify every Windows row in `docs/testing.md` against local fixture APIs, including file/form sending and import/export dialogs. `API_CLIENT_EXECUTABLE` can select the installed executable for Playwright, but the Linux offline runner cannot provide Windows isolation, and Linux-only chooser tests skip Windows. A green suite with skips is insufficient: capture independent Windows evidence for those checks and normal close/reopen.
+
+Uninstall preservation must use a separate Windows account with synthetic workspaces, never existing user data. Default Electron data is `%APPDATA%\offline-api-client\`; verify the actual path on the test machine. Close normally after saving, record database hashes and logical saved state, uninstall through Windows Settings, verify the data remains, reinstall the same hashed artifact and reopen it. `deleteAppDataOnUninstall: false` configures preservation; template inspection does not prove actual behavior. Do not pass the uninstaller's explicit data-deletion option during ordinary uninstall. Users wanting complete removal can explicitly delete that verified application data folder in Explorer after uninstall, understanding that it removes their workspaces and settings.
+
+No Windows artifact or hash exists from TASK-029 yet. See [TASK-029 report](task-reports/TASK-029.md) for verified preparation and the outstanding Windows blocker. TASK-030 remains unstarted.

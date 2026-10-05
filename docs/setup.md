@@ -25,6 +25,8 @@ Initial dependency downloads/build tooling require available internet or a prepa
 
 `npm run dev`, `npm run typecheck`, `npm run lint`, `npm test`, `npm run build`, `npm run package:linux`, `npm run package:win`, and focused smoke-test scripts. Avoid shell syntax that works only on Bash; npm scripts must run under Windows too. Use `npm ci` with lockfile in clean verification.
 
+`npm run package:win` is now configured for native Windows x64 only; its NSIS build and installation remain unverified until TASK-029 runs on Windows. See `docs/release.md` for the pending PowerShell procedure. `test:offline` remains a Linux-only acceptance runner and must not be used as Windows evidence.
+
 ## Native SQLite check
 
 Rebuild for Electron's ABI and each target OS/architecture, ensure binding is packaged/unpacked appropriately, and exercise an actual write/reopen in packaged app. A successful Node-only test does not verify Electron native loading. Refer to exact selected electron-builder version's rebuild configuration rather than mixing config fields from different majors.
