@@ -36,3 +36,29 @@ export function createOwnedHandler<I extends z.ZodType, T extends z.ZodType>(
     }
   }
 }
+
+// Native dialogs yield control. Recheck the exact owner before returning their result.
+export function createOwnedAsyncHandler<I extends z.ZodType, T extends z.ZodType>(
+  getWindow: () => OwnedWindow | null, trustedUrl: string, inputSchema: I, outputSchema: T,
+  operation: (input: z.infer<I>) => Promise<z.infer<T>>, mapError: (error: unknown) => DomainError
+) {
+  return async (event: SenderContext, ...args: unknown[]): Promise<Result<z.infer<T>>> => {
+    const owner = getWindow()
+    const authorized = () => owner !== null && getWindow() === owner && !owner.isDestroyed() &&
+      event.sender === owner.webContents && event.senderFrame !== null &&
+      event.senderFrame === owner.webContents.mainFrame && event.senderFrame.url === trustedUrl
+    const unavailable: Result<z.infer<T>> = { ok: false, error: { code: 'NOT_FOUND', message: 'Operation unavailable', retryable: false } }
+    if (!authorized()) return unavailable
+    const input = inputSchema.safeParse(args)
+    if (!input.success) return { ok: false, error: validationError(input.error, true) }
+    try {
+      const data = await operation(input.data)
+      if (!authorized()) return unavailable
+      return { ok: true, data: outputSchema.parse(data) }
+    } catch (error) {
+      if (!authorized()) return unavailable
+      const mapped = domainErrorSchema.safeParse(mapError(error))
+      return mapped.success ? { ok: false, error: mapped.data } : unavailable
+    }
+  }
+}

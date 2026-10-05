@@ -1,6 +1,6 @@
 # TASK-021 — Implement upload file capabilities
 
-Status: todo
+Status: done
 Dependencies: TASK-013, TASK-019
 
 ## Read first
@@ -29,3 +29,7 @@ No directory uploads, persistent paths or multipart transport yet.
 ## Completion procedure
 
 Record actual changes, commands/results, environment, evidence and blockers in `docs/task-reports/TASK-021.md`. Update this status and the index together. Mark `done` only when acceptance is verified; otherwise `in_progress` or `blocked`. Stop at this task boundary.
+
+## Evidence
+
+See [TASK-021 report](../task-reports/TASK-021.md) for temporary-file/SQLite tests, real Linux native selection/cancel and lifecycle smoke, commands and limitations. Windows and packaged-app acceptance were not tested. Multipart transport remains TASK-022.

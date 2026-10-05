@@ -1,4 +1,8 @@
-import { app, BrowserWindow, ipcMain, safeStorage } from 'electron'
+import { UploadService } from './files/uploads'
+import { Repositories } from './db/repositories'
+import { createFileHandlers } from './ipc/files'
+import { FILE_CHANNELS } from '../shared/files'
+import { app, BrowserWindow, ipcMain, safeStorage, dialog } from 'electron'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { bootstrapInputSchema, bootstrapSchema, IPC_CHANNELS } from '../shared/desktop-api'
@@ -24,11 +28,13 @@ import { ExecutionService } from './services/execution'
 import { createExecutionHandlers } from './ipc/execution'
 import { EXECUTION_CHANNELS } from '../shared/execution'
 
+let uploadService: UploadService | null = null
 let ownedWindow: BrowserWindow | null = null
 let database: Database.Database | null = null
 let secretStore: SecretStore | null = null
 let executionService: ExecutionService | null = null
 app.on('will-quit', () => {
+  uploadService?.clear(); uploadService = null
   executionService?.abort(); executionService = null
   secretStore?.clear(); secretStore = null
   if (database?.open) database.close()
@@ -81,14 +87,21 @@ else {
       try { contents.send(EXECUTION_CHANNELS.completed, completion) }
       catch { /* A disappearing renderer cannot undo completion or committed deletion. */ }
     }) : null
+    uploadService = database ? new UploadService(id => { if (!database) throw new Error('Unavailable'); new Repositories(database).getWorkspace(id) }) : null
+    const fileHandlers = createFileHandlers(() => ownedWindow, trustedUrl, () => uploadService, async () => {
+      const result = await dialog.showOpenDialog(window, { title: 'Select upload file', properties: ['openFile', 'dontAddToRecent'] })
+      return result.canceled ? null : result.filePaths[0] ?? null
+    })
+    ipcMain.handle(FILE_CHANNELS.chooseUpload, fileHandlers.chooseUpload)
+    ipcMain.handle(FILE_CHANNELS.releaseUpload, fileHandlers.releaseUpload)
     const executionHandlers = createExecutionHandlers(() => ownedWindow, trustedUrl, () => executionService)
     ipcMain.handle(EXECUTION_CHANNELS.send, executionHandlers.send)
     ipcMain.handle(EXECUTION_CHANNELS.cancel, executionHandlers.cancel)
     ipcMain.on(EXECUTION_CHANNELS.start, executionHandlers.start)
     // Captured requests must not outlive their renderer, including reload/crash.
-    contents.on('render-process-gone', () => executionService?.abort())
+    contents.on('render-process-gone', () => { executionService?.abort(); uploadService?.clear() })
     contents.on('did-start-navigation', (_event, _url, inPlace, mainFrame) => {
-      if (mainFrame && !inPlace) executionService?.abort()
+      if (mainFrame && !inPlace) { executionService?.abort(); uploadService?.clear() }
     })
     contents.session.setPermissionRequestHandler((_contents, _permission, callback) => callback(false))
     contents.session.setPermissionCheckHandler(() => false)
@@ -115,7 +128,7 @@ else {
     const variableHandlers = createVariableHandlers(() => ownedWindow, trustedUrl, () => variableService)
     for (const method of ['list', 'create', 'rename', 'delete', 'select'] as const) ipcMain.handle(ENVIRONMENT_CHANNELS[method], variableHandlers.environments[method])
     for (const method of ['list', 'upsert', 'delete', 'reveal'] as const) ipcMain.handle(VARIABLE_CHANNELS[method], variableHandlers.variables[method])
-    const workspaceService = database ? new WorkspaceService(database, secretStore ?? undefined, id => executionService?.abortWorkspace(id)) : null
+    const workspaceService = database ? new WorkspaceService(database, secretStore ?? undefined, id => { executionService?.abortWorkspace(id); uploadService?.forgetWorkspace(id) }) : null
     const workspaceHandlers = createWorkspaceHandlers(() => ownedWindow, trustedUrl, () => workspaceService)
     for (const method of ['list', 'create', 'rename', 'delete', 'select'] as const) {
       ipcMain.handle(WORKSPACE_CHANNELS[method], workspaceHandlers[method])
@@ -127,6 +140,8 @@ else {
     const requestHandlers = createRequestHandlers(() => ownedWindow, trustedUrl, () => requestService)
     for (const method of ['newRow', 'list', 'get', 'create', 'save', 'duplicate', 'delete'] as const) ipcMain.handle(REQUEST_CHANNELS[method], requestHandlers[method])
     window.on('closed', () => {
+      uploadService?.clear(); uploadService = null
+      for (const channel of Object.values(FILE_CHANNELS)) ipcMain.removeHandler(channel)
       ownedWindow = null
       executionService?.abort(); executionService = null
       ipcMain.removeHandler(EXECUTION_CHANNELS.send)

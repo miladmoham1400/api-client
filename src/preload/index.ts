@@ -1,3 +1,4 @@
+import { createFileApi } from './files'
 import { ENVIRONMENT_CHANNELS as EC, VARIABLE_CHANNELS as VC, environmentInputs as EI, variableInputs as VI, environmentResultSchema, variableResultSchema, revealResultSchema } from '../shared/variable-management'
 import { contextBridge, ipcRenderer } from 'electron'
 import { IPC_CHANNELS, bootstrapResultSchema, type DesktopApi } from '../shared/desktop-api'
@@ -43,6 +44,7 @@ async function variableCall<I extends z.ZodType<unknown[]>, O extends z.ZodType>
 }
 
 const api: DesktopApi = Object.freeze({
+  files: createFileApi((channel, ...args) => ipcRenderer.invoke(channel, ...args)),
   execution: createExecutionApi(
     args => ipcRenderer.invoke(EXECUTION_CHANNELS.send, ...args),
     id => ipcRenderer.send(EXECUTION_CHANNELS.start, id),
