@@ -1,3 +1,4 @@
+import { shutdown } from './fixtures/shutdown'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -76,5 +77,5 @@ test('multipart editor selects native files, sends unsaved rows, preserves selec
     await editor.getByRole('tab', { name: 'Headers', exact: true }).click(); await page.getByRole('button', { name: 'Add header', exact: true }).click()
     await page.getByLabel('Header 1 key', { exact: true }).fill('Content-Type'); await page.getByLabel('Header 1 value', { exact: true }).fill('multipart/form-data; boundary=forged')
     await send(); await expect(editor.getByRole('alert').first()).toContainText('CONTENT_TYPE_CONFLICT'); expect(fixture.captures).toHaveLength(6)
-  } finally { await application.close(); await fixture.close(); rmSync(directory, { recursive: true, force: true }) }
+  } finally { await shutdown(application); await fixture.close(); rmSync(directory, { recursive: true, force: true }) }
 })

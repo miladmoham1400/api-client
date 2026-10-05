@@ -1,6 +1,6 @@
 # TASK-023 — Finish draft navigation and destructive-action guards
 
-Status: todo
+Status: done
 Dependencies: TASK-022, TASK-007, TASK-008, TASK-009
 
 ## Read first
@@ -28,3 +28,7 @@ No autosave, multiple tabs or recovery of unsaved drafts after crash.
 ## Completion procedure
 
 Record actual changes, commands/results, environment, evidence and blockers in `docs/task-reports/TASK-023.md`. Update this status and the index together. Mark `done` only when acceptance is verified; otherwise `in_progress` or `blocked`. Stop at this task boundary.
+
+## Execution evidence
+
+See [TASK-023 report](../task-reports/TASK-023.md) for actual checks: 284 unit tests, 22 Linux desktop tests and a final 7-test affected-scenario rerun after confirmation invalidation. Windows/Wayland and packaged-app acceptance remain unverified.

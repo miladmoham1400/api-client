@@ -1,3 +1,4 @@
+import { shutdown } from './fixtures/shutdown'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -86,7 +87,7 @@ test('sandboxed preload sends captured native requests, receives immediate compl
     closed = true
     await expect.poll(() => new Promise<number>((resolve, reject) => fixture.server.getConnections((error, count) => error ? reject(error) : resolve(count)))).toBe(0)
   } finally {
-    if (!closed) await application.close()
+    if (!closed) await shutdown(application)
     await fixture.close(); await tls.close(); rmSync(directory, { recursive: true, force: true })
   }
 })

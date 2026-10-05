@@ -1,3 +1,4 @@
+import { shutdown } from './fixtures/shutdown'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -55,5 +56,5 @@ test('auth editing saves literal handles, templates, replacements and missing se
     await page.keyboard.press('Control+s')
     await expect(page.getByRole('status').filter({ hasText: /^Saved$/ })).toBeVisible()
     await expect(page.getByRole('button', { name: 'Send', exact: true })).toBeDisabled()
-  } finally { await application.close(); rmSync(directory, { recursive: true, force: true }) }
+  } finally { await shutdown(application); rmSync(directory, { recursive: true, force: true }) }
 })

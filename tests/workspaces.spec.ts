@@ -1,3 +1,4 @@
+import { shutdown } from './fixtures/shutdown'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -109,5 +110,5 @@ test('workspace CRUD and selection persist across restart; confirmation and fail
     await expect(page.getByRole('button', { name: 'Send', exact: true })).toBeDisabled()
     const resources = await page.evaluate(() => performance.getEntriesByType('resource').map(entry => entry.name))
     expect(resources.every(url => url.startsWith('file:') || url.startsWith('data:'))).toBe(true)
-  } finally { await application.close(); rmSync(directory, { recursive: true, force: true }) }
+  } finally { await shutdown(application); rmSync(directory, { recursive: true, force: true }) }
 })

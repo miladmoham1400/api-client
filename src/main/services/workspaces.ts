@@ -5,7 +5,7 @@ import { workspaceSnapshotSchema } from '../../shared/workspaces'
 
 export class WorkspaceService {
   private readonly repositories: Repositories
-  constructor(private readonly db: Database.Database, private readonly secrets?: { forgetWorkspace(workspace: string): void }, private readonly deleted?: (workspace: string) => void) { this.repositories = new Repositories(db) }
+  constructor(private readonly db: Database.Database, private readonly secrets?: { forgetWorkspace(workspace: string): void }, private readonly deleted?: (workspace: string) => void, private readonly beforeDelete?: (workspace: string) => void) { this.repositories = new Repositories(db) }
   list() {
     return workspaceSnapshotSchema.parse({
       workspaces: this.repositories.listWorkspaces(), selectedWorkspaceId: this.repositories.getSelectedWorkspace()
@@ -33,6 +33,8 @@ export class WorkspaceService {
   }
   delete(id: string) {
     id = uuidSchema.parse(id)
+    this.repositories.getWorkspace(id)
+    this.beforeDelete?.(id)
     // Repository deletion clears active selection; empty selection is the fallback.
     const result = this.mutate(() => { this.repositories.deleteWorkspace(id) })
     this.secrets?.forgetWorkspace(id)

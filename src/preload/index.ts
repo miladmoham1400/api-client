@@ -1,3 +1,5 @@
+import { CLOSE_CHANNELS, closeRequestedSchema, closeDecisionInput, closeDecisionResult } from '../shared/close'
+import { subscribeValidated } from './listeners'
 import { createFileApi } from './files'
 import { ENVIRONMENT_CHANNELS as EC, VARIABLE_CHANNELS as VC, environmentInputs as EI, variableInputs as VI, environmentResultSchema, variableResultSchema, revealResultSchema } from '../shared/variable-management'
 import { contextBridge, ipcRenderer } from 'electron'
@@ -93,6 +95,13 @@ const api: DesktopApi = Object.freeze({
     select: (id: string | null) => workspaceCall(WORKSPACE_CHANNELS.select, workspaceInputs.select, [id])
   }),
   app: Object.freeze({
+    onCloseRequested: (callback: Parameters<DesktopApi['app']['onCloseRequested']>[0]) => subscribeValidated(closeRequestedSchema, listener => { ipcRenderer.on(CLOSE_CHANNELS.requested, listener) }, listener => { ipcRenderer.removeListener(CLOSE_CHANNELS.requested, listener) }, callback),
+    requestCloseDecision: async (token: string, decision: 'close' | 'cancel') => {
+      const parsed = closeDecisionInput.safeParse([token, decision])
+      if (!parsed.success) return { ok: false as const, error: validationError(parsed.error, true) }
+      try { return closeDecisionResult.parse(await ipcRenderer.invoke(CLOSE_CHANNELS.decision, ...parsed.data)) }
+      catch { return { ok: false as const, error: { code: 'VALIDATION' as const, message: 'Operation unavailable', retryable: false } } }
+    },
     getBootstrap: async (): ReturnType<DesktopApi['app']['getBootstrap']> => {
       try {
         return bootstrapResultSchema.parse(await ipcRenderer.invoke(IPC_CHANNELS.getBootstrap))

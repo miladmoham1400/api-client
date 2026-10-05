@@ -1,3 +1,4 @@
+import { shutdown } from './fixtures/shutdown'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -53,5 +54,5 @@ test('Linux native selection/cancel, workspace isolation, reload and restart req
     const deletionId = await select()
     expect((await page.evaluate(w => window.offlineApi.workspaces.delete(w), workspace)).ok).toBe(true)
     expect(await page.evaluate(([w, id]) => window.offlineApi.files.releaseUpload(w!, id!), [workspace, deletionId])).toMatchObject({ ok: false, error: { code: 'NOT_FOUND' } })
-  } finally { await application.close(); rmSync(directory, { recursive: true, force: true }) }
+  } finally { await shutdown(application); rmSync(directory, { recursive: true, force: true }) }
 })

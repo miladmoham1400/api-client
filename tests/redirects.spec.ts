@@ -1,3 +1,4 @@
+import { shutdown } from './fixtures/shutdown'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -56,5 +57,5 @@ test('sandboxed Electron follows redirects, strips credentials permanently and r
     // A terminal redirect error must release the single execution slot.
     expect(await send({ name: 'After error', method: 'GET', urlTemplate: a.url + '/echo' })).toMatchObject({ statusCode: 200, redirectCount: 0 })
     await expect(page.getByRole('button', { name: 'Send', exact: true })).toBeDisabled()
-  } finally { await application.close(); await Promise.all([a.close(), b.close(), secure.close()]); rmSync(directory, { recursive: true, force: true }) }
+  } finally { await shutdown(application); await Promise.all([a.close(), b.close(), secure.close()]); rmSync(directory, { recursive: true, force: true }) }
 })

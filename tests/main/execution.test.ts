@@ -137,3 +137,17 @@ it.each(['cancel', 'timeout', 'response'] as const)('first terminal outcome wins
   expect(signal?.aborted).toBe(winner !== 'response')
   expect(f.service.send(f.a, null, draft, null).ok).toBe(true)
 })
+it('pre-deletion cleanup aborts execution while the workspace still exists, even if deletion subsequently fails', () => {
+  const f = fixture()
+  const service = new WorkspaceService(f.db, undefined, undefined, workspace => {
+    f.service.abortWorkspace(workspace)
+    expect(f.r.getWorkspace(workspace).id).toBe(workspace)
+    expect(f.completed).toMatchObject([{ result: { code: 'CANCELLED' } }])
+  })
+  const id = accepted(f.service.send(f.a, null, draft, null))
+  f.db.exec("CREATE TRIGGER fail_delete BEFORE DELETE ON workspaces BEGIN SELECT RAISE(ABORT,'synthetic'); END;")
+  expect(() => service.delete(f.a)).toThrow()
+  expect(f.r.getWorkspace(f.a).id).toBe(f.a)
+  expect(f.completed).toMatchObject([{ executionId: id, result: { code: 'CANCELLED' } }])
+  expect(f.service.send(f.a, null, draft, null).ok).toBe(true)
+})

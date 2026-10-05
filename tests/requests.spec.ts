@@ -1,3 +1,4 @@
+import { shutdown } from './fixtures/shutdown'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -30,7 +31,7 @@ test('explicit Save/Ctrl+S persists independent drafts; failed save, duplicate a
     if (!saved.ok || !saved.data.editor) throw new Error('Missing saved request')
     const requestId = saved.data.editor.id
     await page.getByLabel('Request URL', { exact: true }).fill('http://127.0.0.1/unsaved')
-    await expect(page.getByLabel('Workspace', { exact: true })).toBeDisabled()
+    await expect(page.getByLabel('Workspace', { exact: true })).toBeEnabled()
     expect(await page.evaluate(workspace => window.offlineApi.requests.list(workspace), id)).toEqual(saved)
     await application.evaluate(({ app }) => {
       const load = process.getBuiltinModule('module').createRequire(`${app.getAppPath()}/package.json`)
@@ -79,5 +80,5 @@ test('explicit Save/Ctrl+S persists independent drafts; failed save, duplicate a
     const remaining = await page.evaluate(workspace => window.offlineApi.requests.list(workspace), id)
     expect(remaining.ok && remaining.data.requests.map(request => request.id)).toEqual([requestId])
     await expect(page.getByRole('button', { name: 'Send', exact: true })).toBeEnabled()
-  } finally { await application.close(); rmSync(directory, { recursive: true, force: true }) }
+  } finally { await shutdown(application); rmSync(directory, { recursive: true, force: true }) }
 })

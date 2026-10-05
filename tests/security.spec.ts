@@ -1,3 +1,4 @@
+import { shutdown } from './fixtures/shutdown'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -31,7 +32,7 @@ test('owned production window exposes only validated APIs and denies browser cap
       frozen: Object.isFrozen(window.offlineApi.files) && Object.isFrozen(window.offlineApi) && Object.isFrozen(window.offlineApi.execution) && Object.isFrozen(window.offlineApi.app) && Object.isFrozen(window.offlineApi.environments) && Object.isFrozen(window.offlineApi.variables) && Object.isFrozen(window.offlineApi.workspaces) && Object.isFrozen(window.offlineApi.collections) && Object.isFrozen(window.offlineApi.requests),
       require: typeof Reflect.get(window, 'require'), process: typeof Reflect.get(window, 'process'),
       ipc: typeof Reflect.get(window, 'ipcRenderer')
-    }))).toEqual({ fileMethods: ['chooseUpload', 'releaseUpload'], keys: ['files', 'execution', 'environments', 'variables', 'collections', 'requests', 'workspaces', 'app'], methods: ['getBootstrap'], executionMethods: ['send', 'cancel', 'onCompleted'], environmentMethods: ['list', 'create', 'rename', 'delete', 'select'], variableMethods: ['list', 'upsert', 'delete', 'reveal'], workspaceMethods: ['list', 'create', 'rename', 'delete', 'select'], collectionMethods: ['list', 'create', 'rename', 'delete'], requestMethods: ['newRow', 'list', 'get', 'create', 'save', 'duplicate', 'delete', 'move'], frozen: true, require: 'undefined', process: 'undefined', ipc: 'undefined' })
+    }))).toEqual({ fileMethods: ['chooseUpload', 'releaseUpload'], keys: ['files', 'execution', 'environments', 'variables', 'collections', 'requests', 'workspaces', 'app'], methods: ['onCloseRequested', 'requestCloseDecision', 'getBootstrap'], executionMethods: ['send', 'cancel', 'onCompleted'], environmentMethods: ['list', 'create', 'rename', 'delete', 'select'], variableMethods: ['list', 'upsert', 'delete', 'reveal'], workspaceMethods: ['list', 'create', 'rename', 'delete', 'select'], collectionMethods: ['list', 'create', 'rename', 'delete'], requestMethods: ['newRow', 'list', 'get', 'create', 'save', 'duplicate', 'delete', 'move'], frozen: true, require: 'undefined', process: 'undefined', ipc: 'undefined' })
     expect(await page.evaluate(() => window.offlineApi.app.getBootstrap())).toEqual({
       ok: true, data: { stage: 'foundation', capabilities: { database: true, requests: true }, database: { status: 'ready' } }
     })
@@ -57,11 +58,12 @@ test('owned production window exposes only validated APIs and denies browser cap
       } })
       try {
         await other.loadURL(owned.webContents.getURL())
-        const result: unknown = await other.webContents.executeJavaScript('Promise.all([window.offlineApi.app.getBootstrap(), window.offlineApi.workspaces.create("Unauthorized")])')
+        const result: unknown = await other.webContents.executeJavaScript('Promise.all([window.offlineApi.app.getBootstrap(), window.offlineApi.workspaces.create("Unauthorized"),window.offlineApi.app.requestCloseDecision("00000000-0000-4000-8000-000000000001","close")])')
         return result
       } finally { other.destroy() }
     })
     expect(rejected).toEqual([
+      { ok: false, error: { code: 'NOT_FOUND', message: 'Operation unavailable', retryable: false } },
       { ok: false, error: { code: 'NOT_FOUND', message: 'Operation unavailable', retryable: false } },
       { ok: false, error: { code: 'NOT_FOUND', message: 'Operation unavailable', retryable: false } }
     ])
@@ -93,5 +95,5 @@ test('owned production window exposes only validated APIs and denies browser cap
     await expect.poll(() => application.evaluate(() => Reflect.get(globalThis, 'navigationDeniedObserved'))).toBe(true)
     expect(page.url()).toBe(original)
     expect((await page.evaluate(() => window.offlineApi.app.getBootstrap())).ok).toBe(true)
-  } finally { await application.close(); rmSync(directory, { recursive: true, force: true }) }
+  } finally { await shutdown(application); rmSync(directory, { recursive: true, force: true }) }
 })

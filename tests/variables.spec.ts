@@ -1,3 +1,4 @@
+import { shutdown } from './fixtures/shutdown'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -93,5 +94,5 @@ test('two-workspace environments and variables preserve scope, masking, selectio
     await page.getByRole('button', { name: 'Variables', exact: true }).click()
     await expect(page.getByRole('group', { name: 'Variable host', exact: true })).toContainText('workspace-B')
     await expect(page.getByRole('group', { name: 'Variable fixture', exact: true })).toHaveCount(0)
-  } finally { await application.close(); rmSync(directory, { recursive: true, force: true }) }
+  } finally { await shutdown(application); rmSync(directory, { recursive: true, force: true }) }
 })

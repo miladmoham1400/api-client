@@ -1,3 +1,4 @@
+import { shutdown } from './fixtures/shutdown'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -121,5 +122,5 @@ test('sidebar collection CRUD and grouping preserve temporary saved requests and
     expect(restored.ok && restored.data.collections.map(collection => collection.id)).toEqual([d])
     expect(restored.ok && restored.data.requests.map(request => request.id).sort()).toEqual([root, grouped].sort())
     await expect(page.getByRole('button', { name: 'Send', exact: true })).toBeDisabled()
-  } finally { await application.close(); rmSync(directory, { recursive: true, force: true }) }
+  } finally { await shutdown(application); rmSync(directory, { recursive: true, force: true }) }
 })

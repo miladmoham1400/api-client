@@ -1,3 +1,4 @@
+import { shutdown } from './fixtures/shutdown'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -21,5 +22,5 @@ test('real Electron reports safeStorage capability without exposing synthetic va
     if (capability.mode === 'secure') { expect(capability.roundTrip).toBe(true); expect(capability.plaintextAbsent).toBe(true) }
     else { expect(capability.roundTrip).toBeNull(); expect(capability.plaintextAbsent).toBeNull() }
     expect(await page.evaluate(() => typeof Reflect.get(window.offlineApi, 'secrets'))).toBe('undefined')
-  } finally { await application.close(); rmSync(directory, { recursive: true, force: true }) }
+  } finally { await shutdown(application); rmSync(directory, { recursive: true, force: true }) }
 })

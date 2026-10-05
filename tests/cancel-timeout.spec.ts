@@ -1,3 +1,4 @@
+import { shutdown } from './fixtures/shutdown'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -57,5 +58,5 @@ test('Send/Cancel and Ctrl+Enter execute unsaved snapshots, release busy state a
     expect(saved).toMatchObject({ ok: true, data: { requests: [], editor: null } })
     expect(urls).toEqual(['/hold', '/hold', '/echo']); expect(browserRequests).toEqual([])
     await expect(page.getByLabel('Response body text')).toContainText('bodyLength')
-  } finally { await application.close(); await fixture.close(); rmSync(directory, { recursive: true, force: true }) }
+  } finally { await shutdown(application); await fixture.close(); rmSync(directory, { recursive: true, force: true }) }
 })

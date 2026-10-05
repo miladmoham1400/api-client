@@ -1,3 +1,4 @@
+import { shutdown } from './fixtures/shutdown'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -81,5 +82,5 @@ test('keyboard row editing preserves duplicate/disabled/order and validated sett
     await expect(page.getByLabel('Overall timeout (ms)', { exact: true })).toHaveValue('12345')
     await expect(page.getByLabel('Follow redirects', { exact: true })).toBeChecked()
     await expect(page.getByRole('button', { name: 'Send', exact: true })).toBeDisabled()
-  } finally { await application.close(); rmSync(directory, { recursive: true, force: true }) }
+  } finally { await shutdown(application); rmSync(directory, { recursive: true, force: true }) }
 })

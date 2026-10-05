@@ -1,3 +1,4 @@
+import type { GuardTransition } from '../navigation/transition'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Box, Button, Dialog, Flex, Heading, Input, Menu, NativeSelect, Portal, Text, VStack } from '@chakra-ui/react'
 import type { Grouping } from '../../../shared/collections'
@@ -8,12 +9,14 @@ import { nameSchema } from '../../../shared/primitives'
 type Editing = { kind: 'create' } | { kind: 'rename' | 'delete'; id: string; name: string }
 
 /** Mounted with a workspace key so a switch never displays the prior workspace's rows. */
-export function CollectionSidebar({ workspaceId, requestController }: { workspaceId: string | null; requestController: RequestController }) {
-  const locked = requestController.dirty || requestController.busy || requestController.sending
+export function CollectionSidebar({ workspaceId, requestController, guard }: { guard: GuardTransition; workspaceId: string | null; requestController: RequestController }) {
+  const locked = requestController.busy
   const [snapshot, setSnapshot] = useState<Grouping | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [editing, setEditing] = useState<Editing | null>(null)
+  const currentEditing = useRef(editing)
+  currentEditing.current = editing
   const [name, setName] = useState('')
   const [fieldError, setFieldError] = useState<string | null>(null)
   const generation = useRef(0)
@@ -47,13 +50,14 @@ export function CollectionSidebar({ workspaceId, requestController }: { workspac
     if (!editing || !workspaceId || busy) return
     if (editing.kind !== 'delete' && !nameSchema.safeParse(name).success) { setFieldError('Enter a name with 1–100 characters after trimming.'); input.current?.focus(); return }
     const target = editing
-    if (await apply(() => target.kind === 'create' ? window.offlineApi.collections.create(workspaceId, name) : target.kind === 'rename' ? window.offlineApi.collections.rename(workspaceId, target.id, name) : window.offlineApi.collections.delete(workspaceId, target.id))) setEditing(null)
+    const operation = () => currentEditing.current === target ? apply(() => target.kind === 'create' ? window.offlineApi.collections.create(workspaceId, name) : target.kind === 'rename' ? window.offlineApi.collections.rename(workspaceId, target.id, name) : window.offlineApi.collections.delete(workspaceId, target.id)) : Promise.resolve(false)
+    if (target.kind === 'delete' ? await guard(operation, true) : await operation()) setEditing(null)
   }
   function requests(collectionId: string | null) {
     const rows = snapshot?.requests.filter(request => request.collectionId === collectionId) ?? []
     return rows.length ? rows.map(request => <Box key={request.id} role="group" aria-label={`Request: ${request.name}`} p="2" borderWidth="1px" borderRadius="sm">
-      <Button variant="ghost" size="sm" whiteSpace="normal" h="auto" py="2" disabled={locked || busy} onClick={() => requestController.open(request.id)}>{request.name}</Button>
-      <NativeSelect.Root size="sm" disabled={busy || locked || !workspaceId}>
+      <Button variant="ghost" size="sm" whiteSpace="normal" h="auto" py="2" disabled={locked || busy} onClick={() => { if (request.id !== requestController.saved?.id) void guard(() => requestController.open(request.id)) }}>{request.name}</Button>
+      <NativeSelect.Root size="sm" disabled={busy || locked || requestController.dirty || requestController.sending || !workspaceId}>
         <NativeSelect.Field aria-label={`Collection for ${request.name}`} value={request.collectionId ?? ''} onChange={event => {
           const destination = event.target.value || null
           if (workspaceId) void apply(() => window.offlineApi.requests.move(workspaceId, request.id, destination))
@@ -85,7 +89,7 @@ export function CollectionSidebar({ workspaceId, requestController }: { workspac
     </VStack>)}
     <Heading size="sm">Root requests</Heading>
     {snapshot && requests(null)}
-    <Button data-create-request disabled={!workspaceId || !snapshot || busy || locked} variant="outline" size="sm" onClick={requestController.create}>Create Request</Button>
+    <Button data-create-request disabled={!workspaceId || !snapshot || busy || locked} variant="outline" size="sm" onClick={() => { void guard(async () => requestController.create()) }}>Create Request</Button>
     <Dialog.Root open={editing !== null} onOpenChange={({ open: isOpen }) => { if (!isOpen && !busy) setEditing(null) }}
       initialFocusEl={() => editing?.kind === 'delete' ? cancel.current : input.current}
       finalFocusEl={() => returnId.current ? triggers.current.get(returnId.current) ?? create.current : create.current}>

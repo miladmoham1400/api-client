@@ -1,3 +1,4 @@
+import type { GuardTransition } from '../navigation/transition'
 import { useRef, useState } from 'react'
 import { Box, Button, Dialog, Input, Menu, NativeSelect, Portal, Text } from '@chakra-ui/react'
 import { nameSchema } from '../../../shared/primitives'
@@ -5,10 +6,12 @@ import type { WorkspaceController } from './use-workspaces'
 
 type Editing = { kind: 'create' } | { kind: 'rename' | 'delete'; id: string; name: string }
 
-export function WorkspaceControls({ controller, placement, locked = false }: { controller: WorkspaceController; placement: 'top' | 'sidebar'; locked?: boolean }) {
+export function WorkspaceControls({ controller, placement, guard, locked = false }: { guard: GuardTransition; controller: WorkspaceController; placement: 'top' | 'sidebar'; locked?: boolean }) {
   const { snapshot, busy, error, apply, reload } = controller
   const selected = snapshot?.workspaces.find(workspace => workspace.id === snapshot.selectedWorkspaceId)
   const [editing, setEditing] = useState<Editing | null>(null)
+  const currentEditing = useRef(editing)
+  currentEditing.current = editing
   const [name, setName] = useState('')
   const [fieldError, setFieldError] = useState<string | null>(null)
   const input = useRef<HTMLInputElement>(null)
@@ -29,14 +32,15 @@ export function WorkspaceControls({ controller, placement, locked = false }: { c
       return
     }
     const target = editing
-    const success = await apply(() => target.kind === 'create' ? window.offlineApi.workspaces.create(name) : target.kind === 'rename' ? window.offlineApi.workspaces.rename(target.id, name) : window.offlineApi.workspaces.delete(target.id))
+    const operation = () => currentEditing.current === target ? apply(() => target.kind === 'create' ? window.offlineApi.workspaces.create(name) : target.kind === 'rename' ? window.offlineApi.workspaces.rename(target.id, name) : window.offlineApi.workspaces.delete(target.id)) : Promise.resolve(false)
+    const success = target.kind === 'rename' ? await operation() : await guard(operation)
     if (success) setEditing(null)
   }
   const title = editing?.kind === 'delete' ? 'Delete workspace' : editing?.kind === 'rename' ? 'Rename workspace' : 'Create workspace'
   return <>
     {placement === 'top' ? <>
       <NativeSelect.Root width="210px" disabled={!snapshot || busy || locked}>
-        <NativeSelect.Field ref={selector} aria-label="Workspace" value={snapshot?.selectedWorkspaceId ?? ''} onChange={event => { void apply(() => window.offlineApi.workspaces.select(event.target.value || null)) }}>
+        <NativeSelect.Field ref={selector} aria-label="Workspace" value={snapshot?.selectedWorkspaceId ?? ''} onChange={event => { const id = event.target.value || null; if (id !== snapshot?.selectedWorkspaceId) void guard(() => apply(() => window.offlineApi.workspaces.select(id))) }}>
           <option value="">{snapshot ? 'No workspace selected' : 'Loading workspaces…'}</option>
           {snapshot?.workspaces.map(workspace => <option key={workspace.id} value={workspace.id}>{workspace.name}</option>)}
         </NativeSelect.Field><NativeSelect.Indicator />
@@ -51,7 +55,7 @@ export function WorkspaceControls({ controller, placement, locked = false }: { c
       <Text fontSize="sm" color="fg.muted" overflowWrap="anywhere">{selected?.name ?? (snapshot ? 'No workspace selected' : 'Loading workspaces…')}</Text>
       <Button ref={create} disabled={!snapshot || busy || locked} onClick={() => open({ kind: 'create' })}>Create Workspace</Button>
       {busy && <Text role="status" fontSize="sm">Updating workspaces…</Text>}
-      {error && <Box role="alert"><Text fontSize="sm">{error}</Text><Button variant="outline" size="sm" disabled={busy} onClick={() => { void reload() }}>Reload workspaces</Button></Box>}
+      {error && <Box role="alert"><Text fontSize="sm">{error}</Text><Button variant="outline" size="sm" disabled={busy} onClick={() => { void guard(reload, true) }}>Reload workspaces</Button></Box>}
     </>}
     <Dialog.Root open={editing !== null} onOpenChange={({ open: isOpen }) => { if (!isOpen && !busy) setEditing(null) }}
       initialFocusEl={() => editing?.kind === 'delete' ? cancel.current : input.current}

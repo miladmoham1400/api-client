@@ -103,3 +103,18 @@ it('returns sanitized errors when the database is unavailable', () => {
   const unavailable = createWorkspaceHandlers(() => f.window, f.frame.url, () => null)
   expect(unavailable.create(f.event, 'Workspace')).toMatchObject({ ok: false, error: { code: 'DATABASE_UNAVAILABLE' } })
 })
+it('invalidates execution before deletion, only for an existing owned workspace', () => {
+  const f = fixture(), id = f.service.create('A').selectedWorkspaceId
+  if (!id) throw new Error('Missing selection')
+  const order: string[] = []
+  const service = new WorkspaceService(f.db, undefined, () => { order.push('deleted') }, workspace => {
+    expect(workspace).toBe(id)
+    expect(f.db.prepare('SELECT id FROM workspaces WHERE id=?').get(id)).toEqual({ id })
+    order.push('abort')
+  })
+  expect(() => service.delete(randomUUID())).toThrow()
+  expect(order).toEqual([])
+  service.delete(id)
+  expect(order).toEqual(['abort', 'deleted'])
+  expect(f.db.prepare('SELECT id FROM workspaces WHERE id=?').get(id)).toBeUndefined()
+})

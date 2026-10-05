@@ -1,3 +1,4 @@
+import { shutdown } from './fixtures/shutdown'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -65,5 +66,5 @@ test('shell fits desktop sizes, traps/restores dialog focus and recovers from bo
     })
     await page.getByRole('button', { name: 'Retry startup' }).click()
     await expect(page.getByRole('heading', { name: 'No request selected' })).toBeVisible()
-  } finally { await application.close(); rmSync(directory, { recursive: true, force: true }) }
+  } finally { await shutdown(application); rmSync(directory, { recursive: true, force: true }) }
 })

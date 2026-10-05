@@ -1,3 +1,4 @@
+import type { CloseApi } from './close'
 import type { FileApi } from './files'
 import type { EnvironmentApi, VariableApi } from './variable-management'
 import { z } from 'zod'
@@ -27,5 +28,5 @@ export interface DesktopApi {
   readonly collections: CollectionApi
   readonly requests: RequestGroupingApi & RequestPersistenceApi
   readonly execution: ExecutionApi
-  readonly app: { readonly getBootstrap: () => Promise<Result<Bootstrap>> }
+  readonly app: CloseApi & { readonly getBootstrap: () => Promise<Result<Bootstrap>> }
 }

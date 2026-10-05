@@ -115,11 +115,11 @@ export function useRequests(workspace: string | null) {
     chooseFile, changeMultipart,
     ...execution,
     saved: currentWorkspace ? saved : null, draft: currentWorkspace ? draft : null, busy: currentWorkspace ? busy : workspace !== null, dirty, error: currentWorkspace ? error : null, revision, validation, addRow, changeBody: (kind: EditableBody['kind']) => { if (!draft || busy) return; const result = switchBody(bodyCache.current, draft.body, kind); bodyCache.current = result.cache; setDraft({ ...draft, body: result.body }); setValidation({}) }, setDraft: (value: RequestDraft) => { setDraft(value); setValidation({}) }, save,
-    create: () => { if (!workspace || busy || dirty || execution.sending) return; releaseSelections(); bodyCache.current = initialBodyDrafts(); setSaved(null); setDraft(copyDraft({ name: 'New request', method: 'GET', urlTemplate: '', body: { kind: 'none' }, auth: { mode: 'none' } })); setError(null) },
+    create: () => { if (!workspace || running.current) return false; releaseSelections(); bodyCache.current = initialBodyDrafts(); setSaved(null); setDraft(copyDraft({ name: 'New request', method: 'GET', urlTemplate: '', body: { kind: 'none' }, auth: { mode: 'none' } })); setError(null); setValidation({}); return true },
     discard: () => { if (!busy) { releaseSelections(); bodyCache.current = initialBodyDrafts(saved?.body ?? undefined); setDraft(saved ? copyDraft(saved) : null); setError(null); setValidation({}) } },
-    open: (id: string) => { if (workspace && !dirty && !execution.sending) void apply(() => window.offlineApi.requests.get(workspace, id)) },
-    duplicate: () => { if (workspace && saved && !dirty && !execution.sending) void apply(() => window.offlineApi.requests.duplicate(workspace, saved.id), true) },
-    delete: () => workspace && saved && !dirty && !execution.sending ? apply(() => window.offlineApi.requests.delete(workspace, saved.id), true) : Promise.resolve(false)
+    open: (id: string) => workspace ? apply(() => window.offlineApi.requests.get(workspace, id)) : Promise.resolve(false),
+    duplicate: () => workspace && saved ? apply(() => window.offlineApi.requests.duplicate(workspace, saved.id), true) : Promise.resolve(false),
+    delete: () => workspace && saved ? apply(() => window.offlineApi.requests.delete(workspace, saved.id), true) : Promise.resolve(false)
   }
 }
 export type RequestController = ReturnType<typeof useRequests>

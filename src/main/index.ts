@@ -1,3 +1,6 @@
+import { randomUUID } from 'node:crypto'
+import { z } from 'zod'
+import { CLOSE_CHANNELS, closeDecisionInput } from '../shared/close'
 import { UploadService } from './files/uploads'
 import { Repositories } from './db/repositories'
 import { createFileHandlers } from './ipc/files'
@@ -82,6 +85,24 @@ else {
     })
     ownedWindow = window
     const contents = window.webContents
+    let closeReady = false, approvedClose = false
+    let pendingClose: string | null = null
+    window.on('close', event => {
+      if (!closeReady || approvedClose) { approvedClose = false; return }
+      event.preventDefault()
+      if (pendingClose) return
+      pendingClose = randomUUID()
+      contents.send(CLOSE_CHANNELS.requested, { token: pendingClose })
+    })
+    ipcMain.handle(CLOSE_CHANNELS.decision, createOwnedHandler(() => ownedWindow, trustedUrl, closeDecisionInput, z.null(), ([token, decision]) => {
+      if (token !== pendingClose) throw new Error('No matching close request')
+      pendingClose = null
+      if (decision === 'close') {
+        approvedClose = true
+        setImmediate(() => { if (!window.isDestroyed()) window.close() })
+      }
+      return null
+    }))
     uploadService = database ? new UploadService(id => { if (!database) throw new Error('Unavailable'); new Repositories(database).getWorkspace(id) }) : null
     executionService = database && secretStore ? new ExecutionService(new MaterializationService(database, secretStore, uploadService ?? undefined), completion => {
       if (ownedWindow !== window || window.isDestroyed() || contents.isDestroyed()) return
@@ -99,9 +120,9 @@ else {
     ipcMain.handle(EXECUTION_CHANNELS.cancel, executionHandlers.cancel)
     ipcMain.on(EXECUTION_CHANNELS.start, executionHandlers.start)
     // Captured requests must not outlive their renderer, including reload/crash.
-    contents.on('render-process-gone', () => { executionService?.abort(); uploadService?.clear() })
+    contents.on('render-process-gone', () => { closeReady = false; pendingClose = null; executionService?.abort(); uploadService?.clear() })
     contents.on('did-start-navigation', (_event, _url, inPlace, mainFrame) => {
-      if (mainFrame && !inPlace) { executionService?.abort(); uploadService?.clear() }
+      if (mainFrame && !inPlace) { closeReady = false; pendingClose = null; approvedClose = false; executionService?.abort(); uploadService?.clear() }
     })
     contents.session.setPermissionRequestHandler((_contents, _permission, callback) => callback(false))
     contents.session.setPermissionCheckHandler(() => false)
@@ -122,13 +143,13 @@ else {
     })
     ipcMain.handle(IPC_CHANNELS.getBootstrap, createOwnedHandler(
       () => ownedWindow, trustedUrl, bootstrapInputSchema, bootstrapSchema,
-      () => bootstrap
+      () => { closeReady = true; return bootstrap }
     ))
     const variableService = database && secretStore ? new VariableService(database, secretStore) : null
     const variableHandlers = createVariableHandlers(() => ownedWindow, trustedUrl, () => variableService)
     for (const method of ['list', 'create', 'rename', 'delete', 'select'] as const) ipcMain.handle(ENVIRONMENT_CHANNELS[method], variableHandlers.environments[method])
     for (const method of ['list', 'upsert', 'delete', 'reveal'] as const) ipcMain.handle(VARIABLE_CHANNELS[method], variableHandlers.variables[method])
-    const workspaceService = database ? new WorkspaceService(database, secretStore ?? undefined, id => { executionService?.abortWorkspace(id); uploadService?.forgetWorkspace(id) }) : null
+    const workspaceService = database ? new WorkspaceService(database, secretStore ?? undefined, id => { uploadService?.forgetWorkspace(id) }, id => { executionService?.abortWorkspace(id) }) : null
     const workspaceHandlers = createWorkspaceHandlers(() => ownedWindow, trustedUrl, () => workspaceService)
     for (const method of ['list', 'create', 'rename', 'delete', 'select'] as const) {
       ipcMain.handle(WORKSPACE_CHANNELS[method], workspaceHandlers[method])
@@ -140,6 +161,7 @@ else {
     const requestHandlers = createRequestHandlers(() => ownedWindow, trustedUrl, () => requestService)
     for (const method of ['newRow', 'list', 'get', 'create', 'save', 'duplicate', 'delete'] as const) ipcMain.handle(REQUEST_CHANNELS[method], requestHandlers[method])
     window.on('closed', () => {
+      ipcMain.removeHandler(CLOSE_CHANNELS.decision)
       uploadService?.clear(); uploadService = null
       for (const channel of Object.values(FILE_CHANNELS)) ipcMain.removeHandler(channel)
       ownedWindow = null

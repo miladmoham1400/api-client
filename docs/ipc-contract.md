@@ -9,7 +9,7 @@ Runtime-validate incoming payloads and outgoing shared DTOs. Do not return stack
 
 | Group | Methods |
 |---|---|
-| app | getBootstrap(), setTheme(theme), requestCloseDecision(decision) |
+| app | getBootstrap(), onCloseRequested(callback), requestCloseDecision(token,decision); setTheme(theme) reserved for TASK-026 |
 | workspaces | list(), create(name), rename(id,name), delete(id), select(id) |
 | collections | list(workspaceId), create(workspaceId,name), rename(workspaceId,id,name), delete(workspaceId,id) |
 | environments | list(workspaceId), create(workspaceId,name), rename(workspaceId,id,name), delete(workspaceId,id), select(workspaceId,idOrNull) |
@@ -34,6 +34,8 @@ Environment snapshots include owned environments, active selection and current s
 `execution.send` returns `{executionId}` after validation and snapshot materialization; actual network operation starts asynchronously. `onCompleted` receives `{executionId,result:HttpResponse|ExecutionError}` once. Emit completion after the invocation result is delivered or maintain a main-side retrievable completion record so very fast responses cannot race subscription setup. Register listener before enabling Send. Listener cleanup prevents accumulation.
 
 `files.chooseUpload` accepts only an existing workspace UUID and opens a main-owned native single-file dialog. Success returns `{fileId,name,size}` (no path); ordinary cancellation returns `{ok:true,data:null}`. Selection must be a readable regular file no larger than 20 MiB. `releaseUpload` accepts only workspace/file UUIDs and returns `null`; unknown, released or foreign-workspace handles return the same sanitized `FILE_REQUIRED`. Deleting a workspace, renderer reload/crash, window close and app exit invalidate its capabilities; pending dialogs cannot recreate them after invalidation. Main-only `UploadService.captureForSend` captures selected capabilities, then reopens and validates enabled file rows before each multipart connection, with row-specific errors and a 50 MiB total limit. Saved/imported file rows retain only display metadata and require reselection. Multipart uses a private replayable streaming body source, with engine-generated boundary/Content-Type/known Content-Length, a 55 MiB serialized limit and cleanup on every terminal path. Releasing a draft selection does not alter an accepted execution; allowed body-preserving redirects reopen its captured files. No resolved body, descriptor or stream crosses IPC.
+
+Normal window close and app quit are intercepted in main after startup subscription. `onCloseRequested` delivers only a validated `{token}` with a fresh main-generated UUID. The renderer applies active-request and dirty-draft guards, then `requestCloseDecision(token,'close'|'cancel')` returns `Result<null>`. Main checks the exact owned main frame and consumes only the matching pending token; unsolicited/stale decisions cannot close a window. Repeated close gestures share one pending decision. Startup/recovery screens may close without editor guards. Renderer crash/forced process termination is not unsaved-draft recovery.
 
 ## Domain errors
 

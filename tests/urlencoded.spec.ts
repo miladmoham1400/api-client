@@ -1,3 +1,4 @@
+import { shutdown } from './fixtures/shutdown'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -91,5 +92,5 @@ test('form editor sends unsaved ordered snapshots, validates before I/O and reop
     expect(requests).toHaveLength(3)
     await page.getByLabel('Body mode', { exact: true }).selectOption('json')
     await expect(page.getByLabel('JSON source text', { exact: true })).toHaveValue('')
-  } finally { await application.close(); await fixture.close(); rmSync(directory, { recursive: true, force: true }) }
+  } finally { await shutdown(application); await fixture.close(); rmSync(directory, { recursive: true, force: true }) }
 })

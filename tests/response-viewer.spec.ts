@@ -1,3 +1,4 @@
+import { shutdown } from './fixtures/shutdown'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -114,5 +115,5 @@ test('response viewer safely presents HTTP/error/binary states, snapshots, stale
     const restarted = await application.firstWindow()
     await expect(restarted.getByRole('region', { name: 'Response', exact: true })).toContainText('No response yet.')
     await expect(restarted.getByLabel('Response body text')).toHaveCount(0)
-  } finally { await application.close(); await fixture.close(); rmSync(directory, { recursive: true, force: true }) }
+  } finally { await shutdown(application); await fixture.close(); rmSync(directory, { recursive: true, force: true }) }
 })

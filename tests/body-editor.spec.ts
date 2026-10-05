@@ -1,3 +1,4 @@
+import { shutdown } from './fixtures/shutdown'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -62,5 +63,5 @@ test('body modes retain inactive drafts while Save/restart persists only the act
     expect(none.ok && none.data.editor?.body).toEqual({ kind: 'none' })
     await page.screenshot({ path: '/tmp/api-client-body.png' })
     await expect(page.getByRole('button', { name: 'Send', exact: true })).toBeDisabled()
-  } finally { await application.close(); rmSync(directory, { recursive: true, force: true }) }
+  } finally { await shutdown(application); rmSync(directory, { recursive: true, force: true }) }
 })

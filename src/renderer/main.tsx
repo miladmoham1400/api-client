@@ -1,3 +1,4 @@
+import { useNavigationGuard } from './features/navigation/guard'
 import { StrictMode, useEffect, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Box, Button, Dialog, Flex, Heading, Portal, Text, VStack } from '@chakra-ui/react'
@@ -16,6 +17,14 @@ import type { WorkspaceController } from './features/workspaces/use-workspaces'
 type Startup = { status: 'loading' } | { status: 'error' } | { status: 'ready'; data: Bootstrap }
 
 function Shell() {
+  const closeGuard = useRef<(() => Promise<boolean>) | null>(null)
+  useEffect(() => window.offlineApi.app.onCloseRequested(({ token }) => {
+    void (async () => {
+      let allow = false
+      try { allow = closeGuard.current ? await closeGuard.current() : true } catch { /* Keep the window open on a failed guard. */ }
+      await window.offlineApi.app.requestCloseDecision(token, allow ? 'close' : 'cancel')
+    })()
+  }), [])
   const [startup, setStartup] = useState<Startup>({ status: 'loading' })
   const [attempt, setAttempt] = useState(0)
   const workspaces = useWorkspaces(startup.status === 'ready' && startup.data.database.status === 'ready')
@@ -37,15 +46,17 @@ function Shell() {
   if (startup.status === 'error') return <VStack p="8" align="start"><Box role="alert"><Heading>Client unavailable</Heading><Text>Local startup information could not be loaded. Try again or restart the app.</Text></Box><Button onClick={() => { setStartup({ status: 'loading' }); setAttempt(value => value + 1) }}>Retry startup</Button></VStack>
   if (startup.data.database.status === 'unavailable') return <VStack p="8" align="start" role="alert"><Heading>Database unavailable</Heading><Text>{startup.data.database.message}</Text><Text overflowWrap="anywhere">Database location: {startup.data.database.path}</Text></VStack>
 
-  return <Desktop workspaces={workspaces} />
+  return <Desktop workspaces={workspaces} closeGuard={closeGuard} />
 }
-function Desktop({ workspaces }: { workspaces: WorkspaceController }) {
+function Desktop({ workspaces, closeGuard }: { workspaces: WorkspaceController; closeGuard: React.RefObject<(() => Promise<boolean>) | null> }) {
   const closeButton = useRef<HTMLButtonElement>(null)
   const requests = useRequests(workspaces.snapshot?.selectedWorkspaceId ?? null)
+  const navigation = useNavigationGuard(requests)
+  useEffect(() => { closeGuard.current = navigation.close; return () => { closeGuard.current = null } }, [closeGuard, navigation.close])
   return <Flex direction="column" h="100dvh" bg="bg" color="fg">
     <Flex as="header" gap="3" p="3" borderBottomWidth="1px" align="center" flexWrap="wrap">
       <Heading size="md" mr="2">Offline API Client</Heading>
-      <WorkspaceControls controller={workspaces} locked={requests.dirty || requests.busy || requests.sending} placement="top" />
+      <WorkspaceControls controller={workspaces} locked={requests.busy} guard={navigation.guard} placement="top" />
       <VariableControls key={workspaces.snapshot?.selectedWorkspaceId ?? 'none'} workspace={workspaces.snapshot?.selectedWorkspaceId ?? null} />
       <Button disabled variant="outline" size="sm">System theme</Button>
       <Dialog.Root initialFocusEl={() => closeButton.current}>
@@ -60,14 +71,15 @@ function Desktop({ workspaces }: { workspaces: WorkspaceController }) {
     <Flex flex="1" minH="0">
       <VStack as="aside" aria-label="Collections and requests" align="stretch" gap="4" w="250px" minW="210px" p="4" overflow="auto" borderRightWidth="1px">
         <Heading size="sm">Workspace</Heading>
-        <WorkspaceControls controller={workspaces} locked={requests.dirty || requests.busy || requests.sending} placement="sidebar" />
-        <CollectionSidebar key={workspaces.snapshot?.selectedWorkspaceId ?? "none"} workspaceId={workspaces.snapshot?.selectedWorkspaceId ?? null} requestController={requests} />
+        <WorkspaceControls controller={workspaces} locked={requests.busy} guard={navigation.guard} placement="sidebar" />
+        <CollectionSidebar key={workspaces.snapshot?.selectedWorkspaceId ?? "none"} workspaceId={workspaces.snapshot?.selectedWorkspaceId ?? null} requestController={requests} guard={navigation.guard} />
       </VStack>
       <Flex as="main" direction="column" flex="1" minW="0" minH="0" p="4" gap="3" overflow="auto">
-        <RequestEditor key={workspaces.snapshot?.selectedWorkspaceId ?? "none"} controller={requests} />
+        <RequestEditor key={workspaces.snapshot?.selectedWorkspaceId ?? "none"} controller={requests} guard={navigation.guard} />
         <ResponseViewer controller={requests} />
       </Flex>
     </Flex>
+    {navigation.dialog}
     <Box as="footer" borderTopWidth="1px" px="4" py="2"><Text fontSize="xs" color="fg.muted">Local storage ready</Text></Box>
   </Flex>
 }
