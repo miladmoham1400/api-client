@@ -1,0 +1,26 @@
+# Developer graph inputs; application data and generated/vendor files stay out.
+.git/
+.agents/
+.codex/
+.tools/
+node_modules/
+out/
+dist/
+graphify-out/
+test-results/
+playwright-report/
+tools/graphify/
+scripts/graphify.py
+scripts/setup-graphify.py
+package-lock.json
+*.sqlite
+*.sqlite-*
+*.db
+.env
+.env.*
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+*.log

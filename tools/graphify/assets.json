@@ -1,0 +1,11 @@
+{
+  "package": "vis-network",
+  "version": "9.1.6",
+  "url": "https://registry.npmjs.org/vis-network/-/vis-network-9.1.6.tgz",
+  "integrity": "sha512-Eiwx1JleAsUqfy4pzcsFngCVlCEdjAtRPB/OwCV7PHBm+o2jtE4IZPcPITAEGUlxvL4Fdw7/lZsfD32dL+IL6g==",
+  "files": {
+    "package/standalone/umd/vis-network.min.js": "vis-network.min.js",
+    "package/LICENSE-MIT": "LICENSE-MIT",
+    "package/LICENSE-APACHE-2.0": "LICENSE-APACHE-2.0"
+  }
+}

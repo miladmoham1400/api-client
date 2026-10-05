@@ -34,3 +34,11 @@ Build the Offline API Client described in this repository. Preserve documented b
 ## Versions and release
 
 Verify compatible maintained stable packages in TASK-001 and record exact versions. Use Chakra v3 APIs only. Commit a lockfile and reproducible scripts. Distinguish developer Node from Electron's embedded Node. Rebuild native SQLite dependencies for each selected Electron/OS target. Linux and Windows require independent packaged-app smoke tests.
+
+## Graphify developer workflow
+
+- Project skill: `.agents/skills/graphify/SKILL.md`; project configuration and evidence: `docs/graphify.md` and `docs/tooling-reports/graphify.md`.
+- Read required task/specification documents first. For architecture, call-chain or change-impact questions, consult `python3 scripts/graphify.py query "<question>"` when the graph exists, then inspect the relevant source. Source and specifications take precedence over inferred graph edges; absence of an edge is not evidence of absence of behavior.
+- For this repository, the local-only wrapper replaces the upstream full extraction/install workflow: use `python3 scripts/graphify.py build` initially and `python3 scripts/graphify.py update` after source changes. It uses pinned project-local Python tooling, code-only extraction, no model labeling and bundled visualization assets. Do not auto-upgrade packages, use semantic/cloud extraction, install global settings, enable multi-agent features or install Git/tool hooks as part of a normal task.
+- Generated `graphify-out/` is ignored and must be regenerated locally. Exclude application databases, secrets, environment files, dependencies and build output using `.graphifyignore`. Do not copy user workspace data or credential values into graphs/reports.
+- Graphify is optional developer tooling, not an application/runtime dependency or a task gate. If unavailable or incomplete, use source inspection and record the limitation. Graph output never counts as test evidence and never authorizes implementing a later task.

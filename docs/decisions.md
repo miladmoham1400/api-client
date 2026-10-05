@@ -38,4 +38,8 @@ React local state/context is sufficient initially. Avoid adding a global state l
 
 ## Change policy
 
-Record material changes here with reason, user authorization if scope changes, and affected tasks. Routine internal choices do not require a new approval. No changes are recorded yet.
+Record material changes here with reason, user authorization if scope changes, and affected tasks. Routine internal choices do not require a new approval.
+
+## Developer tooling — 2026-10-05
+
+User authorized project-local Graphify installation and documentation before the next task. Use pinned Python tooling and a project Agent Skill, code-only local extraction, no model labeling and bundled graph visualization assets. Graphify assists source discovery; specifications, source and actual checks remain authoritative. It adds no application runtime dependency, product feature, global assistant settings or task-status change. See [configuration](graphify.md) and [evidence](tooling-reports/graphify.md).

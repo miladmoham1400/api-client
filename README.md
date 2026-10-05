@@ -46,5 +46,10 @@ Do not copy a task into a chat without its referenced specifications. The comple
 | [Release](docs/release.md) | Linux/Windows packages and evidence |
 | [Sources](docs/sources.md) | Official references checked for this plan |
 | [Task index](docs/task-index.md) | Ordered, dependency-linked tasks |
+| [Graphify](docs/graphify.md) | Optional local source graph, setup and developer workflow |
 
 The task index is the progress source of truth; individual tasks initially have `todo` status. No application has been built or tested by this planning pack.
+
+## Optional developer graph
+
+Graphify is installed as a project skill with pinned tooling separate from the desktop app. Run `python3 scripts/graphify.py build` and open `graphify-out/graph.html`; use `python3 scripts/graphify.py update` after source changes. See [setup and usage](docs/graphify.md) and [actual verification](docs/tooling-reports/graphify.md). This tooling setup does not advance a product task or change the app's offline runtime requirements.
