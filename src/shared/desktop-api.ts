@@ -1,3 +1,4 @@
+import type { ExportApi } from './export'
 import type { CloseApi } from './close'
 import type { FileApi } from './files'
 import type { EnvironmentApi, VariableApi } from './variable-management'
@@ -21,6 +22,7 @@ export const bootstrapInputSchema = z.tuple([])
 export const IPC_CHANNELS = Object.freeze({ getBootstrap: 'app:get-bootstrap' })
 export type Bootstrap = z.infer<typeof bootstrapSchema>
 export interface DesktopApi {
+  readonly transfer: ExportApi
   readonly files: FileApi
   readonly environments: EnvironmentApi
   readonly variables: VariableApi

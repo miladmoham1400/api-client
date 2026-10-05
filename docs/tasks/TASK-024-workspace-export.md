@@ -1,6 +1,6 @@
 # TASK-024 — Implement safe workspace JSON export
 
-Status: todo
+Status: done
 Dependencies: TASK-023, TASK-013
 
 ## Read first
@@ -28,3 +28,5 @@ No secrets-included mode or Postman format.
 ## Completion procedure
 
 Record actual changes, commands/results, environment, evidence and blockers in `docs/task-reports/TASK-024.md`. Update this status and the index together. Mark `done` only when acceptance is verified; otherwise `in_progress` or `blocked`. Stop at this task boundary.
+
+Completion evidence: [TASK-024 report](../task-reports/TASK-024.md). Linux native save/cancel and full desktop regression checks passed; Windows/Wayland and packaged-app checks remain unverified.

@@ -1,3 +1,4 @@
+import { EXPORT_CHANNEL, exportInputSchema, exportResultSchema } from '../shared/export'
 import { CLOSE_CHANNELS, closeRequestedSchema, closeDecisionInput, closeDecisionResult } from '../shared/close'
 import { subscribeValidated } from './listeners'
 import { createFileApi } from './files'
@@ -46,6 +47,14 @@ async function variableCall<I extends z.ZodType<unknown[]>, O extends z.ZodType>
 }
 
 const api: DesktopApi = Object.freeze({
+  transfer: Object.freeze({
+    exportWorkspace: async (workspace: string) => {
+      const input = exportInputSchema.safeParse([workspace])
+      if (!input.success) return { ok: false as const, error: validationError(input.error, true) }
+      try { return exportResultSchema.parse(await ipcRenderer.invoke(EXPORT_CHANNEL, ...input.data)) }
+      catch { return { ok: false as const, error: { code: 'EXPORT_WRITE_FAILED' as const, message: 'Export unavailable', retryable: true } } }
+    }
+  }),
   files: createFileApi((channel, ...args) => ipcRenderer.invoke(channel, ...args)),
   execution: createExecutionApi(
     args => ipcRenderer.invoke(EXECUTION_CHANNELS.send, ...args),

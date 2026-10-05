@@ -1,3 +1,6 @@
+import { WorkspaceExportService } from './services/workspace-export'
+import { createExportHandler } from './ipc/export'
+import { EXPORT_CHANNEL } from '../shared/export'
 import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
 import { CLOSE_CHANNELS, closeDecisionInput } from '../shared/close'
@@ -6,7 +9,7 @@ import { Repositories } from './db/repositories'
 import { createFileHandlers } from './ipc/files'
 import { FILE_CHANNELS } from '../shared/files'
 import { app, BrowserWindow, ipcMain, safeStorage, dialog } from 'electron'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { bootstrapInputSchema, bootstrapSchema, IPC_CHANNELS } from '../shared/desktop-api'
 import type Database from 'better-sqlite3'
@@ -109,6 +112,11 @@ else {
       try { contents.send(EXECUTION_CHANNELS.completed, completion) }
       catch { /* A disappearing renderer cannot undo completion or committed deletion. */ }
     }) : null
+    const exportService = database ? new WorkspaceExportService(database, [app.getPath('userData'), app.getAppPath(), dirname(app.getPath('exe'))]) : null
+    ipcMain.handle(EXPORT_CHANNEL, createExportHandler(() => ownedWindow, trustedUrl, () => exportService, async () => {
+      const result = await dialog.showSaveDialog(window, { title: 'Export workspace JSON', defaultPath: 'workspace.json', filters: [{ name: 'Workspace JSON', extensions: ['json'] }], properties: ['showOverwriteConfirmation', 'dontAddToRecent'] })
+      return result.canceled ? null : result.filePath ?? null
+    }))
     const fileHandlers = createFileHandlers(() => ownedWindow, trustedUrl, () => uploadService, async () => {
       const result = await dialog.showOpenDialog(window, { title: 'Select upload file', properties: ['openFile', 'dontAddToRecent'] })
       return result.canceled ? null : result.filePaths[0] ?? null
@@ -161,6 +169,7 @@ else {
     const requestHandlers = createRequestHandlers(() => ownedWindow, trustedUrl, () => requestService)
     for (const method of ['newRow', 'list', 'get', 'create', 'save', 'duplicate', 'delete'] as const) ipcMain.handle(REQUEST_CHANNELS[method], requestHandlers[method])
     window.on('closed', () => {
+      ipcMain.removeHandler(EXPORT_CHANNEL)
       ipcMain.removeHandler(CLOSE_CHANNELS.decision)
       uploadService?.clear(); uploadService = null
       for (const channel of Object.values(FILE_CHANNELS)) ipcMain.removeHandler(channel)

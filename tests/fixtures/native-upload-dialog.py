@@ -35,11 +35,27 @@ x11.XStringToKeysym.restype = ctypes.c_ulong
 x11.XKeysymToKeycode.argtypes = [ctypes.c_void_p, ctypes.c_ulong]
 x11.XKeysymToKeycode.restype = ctypes.c_uint
 x11.XFlush.argtypes = [ctypes.c_void_p]
+x11.XSync.argtypes = [ctypes.c_void_p, ctypes.c_int]
 x11.XCloseDisplay.argtypes = [ctypes.c_void_p]
 xtst.XTestFakeKeyEvent.argtypes = [ctypes.c_void_p, ctypes.c_uint, ctypes.c_int, ctypes.c_ulong]
 display = x11.XOpenDisplay(None)
 if not display:
     raise RuntimeError('Native dialog smoke requires an X11 display')
+
+
+class KeyboardState(ctypes.Structure):
+    _fields_ = [('group', ctypes.c_ubyte), ('locked_group', ctypes.c_ubyte),
+                ('base_group', ctypes.c_ushort), ('latched_group', ctypes.c_ushort),
+                ('mods', ctypes.c_ubyte), ('base_mods', ctypes.c_ubyte),
+                ('latched_mods', ctypes.c_ubyte), ('locked_mods', ctypes.c_ubyte),
+                ('compat_state', ctypes.c_ubyte), ('grab_mods', ctypes.c_ubyte),
+                ('compat_grab_mods', ctypes.c_ubyte), ('lookup_mods', ctypes.c_ubyte),
+                ('compat_lookup_mods', ctypes.c_ubyte), ('ptr_buttons', ctypes.c_ushort)]
+
+x11.XkbGetState.argtypes = [ctypes.c_void_p, ctypes.c_uint, ctypes.POINTER(KeyboardState)]
+x11.XkbLockGroup.argtypes = [ctypes.c_void_p, ctypes.c_uint, ctypes.c_uint]
+keyboard_state = KeyboardState()
+x11.XkbGetState(display, 0x100, ctypes.byref(keyboard_state))
 
 
 def find(window):
@@ -48,7 +64,7 @@ def find(window):
     title = name.value.decode('utf-8', errors='replace') if name.value else ''
     if name:
         x11.XFree(name)
-    if title == 'Select upload file':
+    if title == (sys.argv[2] if len(sys.argv) > 2 else 'Select upload file'):
         attributes = Attributes()
         x11.XGetWindowAttributes(display, window, ctypes.byref(attributes))
         if attributes.map_state == 2:
@@ -66,12 +82,15 @@ def find(window):
 
 
 def key(name, pressed):
+    x11.XkbLockGroup(display, 0x100, 0)
+    x11.XFlush(display)
     symbol = x11.XStringToKeysym(name.encode('ascii'))
     code = x11.XKeysymToKeycode(display, symbol)
     if not code:
         raise RuntimeError('Keyboard mapping missing')
     xtst.XTestFakeKeyEvent(display, code, int(pressed), 0)
-    x11.XFlush(display)
+    x11.XSync(display, 0)
+    time.sleep(0.01)
 
 
 def tap(name):
@@ -94,28 +113,48 @@ try:
     if sys.argv[1] == 'cancel':
         tap('Escape')
     else:
+        # Fixture paths use Latin keys; restore the user's group in finally.
+        x11.XkbLockGroup(display, 0x100, 0)
+        x11.XFlush(display)
         path = sys.argv[1]
         if any(char not in 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/.-' for char in path):
             raise RuntimeError('Fixture path must use the supported ASCII keyboard mapping')
+        save_dialog = len(sys.argv) > 2 and sys.argv[2] == 'Export workspace JSON'
+        def type_text(value):
+            for char in value:
+                if char.isupper():
+                    key('Shift_L', True)
+                tap({'/': 'slash', '.': 'period', '-': 'minus'}.get(char, char.lower()))
+                if char.isupper():
+                    key('Shift_L', False)
+        if save_dialog:
+            key('Control_L', True)
+            tap('l')
+            key('Control_L', False)
+        else:
+            # GTK opens its location entry for an absolute path with slash.
+            tap('slash')
+        time.sleep(0.3)
         key('Control_L', True)
-        tap('l')
+        tap('a')
         key('Control_L', False)
-        time.sleep(0.15)
-        for char in path:
-            if char.isupper():
-                key('Shift_L', True)
-            tap({'/': 'slash', '.': 'period', '-': 'minus'}.get(char, char.lower()))
-            if char.isupper():
-                key('Shift_L', False)
+        type_text(path)
         # GTK location completion is asynchronous. Retry confirmation only while this chooser is visible.
         time.sleep(0.2)
         for _ in range(12):
             if not find(x11.XDefaultRootWindow(display)):
                 break
             x11.XSetInputFocus(display, window, 2, 0)
-            tap('Return')
+            if save_dialog:
+                key('Alt_L', True)
+                tap('s')
+                key('Alt_L', False)
+            else:
+                tap('Return')
             time.sleep(0.4)
         else:
             raise RuntimeError('Native chooser did not accept the fixture location')
 finally:
+    x11.XkbLockGroup(display, 0x100, keyboard_state.locked_group)
+    x11.XFlush(display)
     x11.XCloseDisplay(display)

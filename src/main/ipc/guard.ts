@@ -40,7 +40,7 @@ export function createOwnedHandler<I extends z.ZodType, T extends z.ZodType>(
 // Native dialogs yield control. Recheck the exact owner before returning their result.
 export function createOwnedAsyncHandler<I extends z.ZodType, T extends z.ZodType>(
   getWindow: () => OwnedWindow | null, trustedUrl: string, inputSchema: I, outputSchema: T,
-  operation: (input: z.infer<I>) => Promise<z.infer<T>>, mapError: (error: unknown) => DomainError
+  operation: (input: z.infer<I>, authorized: () => boolean) => Promise<z.infer<T>>, mapError: (error: unknown) => DomainError
 ) {
   return async (event: SenderContext, ...args: unknown[]): Promise<Result<z.infer<T>>> => {
     const owner = getWindow()
@@ -52,7 +52,7 @@ export function createOwnedAsyncHandler<I extends z.ZodType, T extends z.ZodType
     const input = inputSchema.safeParse(args)
     if (!input.success) return { ok: false, error: validationError(input.error, true) }
     try {
-      const data = await operation(input.data)
+      const data = await operation(input.data, authorized)
       if (!authorized()) return unavailable
       return { ok: true, data: outputSchema.parse(data) }
     } catch (error) {

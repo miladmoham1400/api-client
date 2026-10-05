@@ -17,7 +17,7 @@ Runtime-validate incoming payloads and outgoing shared DTOs. Do not return stack
 | requests | newRow(workspaceId), list(workspaceId), get(workspaceId,id), create(workspaceId,input), save(workspaceId,id,input), duplicate(workspaceId,id), delete(workspaceId,id), move(workspaceId,id,collectionIdOrNull) |
 | files | chooseUpload(workspaceId) -> opaque file ID + name + size; releaseUpload(workspaceId,fileId) |
 | execution | send(workspaceId,requestIdOrNull,draft,environmentIdOrNull), cancel(executionId), onCompleted(callback) -> unsubscribe |
-| transfer | exportWorkspace(workspaceId) using native save dialog; chooseImport() -> validated preview token; importWorkspace(previewToken) |
+| transfer | exportWorkspace(workspaceId) -> {status:'saved'|'cancelled'} using native save dialog; chooseImport()/importWorkspace(previewToken) reserved for TASK-025 |
 
 These are API shapes, not instructions to expose a generic `invoke(channel,args)` function. Use explicit contextBridge functions and schema allowlists.
 
@@ -37,9 +37,11 @@ Environment snapshots include owned environments, active selection and current s
 
 Normal window close and app quit are intercepted in main after startup subscription. `onCloseRequested` delivers only a validated `{token}` with a fresh main-generated UUID. The renderer applies active-request and dirty-draft guards, then `requestCloseDecision(token,'close'|'cancel')` returns `Result<null>`. Main checks the exact owned main frame and consumes only the matching pending token; unsolicited/stale decisions cannot close a window. Repeated close gestures share one pending decision. Startup/recovery screens may close without editor guards. Renderer crash/forced process termination is not unsaved-draft recovery.
 
+`transfer.exportWorkspace` takes only the workspace UUID, never a renderer-selected path or secrets flag. Main constructs and validates a strict allowlisted v1 export from saved data in one SQLite read transaction before showing an owned native save dialog. The renderer explains omissions and ordinary-field risks first. Cancellation is an ordinary `{status:'cancelled'}` result and creates no temporary/destination file. Success returns only `{status:'saved'}`, with no path or exported payload. Main rechecks the exact owner before writing/committing; same-directory exclusive temp/write/sync/rename preserves an existing destination on failure. Only JSON destinations outside application/data directories are allowed; symlink destinations and SQLite file signatures are rejected. Export does not save drafts, change selections, decrypt secrets or execute requests. Import APIs remain unexposed.
+
 ## Domain errors
 
-VALIDATION, NOT_FOUND, OWNERSHIP, DATABASE_UNAVAILABLE, DATABASE_WRITE_FAILED, VARIABLE_MISSING, SECRET_UNAVAILABLE, FILE_REQUIRED, FILE_CHANGED, FILE_TOO_LARGE, REQUEST_BUSY, INVALID_URL, INVALID_HEADER, AUTH_CONFLICT, CONTENT_TYPE_CONFLICT, UNSUPPORTED_SCHEME, TIMEOUT, CANCELLED, DNS_FAILURE, CONNECTION_REFUSED, TLS_FAILURE, NETWORK_FAILURE, RESPONSE_TOO_LARGE, DECOMPRESSION_FAILURE, REDIRECT_LIMIT, REDIRECT_DOWNGRADE, INVALID_IMPORT, UNSUPPORTED_FORMAT_VERSION, IMPORT_TOO_LARGE.
+EXPORT_WRITE_FAILED, VALIDATION, NOT_FOUND, OWNERSHIP, DATABASE_UNAVAILABLE, DATABASE_WRITE_FAILED, VARIABLE_MISSING, SECRET_UNAVAILABLE, FILE_REQUIRED, FILE_CHANGED, FILE_TOO_LARGE, REQUEST_BUSY, INVALID_URL, INVALID_HEADER, AUTH_CONFLICT, CONTENT_TYPE_CONFLICT, UNSUPPORTED_SCHEME, TIMEOUT, CANCELLED, DNS_FAILURE, CONNECTION_REFUSED, TLS_FAILURE, NETWORK_FAILURE, RESPONSE_TOO_LARGE, DECOMPRESSION_FAILURE, REDIRECT_LIMIT, REDIRECT_DOWNGRADE, INVALID_IMPORT, UNSUPPORTED_FORMAT_VERSION, IMPORT_TOO_LARGE.
 
 HTTP status 4xx/5xx is a successful transport result. User cancellation of file open/save dialogs is an ordinary cancelled operation, not a red failure toast. Repository mutation errors leave UI data intact. Missing/unauthorized IDs share sanitized not-found behavior where appropriate.
 
