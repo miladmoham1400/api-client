@@ -12,6 +12,9 @@ export const tlsFixture = {
 }
 function respond(request: IncomingMessage, response: ServerResponse): void {
   const path = new URL(request.url ?? '/', 'http://fixture').pathname
+  if (path === '/status/401' || path === '/status/500') { response.writeHead(Number(path.slice(-3)), { 'Content-Type': 'text/plain' }); response.end('synthetic HTTP error'); return }
+  if (path === '/delay') { const timer = setTimeout(() => { response.writeHead(200, { 'Content-Type': 'text/plain' }); response.end('delayed fixture') }, 2000); response.on('close', () => clearTimeout(timer)); return }
+  if (path === '/html') { response.writeHead(200, { 'Content-Type': 'text/html' }); response.end('<script>window.syntheticResponseExecuted=true</script>'); return }
   if (path === '/hold') { response.writeHead(200, { 'Content-Type': 'text/plain' }); response.write('waiting'); return }
   if (path === '/reset') { request.socket.destroy(); return }
   if (path === '/truncated') { response.writeHead(200, { 'Content-Length': '100', 'Content-Encoding': 'gzip' }); response.write(gzipSync(Buffer.from('valid partial stream')).subarray(0, 5)); setImmediate(() => response.destroy()); return }

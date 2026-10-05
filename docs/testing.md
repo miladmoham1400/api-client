@@ -50,3 +50,13 @@ Prove offline behavior with egress blocked or internet disconnected while loopba
 ## Evidence format
 
 Task report: date, environment/versions, commands, exit codes, result summary, screenshots/log excerpts only if useful and sanitized, criteria satisfied, unexecuted checks and blockers. Release acceptance in docs/release-acceptance.md has per-OS pass/fail/not-run and reproducible steps. Never convert `not-run` to pass.
+
+## Reproducible local offline acceptance (Linux)
+
+Run `npm run test:unit` first (rebuilds SQLite for developer Node), then `npm run test:offline` (rebuilds SQLite for Electron, builds and runs the complete desktop suite). Never run native rebuilds concurrently. For an existing Electron build, `bash scripts/test-offline.sh tests/offline.spec.ts` runs the focused story.
+
+The offline runner requires Linux, `unshare`, `ip`, a non-root user, working user/network namespaces and the local graphical display. It creates a private network namespace, brings up only loopback, then maps the invoking UID/GID into an inner user namespace for sandboxed Electron. It changes no host interfaces/routes/firewall. The app, fixture servers and Playwright all inherit the isolated network: IPv4/IPv6 non-loopback egress has no interface/route. The focused test checks only `lo` exists, the IPv4 routing table is empty and a documentation-address TCP probe fails with `ENETUNREACH`; loopback sends must succeed. A namespace setup failure is a failed prerequisite, not offline acceptance. Restricted execution environments may require permission to create namespaces and access the GUI.
+
+`tests/offline.spec.ts` intentionally skips outside this runner; that skip is not evidence. It verifies startup, environment precedence, sensitive auth, explicit send, cancel/timeout/error recovery, normal close/reopen, workspace isolation, safe export/import and explicit credential/file recovery. The complete desktop suite also covers negative fixtures, forms/files, redirects, safe response text and boundary validation under the same egress block. Fixtures contain synthetic data only; temporary app data/files are removed. No production sandbox or TLS bypass is used.
+
+This source-built Electron check does not satisfy the independent Linux/Windows packaged-app matrix. Record the actual OS/display/storage capability and not-run targets in the task report. Secure-backend doubles establish conditional unit behavior; they do not prove availability of a real OS credential backend.

@@ -83,3 +83,20 @@ it('rejects untrusted TLS and maps refusal/DNS errors without leaking raw diagno
   }
   for (const code of ['EPROTO', 'ERR_TLS_CERT_ALTNAME_INVALID', 'ERR_SSL_WRONG_VERSION_NUMBER', 'CERT_HAS_EXPIRED', 'SELF_SIGNED_CERT_IN_CHAIN']) expect(transportError({ code }).code).toBe('TLS_FAILURE')
 })
+
+it.each(['PUT', 'PATCH', 'DELETE'] as const)('preserves %s and raw UTF-8 body bytes on the wire', async method => {
+  const text = 'synthetic سلام'
+  const result = await send(capture('/echo', { method, body: { kind: 'raw', text, mediaType: 'text/plain' } }))
+  if (!result.ok || result.data.body.kind !== 'text') throw new Error('Missing captured request')
+  expect(JSON.parse(result.data.body.text)).toMatchObject({ method, bodyLength: Buffer.byteLength(text), bodyBase64: Buffer.from(text).toString('base64') })
+})
+it('keeps 401/500 and literal HTML as responses and aborts the delayed fixture', async () => {
+  for (const statusCode of [401, 500]) expect(await send(capture('/status/' + statusCode))).toMatchObject({ ok: true, data: { statusCode, body: { kind: 'text', text: 'synthetic HTTP error' } } })
+  expect(await send(capture('/html'))).toMatchObject({ ok: true, data: { statusCode: 200, body: { kind: 'text', text: '<script>window.syntheticResponseExecuted=true</script>' } } })
+  const controller = new AbortController()
+  const seen = new Promise<void>(resolve => fixture.server.once('request', () => resolve()))
+  const pending = executeSingleHop(capture('/delay'), controller.signal)
+  await seen
+  controller.abort()
+  expect(await pending).toMatchObject({ ok: false, error: { code: 'CANCELLED' } })
+})
