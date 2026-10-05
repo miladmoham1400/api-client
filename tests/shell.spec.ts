@@ -1,13 +1,14 @@
+import { launchDesktop } from './fixtures/desktop'
 import { shutdown } from './fixtures/shutdown'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { _electron, expect, test } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
 test('shell fits desktop sizes, traps/restores dialog focus and recovers from bootstrap failure', async () => {
   const directory = mkdtempSync(join(tmpdir(), 'api-client-shell-'))
   const env = { ...Object.fromEntries(Object.entries(process.env).filter((entry): entry is [string, string] => entry[1] !== undefined && !['ELECTRON_RUN_AS_NODE', 'ELECTRON_RENDERER_URL'].includes(entry[0]))), XDG_CONFIG_HOME: directory, APPDATA: directory }
-  const application = await _electron.launch({ args: ['.'], chromiumSandbox: true, env })
+  const application = await launchDesktop({ args: ['.'], chromiumSandbox: true, env })
   try {
     const page = await application.firstWindow()
     await expect(page.getByRole('heading', { name: 'No request selected' })).toBeVisible()

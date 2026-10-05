@@ -1,13 +1,14 @@
+import { launchDesktop } from './fixtures/desktop'
 import { shutdown } from './fixtures/shutdown'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { _electron, expect, test } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
 test('keyboard row editing preserves duplicate/disabled/order and validated settings after restart', async () => {
   const directory = mkdtempSync(join(tmpdir(), 'api-client-fields-ui-'))
   const env = { ...Object.fromEntries(Object.entries(process.env).filter((entry): entry is [string, string] => entry[1] !== undefined && !['ELECTRON_RUN_AS_NODE', 'ELECTRON_RENDERER_URL'].includes(entry[0]))), XDG_CONFIG_HOME: directory, APPDATA: directory }
-  let application = await _electron.launch({ args: ['.'], chromiumSandbox: true, env })
+  let application = await launchDesktop({ args: ['.'], chromiumSandbox: true, env })
   try {
     let page = await application.firstWindow()
     await page.getByRole('button', { name: 'Create Workspace', exact: true }).click()
@@ -70,7 +71,7 @@ test('keyboard row editing preserves duplicate/disabled/order and validated sett
     await expect(page.getByLabel('Param 1 value', { exact: true })).toHaveValue('second')
     await page.screenshot({ path: '/tmp/api-client-request-fields.png' })
     await application.close()
-    application = await _electron.launch({ args: ['.'], chromiumSandbox: true, env })
+    application = await launchDesktop({ args: ['.'], chromiumSandbox: true, env })
     page = await application.firstWindow()
     await expect(page.getByLabel('Param 1 value', { exact: true })).toHaveValue('second')
     await expect(page.getByLabel('Param 1 enabled', { exact: true })).not.toBeChecked()

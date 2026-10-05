@@ -1,7 +1,8 @@
+import { launchDesktop } from './fixtures/desktop'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { _electron, expect, test, type Page } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 import { shutdown } from './fixtures/shutdown'
 import { startFixture } from './fixtures/http'
 
@@ -28,7 +29,7 @@ async function request(page: Page, name: string, url: string) {
 
 test('dirty request/workspace navigation, failed Save and normal close preserve explicit decisions and selection', async () => {
   const directory = mkdtempSync(join(tmpdir(), 'api-client-navigation-')), env = environment(directory)
-  let application = await _electron.launch({ args: ['.'], chromiumSandbox: true, env })
+  let application = await launchDesktop({ args: ['.'], chromiumSandbox: true, env })
   try {
     let page = await application.firstWindow()
     const a = await workspace(page, 'A')
@@ -98,7 +99,7 @@ test('dirty request/workspace navigation, failed Save and normal close preserve 
     const closed = application.waitForEvent('close')
     await dirty.getByRole('button', { name: 'Save', exact: true }).click()
     await closed
-    application = await _electron.launch({ args: ['.'], chromiumSandbox: true, env }); page = await application.firstWindow()
+    application = await launchDesktop({ args: ['.'], chromiumSandbox: true, env }); page = await application.firstWindow()
     await expect(page.getByLabel('Workspace', { exact: true })).toHaveValue(a)
     await expect(page.getByLabel('Request name', { exact: true })).toHaveValue('Close draft')
     await page.getByLabel('Request name', { exact: true }).fill('Discard on close')
@@ -108,7 +109,7 @@ test('dirty request/workspace navigation, failed Save and normal close preserve 
       if (!(error instanceof Error) || !error.message.includes('Target page, context or browser has been closed')) throw error
     })
     await discardedClose
-    application = await _electron.launch({ args: ['.'], chromiumSandbox: true, env }); page = await application.firstWindow()
+    application = await launchDesktop({ args: ['.'], chromiumSandbox: true, env }); page = await application.firstWindow()
     await expect(page.getByLabel('Request name', { exact: true })).toHaveValue('Close draft')
     await page.getByLabel('Request name', { exact: true }).fill('')
     await page.getByRole('button', { name: 'Create Request', exact: true }).click()
@@ -131,7 +132,7 @@ test('dirty request/workspace navigation, failed Save and normal close preserve 
 
 test('confirmed request/collection/workspace deletions cannot bypass dirty or active-request guards', async () => {
   const directory = mkdtempSync(join(tmpdir(), 'api-client-navigation-delete-')), fixture = await startFixture()
-  const application = await _electron.launch({ args: ['.'], chromiumSandbox: true, env: environment(directory) })
+  const application = await launchDesktop({ args: ['.'], chromiumSandbox: true, env: environment(directory) })
   try {
     const page = await application.firstWindow(), a = await workspace(page, 'Delete guards')
     await request(page, 'First', fixture.url + '/hold')
@@ -232,7 +233,7 @@ test('confirmed request/collection/workspace deletions cannot bypass dirty or ac
 
 test('cancel-and-navigate waits for an attempt still preparing before an execution ID exists', async () => {
   const directory = mkdtempSync(join(tmpdir(), 'api-client-navigation-preparing-')), fixture = await startFixture()
-  const application = await _electron.launch({ args: ['.'], chromiumSandbox: true, env: environment(directory) })
+  const application = await launchDesktop({ args: ['.'], chromiumSandbox: true, env: environment(directory) })
   try {
     const page = await application.firstWindow(), a = await workspace(page, 'Preparing')
     await request(page, 'Hold', fixture.url + '/hold')

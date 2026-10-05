@@ -1,4 +1,5 @@
-import { _electron, expect, test } from '@playwright/test'
+import { launchDesktop } from './fixtures/desktop'
+import { expect, test } from '@playwright/test'
 import { mkdtempSync, rmSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -7,7 +8,7 @@ import { randomUUID } from 'node:crypto'
 test('native SQLite loads in Electron, reopens saved data and reports corrupt startup without replacement', async () => {
   const directory = mkdtempSync(join(tmpdir(), 'api-client-native-'))
   const env = { ...Object.fromEntries(Object.entries(process.env).filter((entry): entry is [string, string] => entry[1] !== undefined && !['ELECTRON_RUN_AS_NODE','ELECTRON_RENDERER_URL'].includes(entry[0]))), XDG_CONFIG_HOME: directory, APPDATA: directory }
-  let application = await _electron.launch({ args: ['.'], chromiumSandbox: true, env })
+  let application = await launchDesktop({ args: ['.'], chromiumSandbox: true, env })
   try {
     const page = await application.firstWindow()
     await expect(page.getByRole('heading', { name: 'No request selected' })).toBeVisible()
@@ -28,7 +29,7 @@ test('native SQLite loads in Electron, reopens saved data and reports corrupt st
     expect(evidence.ledger).toEqual([{ version: 1 }])
     expect(evidence.abi).toBe('149')
     await application.close()
-    application = await _electron.launch({ args: ['.'], chromiumSandbox: true, env })
+    application = await launchDesktop({ args: ['.'], chromiumSandbox: true, env })
     await application.firstWindow()
     expect(await application.evaluate(({ app }) => {
       const load = process.getBuiltinModule('module').createRequire(`${app.getAppPath()}/package.json`)
@@ -39,7 +40,7 @@ test('native SQLite loads in Electron, reopens saved data and reports corrupt st
     await application.close()
     const corrupt = Buffer.from('synthetic corrupt database with <script>not executable</script>')
     writeFileSync(location, corrupt)
-    application = await _electron.launch({ args: ['.'], chromiumSandbox: true, env })
+    application = await launchDesktop({ args: ['.'], chromiumSandbox: true, env })
     const recovery = await application.firstWindow()
     await expect(recovery.getByRole('heading', { name: 'Database unavailable' })).toBeVisible()
     await expect(recovery.getByRole('alert')).toContainText('Database location:')

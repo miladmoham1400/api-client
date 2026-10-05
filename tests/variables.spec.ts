@@ -1,13 +1,14 @@
+import { launchDesktop } from './fixtures/desktop'
 import { shutdown } from './fixtures/shutdown'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { _electron, expect, test } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
 test('two-workspace environments and variables preserve scope, masking, selection and restart state', async () => {
   const directory = mkdtempSync(join(tmpdir(), 'api-client-variable-ui-'))
   const env = { ...Object.fromEntries(Object.entries(process.env).filter((entry): entry is [string, string] => entry[1] !== undefined && !['ELECTRON_RUN_AS_NODE', 'ELECTRON_RENDERER_URL'].includes(entry[0]))), XDG_CONFIG_HOME: directory, APPDATA: directory }
-  let application = await _electron.launch({ args: ['.'], chromiumSandbox: true, env })
+  let application = await launchDesktop({ args: ['.'], chromiumSandbox: true, env })
   try {
     let page = await application.firstWindow()
     async function workspace(name: string) {
@@ -64,7 +65,7 @@ test('two-workspace environments and variables preserve scope, masking, selectio
     await expect(page.getByLabel('Environment', { exact: true })).toHaveValue(/.+/)
     const selected = await page.getByLabel('Environment', { exact: true }).inputValue()
     await application.close()
-    application = await _electron.launch({ args: ['.'], chromiumSandbox: true, env })
+    application = await launchDesktop({ args: ['.'], chromiumSandbox: true, env })
     page = await application.firstWindow()
     await expect(page.getByLabel('Workspace', { exact: true })).toHaveValue(a)
     await expect(page.getByLabel('Environment', { exact: true })).toHaveValue(selected)

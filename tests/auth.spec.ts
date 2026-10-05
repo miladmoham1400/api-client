@@ -1,13 +1,14 @@
+import { launchDesktop } from './fixtures/desktop'
 import { shutdown } from './fixtures/shutdown'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { _electron, expect, test } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
 test('auth editing saves literal handles, templates, replacements and missing session state without enabling Send', async () => {
   const directory = mkdtempSync(join(tmpdir(), 'api-client-auth-ui-'))
   const env = { ...Object.fromEntries(Object.entries(process.env).filter((entry): entry is [string, string] => entry[1] !== undefined && !['ELECTRON_RUN_AS_NODE', 'ELECTRON_RENDERER_URL'].includes(entry[0]))), XDG_CONFIG_HOME: directory, APPDATA: directory }
-  let application = await _electron.launch({ args: ['.'], chromiumSandbox: true, env })
+  let application = await launchDesktop({ args: ['.'], chromiumSandbox: true, env })
   try {
     let page = await application.firstWindow()
     await page.getByRole('button', { name: 'Create Workspace', exact: true }).click()
@@ -35,7 +36,7 @@ test('auth editing saves literal handles, templates, replacements and missing se
     await page.keyboard.press('Control+s')
     await expect(page.getByRole('status').filter({ hasText: /^Saved$/ })).toBeVisible()
     await application.close()
-    application = await _electron.launch({ args: ['.'], chromiumSandbox: true, env })
+    application = await launchDesktop({ args: ['.'], chromiumSandbox: true, env })
     page = await application.firstWindow()
     await page.getByRole('tab', { name: 'Auth', exact: true }).click()
     await expect(page.getByLabel('Auth mode', { exact: true })).toHaveValue('basic')

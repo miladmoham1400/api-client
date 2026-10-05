@@ -1,8 +1,9 @@
+import { launchDesktop } from './fixtures/desktop'
 import { shutdown } from './fixtures/shutdown'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { _electron, expect, test } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import { startFixture } from './fixtures/http'
 
 test('Send/Cancel and Ctrl+Enter execute unsaved snapshots, release busy state and never save implicitly', async () => {
@@ -10,7 +11,7 @@ test('Send/Cancel and Ctrl+Enter execute unsaved snapshots, release busy state a
   fixture.server.on('request', request => urls.push(request.url ?? ''))
   const directory = mkdtempSync(join(tmpdir(), 'api-client-cancel-ui-'))
   const env = { ...Object.fromEntries(Object.entries(process.env).filter((entry): entry is [string, string] => entry[1] !== undefined && !['ELECTRON_RUN_AS_NODE', 'ELECTRON_RENDERER_URL'].includes(entry[0]))), XDG_CONFIG_HOME: directory, APPDATA: directory }
-  const application = await _electron.launch({ args: ['.'], chromiumSandbox: true, env })
+  const application = await launchDesktop({ args: ['.'], chromiumSandbox: true, env })
   try {
     const page = await application.firstWindow(), browserRequests: string[] = []
     page.on('request', request => { if (/^https?:/.test(request.url())) browserRequests.push(request.url()) })

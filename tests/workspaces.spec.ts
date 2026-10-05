@@ -1,13 +1,14 @@
+import { launchDesktop } from './fixtures/desktop'
 import { shutdown } from './fixtures/shutdown'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { _electron, expect, test } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
 test('workspace CRUD and selection persist across restart; confirmation and failed writes retain data', async () => {
   const directory = mkdtempSync(join(tmpdir(), 'api-client-workspace-ui-'))
   const env = { ...Object.fromEntries(Object.entries(process.env).filter((entry): entry is [string, string] => entry[1] !== undefined && !['ELECTRON_RUN_AS_NODE', 'ELECTRON_RENDERER_URL'].includes(entry[0]))), XDG_CONFIG_HOME: directory, APPDATA: directory }
-  let application = await _electron.launch({ args: ['.'], chromiumSandbox: true, env })
+  let application = await launchDesktop({ args: ['.'], chromiumSandbox: true, env })
   try {
     let page = await application.firstWindow()
     const sidebar = () => page.getByRole('complementary', { name: 'Collections and requests' })
@@ -72,7 +73,7 @@ test('workspace CRUD and selection persist across restart; confirmation and fail
     await dialog.getByRole('button', { name: 'Cancel', exact: true }).click()
     await expect(sidebar().getByText('Clinic API renamed', { exact: true })).toBeVisible()
     await application.close()
-    application = await _electron.launch({ args: ['.'], chromiumSandbox: true, env })
+    application = await launchDesktop({ args: ['.'], chromiumSandbox: true, env })
     page = await application.firstWindow()
     await expect(page.getByLabel('Workspace', { exact: true })).toHaveValue(a)
     await expect(sidebar().getByText('Clinic API renamed', { exact: true })).toBeVisible()
@@ -95,7 +96,7 @@ test('workspace CRUD and selection persist across restart; confirmation and fail
     await expect(page.locator('[role="dialog"]:visible')).toHaveCount(0)
     await page.screenshot({ path: '/tmp/api-client-workspaces.png' })
     await application.close()
-    application = await _electron.launch({ args: ['.'], chromiumSandbox: true, env })
+    application = await launchDesktop({ args: ['.'], chromiumSandbox: true, env })
     page = await application.firstWindow()
     await expect(page.getByLabel('Workspace', { exact: true })).toHaveValue(b)
     await expect(page.getByLabel('Workspace', { exact: true }).locator('option')).toHaveCount(2)
@@ -103,7 +104,7 @@ test('workspace CRUD and selection persist across restart; confirmation and fail
     await page.getByRole('dialog', { name: 'Delete workspace', exact: true }).getByRole('button', { name: 'Delete permanently', exact: true }).click()
     await expect(page.getByLabel('Workspace', { exact: true })).toHaveValue('')
     await application.close()
-    application = await _electron.launch({ args: ['.'], chromiumSandbox: true, env })
+    application = await launchDesktop({ args: ['.'], chromiumSandbox: true, env })
     page = await application.firstWindow()
     await expect(sidebar().getByText('No workspace selected', { exact: true })).toBeVisible()
     expect(await page.evaluate(() => window.offlineApi.workspaces.list())).toEqual({ ok: true, data: { workspaces: [], selectedWorkspaceId: null } })

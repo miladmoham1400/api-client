@@ -22,7 +22,8 @@
     "rebuild:node": "npm rebuild better-sqlite3",
     "predev": "npm run rebuild:electron",
     "prestart": "npm run rebuild:electron",
-    "test:offline": "npm run rebuild:electron && npm run build && bash scripts/test-offline.sh"
+    "test:offline": "npm run rebuild:electron && npm run build && bash scripts/test-offline.sh",
+    "package:linux": "node scripts/clean-linux.mjs && npm run build && electron-builder --config electron-builder.json --linux AppImage deb --x64 --publish never"
   },
   "dependencies": {
     "@chakra-ui/react": "3.37.0",
@@ -45,11 +46,19 @@
     "@vitejs/plugin-react": "5.2.0",
     "busboy": "1.6.0",
     "electron": "44.5.1",
+    "electron-builder": "26.15.3",
     "electron-vite": "5.0.0",
     "eslint": "10.12.0",
     "typescript": "6.0.3",
     "typescript-eslint": "8.71.0",
     "vite": "7.3.6",
     "vitest": "5.0.3"
-  }
+  },
+  "author": {
+    "name": "Offline API Client contributors",
+    "email": "maintainers@example.invalid"
+  },
+  "homepage": "https://example.invalid/offline-api-client",
+  "license": "UNLICENSED",
+  "desktopName": "offline-api-client"
 }

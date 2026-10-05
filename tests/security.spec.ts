@@ -1,16 +1,17 @@
+import { launchDesktop } from './fixtures/desktop'
 import { shutdown } from './fixtures/shutdown'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { spawn } from 'node:child_process'
-import { _electron, expect, test } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
 test('owned production window exposes only validated APIs and denies browser capabilities', async () => {
   const directory = mkdtempSync(join(tmpdir(), 'api-client-smoke-'))
   const env = Object.fromEntries(Object.entries(process.env).filter((entry): entry is [string, string] => entry[1] !== undefined && entry[0] !== 'ELECTRON_RUN_AS_NODE' && entry[0] !== 'ELECTRON_RENDERER_URL'))
   env.XDG_CONFIG_HOME = directory
   env.APPDATA = directory
-  const application = await _electron.launch({ args: ['.'], chromiumSandbox: true, env })
+  const application = await launchDesktop({ args: ['.'], chromiumSandbox: true, env })
   try {
     const page = await application.firstWindow()
     await expect(page.getByRole('heading', { name: 'No request selected' })).toBeVisible()

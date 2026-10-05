@@ -1,15 +1,16 @@
+import { launchDesktop } from './fixtures/desktop'
 import { shutdown } from './fixtures/shutdown'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { _electron, expect, test } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import { startFixture } from './fixtures/http'
 
 test('form editor sends unsaved ordered snapshots, validates before I/O and reopens saved forms', async () => {
   const fixture = await startFixture(), requests: string[] = [], directory = mkdtempSync(join(tmpdir(), 'api-client-form-ui-'))
   fixture.server.on('request', request => requests.push(request.url ?? ''))
   const env = { ...Object.fromEntries(Object.entries(process.env).filter((entry): entry is [string, string] => entry[1] !== undefined && !['ELECTRON_RUN_AS_NODE', 'ELECTRON_RENDERER_URL'].includes(entry[0]))), XDG_CONFIG_HOME: directory, APPDATA: directory }
-  let application = await _electron.launch({ args: ['.'], chromiumSandbox: true, env })
+  let application = await launchDesktop({ args: ['.'], chromiumSandbox: true, env })
   try {
     let page = await application.firstWindow()
     await page.getByRole('button', { name: 'Create Workspace', exact: true }).click()
@@ -79,7 +80,7 @@ test('form editor sends unsaved ordered snapshots, validates before I/O and reop
     expect(saved).toMatchObject({ ok: true, data: { editor: { body: { kind: 'urlencoded', rows: [{ key: 'empty', value: '' }, { key: '{{key}}', value: '%2F' }, { key: 'same', value: '{{word}}' }, { key: '{{missing}}', value: '{{missing}}', enabled: false }] } } } })
     await page.screenshot({ path: '/tmp/api-client-urlencoded.png', animations: 'disabled' })
     await application.close()
-    application = await _electron.launch({ args: ['.'], chromiumSandbox: true, env })
+    application = await launchDesktop({ args: ['.'], chromiumSandbox: true, env })
     page = await application.firstWindow()
     await page.getByRole('region', { name: 'Request editor', exact: true }).getByRole('tab', { name: 'Body', exact: true }).click()
     await expect(page.getByLabel('Body mode', { exact: true })).toHaveValue('urlencoded')

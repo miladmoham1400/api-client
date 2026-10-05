@@ -1,10 +1,11 @@
+import { launchDesktop } from './fixtures/desktop'
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import { connect } from 'node:net'
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { _electron, expect, test } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import type { RequestDraft } from '../src/shared/requests'
 import { workspaceExportSchema } from '../src/shared/transfer'
 import { startFixture } from './fixtures/http'
@@ -34,13 +35,14 @@ test('loopback-only integrated story: persistence, isolation, failures and safe 
   const captures: string[] = []
   fixture.server.on('request', request => captures.push(request.url ?? ''))
   const env = { ...Object.fromEntries(Object.entries(process.env).filter((entry): entry is [string, string] => entry[1] !== undefined && !['ELECTRON_RUN_AS_NODE', 'ELECTRON_RENDERER_URL'].includes(entry[0]))), XDG_CONFIG_HOME: directory, APPDATA: directory }
-  let app = await _electron.launch({ args: ['.'], chromiumSandbox: true, env }), closedNormally = false
+  let app = await launchDesktop({ args: ['.'], chromiumSandbox: true, env }), closedNormally = false
   const diagnostics: string[] = []
   const observeDiagnostics = () => {
     for (const stream of [app.process().stdout, app.process().stderr]) stream?.on('data', (bytes: Buffer) => diagnostics.push(bytes.toString()))
   }
   observeDiagnostics()
   try {
+    if (process.env.API_CLIENT_EXECUTABLE) expect(await app.evaluate(({ app }) => app.isPackaged)).toBe(true)
     let page = await app.firstWindow()
     const browserRequests: string[] = []
     const observe = () => page.on('request', request => { if (/^https?:/.test(request.url())) browserRequests.push(request.url()) })
@@ -109,7 +111,7 @@ test('loopback-only integrated story: persistence, isolation, failures and safe 
     await page.evaluate(async ({ w, e }) => { await window.offlineApi.workspaces.select(w); await window.offlineApi.environments.select(w, e) }, ids)
     await page.reload()
     await app.close(); closedNormally = true
-    app = await _electron.launch({ args: ['.'], chromiumSandbox: true, env })
+    app = await launchDesktop({ args: ['.'], chromiumSandbox: true, env })
     closedNormally = false; observeDiagnostics()
     page = await app.firstWindow(); observe()
     await expect(page.getByLabel('Request name', { exact: true })).toHaveValue('Echo')

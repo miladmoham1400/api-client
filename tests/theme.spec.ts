@@ -1,7 +1,8 @@
+import { launchDesktop } from './fixtures/desktop'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { _electron, expect, test } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import { startFixture } from './fixtures/http'
 import { shutdown } from './fixtures/shutdown'
 
@@ -10,7 +11,7 @@ test('theme survives restart and failed saves without draft loss; keyboard scope
   const directory=mkdtempSync(join(tmpdir(),'api-client-theme-ui-')), fixture=await startFixture(), urls:string[]=[]
   fixture.server.on('request',r=>urls.push(r.url??''))
   const env={...Object.fromEntries(Object.entries(process.env).filter((e): e is [string,string]=>e[1]!==undefined&&!['ELECTRON_RUN_AS_NODE','ELECTRON_RENDERER_URL'].includes(e[0]))),XDG_CONFIG_HOME:directory,APPDATA:directory}
-  let app=await _electron.launch({args:['.'],chromiumSandbox:true,env})
+  let app=await launchDesktop({args:['.'],chromiumSandbox:true,env})
   try {
     let page=await app.firstWindow()
     await expect(page.getByLabel('Theme',{exact:true})).toBeEnabled()
@@ -82,7 +83,7 @@ test('theme survives restart and failed saves without draft loss; keyboard scope
     await page.getByLabel('Request URL',{exact:true}).focus(); await page.keyboard.press('Control+s'); await expect(page.getByRole('status').filter({hasText:/^Saved$/})).toBeVisible()
     for(const mode of ['light','dark','system'] as const){
       await page.getByLabel('Theme',{exact:true}).selectOption(mode); await expect(page.getByLabel('Theme',{exact:true})).toBeEnabled()
-      await app.close(); app=await _electron.launch({args:['.'],chromiumSandbox:true,env});page=await app.firstWindow()
+      await app.close(); app=await launchDesktop({args:['.'],chromiumSandbox:true,env});page=await app.firstWindow()
       await expect(page.getByLabel('Theme',{exact:true})).toHaveValue(mode); await expect(page.getByLabel('Request name',{exact:true})).toHaveValue('Draft stays mounted')
       await page.emulateMedia({colorScheme:'dark'}); await expect(page.locator('html')).toHaveClass(mode==='light'?'light':'dark')
       if(mode==='system'){await page.emulateMedia({colorScheme:'light'});await expect(page.locator('html')).toHaveClass('light')}

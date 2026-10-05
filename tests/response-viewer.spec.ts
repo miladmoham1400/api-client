@@ -1,9 +1,10 @@
+import { launchDesktop } from './fixtures/desktop'
 import { shutdown } from './fixtures/shutdown'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { ServerResponse } from 'node:http'
-import { _electron, expect, test } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import { startFixture } from './fixtures/http'
 
 test('response viewer safely presents HTTP/error/binary states, snapshots, stale events and restart emptiness', async () => {
@@ -20,7 +21,7 @@ test('response viewer safely presents HTTP/error/binary states, snapshots, stale
   })
   const directory = mkdtempSync(join(tmpdir(), 'api-client-response-ui-'))
   const env = { ...Object.fromEntries(Object.entries(process.env).filter((entry): entry is [string, string] => entry[1] !== undefined && !['ELECTRON_RUN_AS_NODE', 'ELECTRON_RENDERER_URL'].includes(entry[0]))), XDG_CONFIG_HOME: directory, APPDATA: directory }
-  let application = await _electron.launch({ args: ['.'], chromiumSandbox: true, env })
+  let application = await launchDesktop({ args: ['.'], chromiumSandbox: true, env })
   try {
     const page = await application.firstWindow(), rendererRequests: string[] = []
     page.on('request', request => { if (/^https?:/.test(request.url())) rendererRequests.push(request.url()) })
@@ -111,7 +112,7 @@ test('response viewer safely presents HTTP/error/binary states, snapshots, stale
     await page.getByRole('button', { name: 'Save', exact: true }).click()
     await expect(page.getByRole('status').filter({ hasText: /^Saved$/ })).toBeVisible()
     await application.close()
-    application = await _electron.launch({ args: ['.'], chromiumSandbox: true, env })
+    application = await launchDesktop({ args: ['.'], chromiumSandbox: true, env })
     const restarted = await application.firstWindow()
     await expect(restarted.getByRole('region', { name: 'Response', exact: true })).toContainText('No response yet.')
     await expect(restarted.getByLabel('Response body text')).toHaveCount(0)

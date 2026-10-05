@@ -1,10 +1,11 @@
+import { launchDesktop } from './fixtures/desktop'
 import { shutdown } from './fixtures/shutdown'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { promisify } from 'node:util'
 import { execFile } from 'node:child_process'
-import { _electron, expect, test } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import { startMultipartFixture } from './fixtures/multipart'
 
 const execute = promisify(execFile)
@@ -13,7 +14,7 @@ test('multipart editor selects native files, sends unsaved rows, preserves selec
   const fixture = await startMultipartFixture(), directory = mkdtempSync(join(tmpdir(), 'multipart-native-'))
   const path = join(directory, 'fixture.bin'), bytes = Buffer.from([0, 255, 1, 13, 10, 128]); writeFileSync(path, bytes)
   const env = { ...Object.fromEntries(Object.entries(process.env).filter((entry): entry is [string, string] => entry[1] !== undefined && !['ELECTRON_RUN_AS_NODE', 'ELECTRON_RENDERER_URL'].includes(entry[0]))), XDG_CONFIG_HOME: directory, APPDATA: directory }
-  let application = await _electron.launch({ args: ['.'], chromiumSandbox: true, env })
+  let application = await launchDesktop({ args: ['.'], chromiumSandbox: true, env })
   try {
     let page = await application.firstWindow()
     await page.getByRole('button', { name: 'Create Workspace', exact: true }).click()
@@ -61,7 +62,7 @@ test('multipart editor selects native files, sends unsaved rows, preserves selec
     await expect(page.getByRole('button', { name: 'Choose multipart 2 file', exact: true })).toHaveText('Replace file')
     await page.keyboard.press('Control+s'); await expect(editor.getByText('Saved', { exact: true })).toBeVisible()
     await send(); expect(fixture.captures).toHaveLength(4) // Save kept the live selection but stored no handle.
-    await application.close(); application = await _electron.launch({ args: ['.'], chromiumSandbox: true, env }); page = await application.firstWindow()
+    await application.close(); application = await launchDesktop({ args: ['.'], chromiumSandbox: true, env }); page = await application.firstWindow()
     editor = page.getByRole('region', { name: 'Request editor', exact: true })
     await expect(page.getByLabel('Request name', { exact: true })).toHaveValue('Multipart')
     await editor.getByRole('tab', { name: 'Body', exact: true }).click()

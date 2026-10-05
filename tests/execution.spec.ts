@@ -1,15 +1,16 @@
+import { launchDesktop } from './fixtures/desktop'
 import { shutdown } from './fixtures/shutdown'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { _electron, expect, test } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import type { RequestDraft } from '../src/shared/requests'
 import { startFixture } from './fixtures/http'
 
 test('sandboxed preload sends captured native requests, receives immediate completion and cleans up execution lifetimes', async () => {
   const fixture = await startFixture(), tls = await startFixture(true), directory = mkdtempSync(join(tmpdir(), 'api-client-send-'))
   const env = { ...Object.fromEntries(Object.entries(process.env).filter((entry): entry is [string, string] => entry[1] !== undefined && !['ELECTRON_RUN_AS_NODE', 'ELECTRON_RENDERER_URL'].includes(entry[0]))), XDG_CONFIG_HOME: directory, APPDATA: directory }
-  const application = await _electron.launch({ args: ['.'], chromiumSandbox: true, env })
+  const application = await launchDesktop({ args: ['.'], chromiumSandbox: true, env })
   let closed = false
   try {
     const page = await application.firstWindow(), rendererRemoteRequests: string[] = []

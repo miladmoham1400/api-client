@@ -23,3 +23,30 @@ Installer/uninstaller must not silently delete user workspaces. Preserve local u
 - `docs/known-limitations.md`: actual remaining issues and deferred features.
 
 Do not mark phase 1 release-ready if either platform required checks are not run or fail. Coding completion and release verification are different states.
+
+## Linux packaging implementation (TASK-028)
+
+`electron-builder.json` configures unsigned x64 AppImage/deb with ASAR, explicit better-sqlite3 unpacking and builder-managed sequential native rebuild. `npm run package:linux` removes only generated `out/` and `dist/linux/`, builds and packages with `--publish never`. No runtime updater is added. Application identity remains `offline-api-client`, preserving its existing default userData directory. Required package homepage/maintainer fields use reserved `.invalid` internal placeholders; replace them with real project metadata before public distribution. The current package uses the default Electron icon.
+
+Clean verification on Ubuntu 24.04 x64:
+
+```text
+npm ci
+npm run lint
+npm run test:unit
+npm run package:linux
+sha256sum dist/linux/*.AppImage dist/linux/*.deb
+```
+
+Initial npm/Electron/builder downloads require internet or prepared caches. Packaged users need no developer Node/npm. Native rebuilds must run sequentially; packaging restores the Electron binding after developer-Node unit tests. Linux desktop libraries and a working Electron sandbox are required. The generated deb declares GTK, notify, NSS, XSS, Xtst, xdg-utils, AT-SPI, UUID and libsecret dependencies; Ubuntu's t64 replacements may satisfy the legacy virtual package names. AppImage additionally needs working FUSE for its default mount mode, or the documented runtime extraction mode `APPIMAGE_EXTRACT_AND_RUN=1`. This environment has no `/dev/fuse`, so default FUSE launch is not verified. Do not use a sandbox-disable flag.
+
+For test-only package selection, set `API_CLIENT_EXECUTABLE` to an absolute packaged executable/AppImage path and run `bash scripts/test-offline.sh`. For AppImage extraction-run also set `APPIMAGE_EXTRACT_AND_RUN=1`. The tests launch that executable with Chromium sandboxing, not the development Electron path; the integrated story asserts `app.isPackaged`. Run package suites sequentially because native chooser/keyboard automation shares the desktop. Temporary extraction of deb content is useful payload evidence but does not count as installation.
+
+Administrative installation verification procedure: install the exact hashed deb with the OS package manager, launch `/opt/offline-api-client/offline-api-client` as a regular user, rerun the isolated full desktop suite and verify saved configuration after normal close/reopen. Then remove the application package and verify the same synthetic userData database remains; reinstall/reopen to verify it is usable. Removing this application must preserve `~/.config/offline-api-client/` (or `$XDG_CONFIG_HOME/offline-api-client/`). Never run installer/uninstaller verification against real user workspaces. Generated removal hooks manage application links/AppArmor only; inspecting them is not evidence that an actual uninstall was performed.
+
+Current actual artifacts, hashes, checks and installation blockers are recorded in [TASK-028 report](task-reports/TASK-028.md). No Windows or phase-1 release-readiness claim follows from Linux payload checks.
+
+
+The dedicated preservation check is separate from ordinary desktop smoke. Create a new `/tmp/api-client-task028-preservation-<alphanumeric suffix>` directory; set `API_CLIENT_PRESERVATION_DIR` to it, `API_CLIENT_EXECUTABLE=/opt/offline-api-client/offline-api-client`, and `API_CLIENT_PRESERVATION_PHASE=seed`, then run `bash scripts/test-offline.sh --config playwright.linux-preservation.config.ts`. After the seed closes normally, remove only the installed app package through the system package manager; verify the recorded database SHA-256 still matches. Reinstall the same hashed deb, set phase to `verify` and run the same check. It checks exact bytes before startup and logical saved workspace/request/environment/variable/theme after reopening. Authentication belongs in the OS prompt; never pass a password through commands, reports or chat. Keep these steps sequential and use only synthetic userData. Remove the temporary test directory after verification, never real user data.
+
+TASK-028 has now verified actual deb install, installed offline suite, package removal and reinstall/reopen with identical synthetic userData. The application remains installed on the tested host; default AppImage FUSE mount mode and all Windows checks remain unverified. See the task report for exact evidence.

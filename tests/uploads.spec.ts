@@ -1,3 +1,4 @@
+import { launchDesktop } from './fixtures/desktop'
 import { shutdown } from './fixtures/shutdown'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -6,7 +7,7 @@ import { promisify } from 'node:util'
 import { execFile } from 'node:child_process'
 import { uploadResultSchema } from '../src/shared/files'
 import { randomUUID } from 'node:crypto'
-import { _electron, expect, test } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
 const execute = promisify(execFile)
 test('Linux native selection/cancel, workspace isolation, reload and restart require reselection', async () => {
@@ -15,7 +16,7 @@ test('Linux native selection/cancel, workspace isolation, reload and restart req
   const path = join(directory, 'fixture.txt'); writeFileSync(path, 'native upload fixture')
   const env = Object.fromEntries(Object.entries(process.env).filter((entry): entry is [string, string] => entry[1] !== undefined && entry[0] !== 'ELECTRON_RUN_AS_NODE' && entry[0] !== 'ELECTRON_RENDERER_URL'))
   env.XDG_CONFIG_HOME = directory; env.APPDATA = directory
-  let application = await _electron.launch({ args: ['.'], chromiumSandbox: true, env })
+  let application = await launchDesktop({ args: ['.'], chromiumSandbox: true, env })
   try {
     let page = await application.firstWindow()
     await expect(page.getByRole('heading', { name: 'No request selected' })).toBeVisible()
@@ -47,7 +48,7 @@ test('Linux native selection/cancel, workspace isolation, reload and restart req
     expect(await page.evaluate(([w, id]) => window.offlineApi.files.releaseUpload(w!, id!), [workspace, fileId])).toMatchObject({ ok: false, error: { code: 'FILE_REQUIRED' } })
     const restartId = await select()
     await application.close()
-    application = await _electron.launch({ args: ['.'], chromiumSandbox: true, env })
+    application = await launchDesktop({ args: ['.'], chromiumSandbox: true, env })
     page = await application.firstWindow()
     await expect(page.getByRole('heading', { name: 'No request selected' })).toBeVisible()
     expect(await page.evaluate(([w, id]) => window.offlineApi.files.releaseUpload(w!, id!), [workspace, restartId])).toMatchObject({ ok: false, error: { code: 'FILE_REQUIRED' } })

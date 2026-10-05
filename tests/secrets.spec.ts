@@ -1,13 +1,14 @@
+import { launchDesktop } from './fixtures/desktop'
 import { shutdown } from './fixtures/shutdown'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { test, expect, _electron } from '@playwright/test'
+import { test, expect } from '@playwright/test'
 
 test('real Electron reports safeStorage capability without exposing synthetic values', async () => {
   const directory = mkdtempSync(join(tmpdir(), 'api-client-secret-capability-'))
   const env = { ...Object.fromEntries(Object.entries(process.env).filter((entry): entry is [string, string] => entry[1] !== undefined && entry[0] !== 'ELECTRON_RUN_AS_NODE')), XDG_CONFIG_HOME: directory, APPDATA: directory }
-  const application = await _electron.launch({ args: ['.'], chromiumSandbox: true, env })
+  const application = await launchDesktop({ args: ['.'], chromiumSandbox: true, env })
   try {
     const page = await application.firstWindow()
     await expect(page.getByRole('heading', { name: 'No request selected' })).toBeVisible()

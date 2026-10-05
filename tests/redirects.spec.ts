@@ -1,9 +1,10 @@
+import { launchDesktop } from './fixtures/desktop'
 import { shutdown } from './fixtures/shutdown'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { randomUUID } from 'node:crypto'
-import { _electron, expect, test } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import type { RequestDraft } from '../src/shared/requests'
 import { startRedirectFixture } from './fixtures/redirects'
 
@@ -12,7 +13,7 @@ test('sandboxed Electron follows redirects, strips credentials permanently and r
   const directory = mkdtempSync(join(tmpdir(), 'api-client-redirects-'))
   // Test process trusts only our public fixture certificate in addition to normal roots; no TLS bypass.
   const env = { ...Object.fromEntries(Object.entries(process.env).filter((entry): entry is [string, string] => entry[1] !== undefined && !['ELECTRON_RUN_AS_NODE', 'ELECTRON_RENDERER_URL'].includes(entry[0]))), XDG_CONFIG_HOME: directory, APPDATA: directory, NODE_EXTRA_CA_CERTS: join(process.cwd(), 'tests/fixtures/tls-test-only.crt') }
-  const application = await _electron.launch({ args: ['.'], chromiumSandbox: true, env })
+  const application = await launchDesktop({ args: ['.'], chromiumSandbox: true, env })
   try {
     const page = await application.firstWindow()
     const workspace = await page.evaluate(async () => {
