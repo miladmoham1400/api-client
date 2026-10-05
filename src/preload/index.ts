@@ -1,3 +1,4 @@
+import { THEME_CHANNELS, themeGetInput, themeSetInput, themeResultSchema, type ThemePreference } from '../shared/theme'
 import { IMPORT_CHANNELS, importChooseInput, importTokenInput, importChooseResult, importCreatedResult, importCancelResult } from '../shared/import'
 import { EXPORT_CHANNEL, exportInputSchema, exportResultSchema } from '../shared/export'
 import { CLOSE_CHANNELS, closeRequestedSchema, closeDecisionInput, closeDecisionResult } from '../shared/close'
@@ -52,6 +53,12 @@ async function importCall<I extends z.ZodType<unknown[]>, O extends z.ZodType>(c
   if (!input.success) return output.parse({ ok: false, error: validationError(input.error, true) })
   try { return output.parse(await ipcRenderer.invoke(channel, ...input.data)) }
   catch { return output.parse({ ok: false, error: { code: 'INVALID_IMPORT', message: 'Import unavailable', retryable: false } }) }
+}
+async function themeCall(channel: (typeof THEME_CHANNELS)[keyof typeof THEME_CHANNELS], args: unknown[]) {
+  const input = (channel === THEME_CHANNELS.get ? themeGetInput : themeSetInput).safeParse(args)
+  if (!input.success) return { ok: false as const, error: validationError(input.error, true) }
+  try { return themeResultSchema.parse(await ipcRenderer.invoke(channel, ...input.data)) }
+  catch { return { ok: false as const, error: { code: 'VALIDATION' as const, message: 'Theme preference unavailable', retryable: true } } }
 }
 const api: DesktopApi = Object.freeze({
   transfer: Object.freeze({
@@ -114,6 +121,8 @@ const api: DesktopApi = Object.freeze({
     select: (id: string | null) => workspaceCall(WORKSPACE_CHANNELS.select, workspaceInputs.select, [id])
   }),
   app: Object.freeze({
+    getTheme: () => themeCall(THEME_CHANNELS.get, []),
+    setTheme: (theme: ThemePreference) => themeCall(THEME_CHANNELS.set, [theme]),
     onCloseRequested: (callback: Parameters<DesktopApi['app']['onCloseRequested']>[0]) => subscribeValidated(closeRequestedSchema, listener => { ipcRenderer.on(CLOSE_CHANNELS.requested, listener) }, listener => { ipcRenderer.removeListener(CLOSE_CHANNELS.requested, listener) }, callback),
     requestCloseDecision: async (token: string, decision: 'close' | 'cancel') => {
       const parsed = closeDecisionInput.safeParse([token, decision])

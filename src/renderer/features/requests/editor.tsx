@@ -8,6 +8,7 @@ import { RowsEditor, SettingsEditor } from './fields'
 import type { RequestController } from './controller'
 
 export function RequestEditor({ controller: c, guard }: { controller: RequestController; guard: GuardTransition }) {
+  const editor = useRef<HTMLDivElement>(null)
   const [deleting, setDeleting] = useState(false)
   const deletionVersion = useRef(0)
   const currentDeleting = useRef(deleting)
@@ -15,14 +16,14 @@ export function RequestEditor({ controller: c, guard }: { controller: RequestCon
   const cancel = useRef<HTMLButtonElement>(null), remove = useRef<HTMLButtonElement>(null)
   useEffect(() => {
     const shortcut = (event: KeyboardEvent) => {
-      if (event.ctrlKey && event.key === 'Enter' && !event.isComposing && !document.querySelector('[role="dialog"][data-state="open"]')) {
+      if (event.ctrlKey && event.key === 'Enter' && editor.current?.contains(document.activeElement) && !event.isComposing && !document.querySelector('[role="dialog"][data-state="open"]')) {
         event.preventDefault(); if (c.canSend && !c.busy) void c.send()
       }
     }
     window.addEventListener('keydown', shortcut)
     return () => window.removeEventListener('keydown', shortcut)
   }, [c.canSend, c.busy, c.send])
-  return <Box as="section" aria-label="Request editor" flex="1" minH="220px" overflow="auto">
+  return <Box ref={editor} as="section" aria-label="Request editor" tabIndex={0} flex="1" minH="220px" overflow="auto">
     <Flex gap="2" align="center" mb="3" flexWrap="wrap">
       <Heading size="md">{c.draft ? 'Request editor' : 'No request selected'}</Heading>
       <Text role="status" fontSize="sm">{c.busy ? 'Loading or saving…' : c.draft ? c.dirty ? 'Unsaved changes' : 'Saved' : 'Select or create a request'}</Text>
@@ -32,7 +33,7 @@ export function RequestEditor({ controller: c, guard }: { controller: RequestCon
       <Button ref={remove} size="sm" variant="outline" disabled={!c.saved || c.busy} onClick={() => { deletionVersion.current++; setDeleting(true) }}>Delete request</Button>
     </Flex>
     {c.error && <Text role="alert" mb="3">{c.error}</Text>}
-    {c.draft && <Box mb="3"><label htmlFor="request-name">Request name</label><Input id="request-name" value={c.draft.name} aria-invalid={!!c.validation.name} aria-describedby={c.validation.name ? "request-name-error" : undefined} disabled={c.busy} onChange={event => { if (c.draft) c.setDraft({ ...c.draft, name: event.target.value }) }} />{c.validation.name && <Text id="request-name-error" role="alert" color="fg.error">name: {c.validation.name}</Text>}</Box>}
+    {c.draft && <Box mb="3"><label htmlFor="request-name">Request name</label><Input id="request-name" value={c.draft.name} aria-invalid={!!c.validation.name} aria-describedby={c.validation.name ? "request-name-error" : undefined} disabled={c.busy} onChange={event => { if (c.draft) c.setDraft({ ...c.draft, name: event.target.value }) }} />{c.validation.name && <Text id="request-name-error" role="alert" color="red.fg">name: {c.validation.name}</Text>}</Box>}
     <Flex gap="2" mb="3">
       <NativeSelect.Root width="110px" flexShrink="0" disabled={!c.draft || c.busy}><NativeSelect.Field aria-label="HTTP method" value={c.draft?.method ?? ''} onChange={event => { if (c.draft) c.setDraft({ ...c.draft, method: httpMethodSchema.parse(event.target.value) }) }}>
         {!c.draft && <option value="">Method</option>}{httpMethodSchema.options.map(method => <option key={method} value={method}>{method}</option>)}
@@ -42,7 +43,7 @@ export function RequestEditor({ controller: c, guard }: { controller: RequestCon
     </Flex>
     {c.executionStatus && <Text role="status" mb="3">{c.executionStatus}</Text>}
     {c.executionError && <Text role="alert" mb="3">{c.executionError}</Text>}
-    {c.validation.urlTemplate && <Text id="request-url-error" role="alert" color="fg.error">urlTemplate: {c.validation.urlTemplate}</Text>}
+    {c.validation.urlTemplate && <Text id="request-url-error" role="alert" color="red.fg">urlTemplate: {c.validation.urlTemplate}</Text>}
     {c.dirty && <Text fontSize="sm" mb="3">Navigation asks whether to save or discard edits. Nothing is saved automatically.</Text>}
     <Tabs.Root defaultValue="params" size="sm"><Tabs.List aria-label="Request fields">{['Params', 'Headers', 'Body', 'Auth', 'Settings'].map(name => <Tabs.Trigger key={name} value={name.toLowerCase()}>{name}</Tabs.Trigger>)}</Tabs.List>
       <Tabs.Content value="params"><RowsEditor controller={c} group="queryRows" /></Tabs.Content>

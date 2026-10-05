@@ -1,12 +1,31 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Box, Button, Flex, Heading, Tabs, Text } from '@chakra-ui/react'
 import type { RequestController } from '../requests/controller'
 import { prettyJson, type PrettyResult } from './format'
 
 export function ResponseViewer({ controller: c }: { controller: RequestController }) {
+  const panel = useRef<HTMLDivElement>(null)
+  const [height, setHeight] = useState(260)
+  useEffect(() => {
+    const element = panel.current
+    if (!element) return
+    const observer = new ResizeObserver(entries => {
+      const size = entries[0]?.borderBoxSize[0]?.blockSize
+      if (size) setHeight(Math.round(size))
+    })
+    observer.observe(element)
+    return () => observer.disconnect()
+  }, [])
+  function resize(delta: number) {
+    const element = panel.current
+    if (!element) return
+    const next = Math.max(180, Math.min(420, Math.round(element.getBoundingClientRect().height) + delta))
+    element.style.height = `${next}px`
+    setHeight(next)
+  }
   const result = c.executionResult
-  return <Box as="section" aria-label="Response" borderWidth="1px" borderRadius="md" p="4" h="260px" minH="180px" maxH="60vh" flexShrink="0" overflow="auto" resize="vertical">
-    <Heading size="sm" mb="2">Response</Heading>
+  return <Box ref={panel} as="section" aria-label="Response" tabIndex={0} borderWidth="1px" borderRadius="md" p="4" h={`${height}px`} minH="180px" maxH="60vh" flexShrink="0" overflow="auto" resize="vertical">
+    <Flex gap="2" align="center" flexWrap="wrap" mb="2"><Heading size="sm">Response</Heading><Button size="xs" variant="outline" aria-label="Decrease response panel height" disabled={height <= 180} onClick={() => resize(-40)}>Smaller</Button><Button size="xs" variant="outline" aria-label="Increase response panel height" disabled={height >= 420} onClick={() => resize(40)}>Larger</Button></Flex>
     {c.sentSnapshot && <Box fontSize="sm" overflowWrap="anywhere" mb="2">
       <Text>Sent snapshot: {c.sentSnapshot.name} · {c.sentSnapshot.method} {c.sentSnapshot.urlTemplate}</Text>
       <Text>Environment at send: {c.sentSnapshot.environment}</Text>

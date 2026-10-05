@@ -1,3 +1,5 @@
+import { THEME_CHANNELS } from '../shared/theme'
+import { createThemeHandlers } from './ipc/theme'
 import { IMPORT_CHANNELS } from '../shared/import'
 import { WorkspaceImportService } from './services/workspace-import'
 import { createImportHandlers } from './ipc/import'
@@ -115,6 +117,9 @@ else {
       try { contents.send(EXECUTION_CHANNELS.completed, completion) }
       catch { /* A disappearing renderer cannot undo completion or committed deletion. */ }
     }) : null
+    const themeHandlers = createThemeHandlers(() => ownedWindow, trustedUrl, () => database ? new Repositories(database) : null)
+    ipcMain.handle(THEME_CHANNELS.get, themeHandlers.get)
+    ipcMain.handle(THEME_CHANNELS.set, themeHandlers.set)
     const importService = database ? new WorkspaceImportService(new Repositories(database)) : null
     const importHandlers = createImportHandlers(() => ownedWindow, trustedUrl, () => importService, async () => {
       const result = await dialog.showOpenDialog(window, { title: 'Import workspace JSON', filters: [{ name: 'Workspace JSON', extensions: ['json'] }], properties: ['openFile', 'dontAddToRecent'] })
@@ -182,6 +187,7 @@ else {
     const requestHandlers = createRequestHandlers(() => ownedWindow, trustedUrl, () => requestService)
     for (const method of ['newRow', 'list', 'get', 'create', 'save', 'duplicate', 'delete'] as const) ipcMain.handle(REQUEST_CHANNELS[method], requestHandlers[method])
     window.on('closed', () => {
+      for (const channel of Object.values(THEME_CHANNELS)) ipcMain.removeHandler(channel)
       importService?.clear()
       for (const channel of Object.values(IMPORT_CHANNELS)) ipcMain.removeHandler(channel)
       ipcMain.removeHandler(EXPORT_CHANNEL)

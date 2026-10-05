@@ -2,3 +2,6 @@ html, body, #root { height: 100%; margin: 0; }
 body { overflow: hidden; }
 /* Keep keyboard focus unmistakable in both system appearances. */
 :focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+
+/* Leave room between explicit labels and focus rings on editing fields. */
+label[for] { display: block; margin-bottom: 0.25rem; }

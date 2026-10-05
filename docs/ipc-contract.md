@@ -9,7 +9,7 @@ Runtime-validate incoming payloads and outgoing shared DTOs. Do not return stack
 
 | Group | Methods |
 |---|---|
-| app | getBootstrap(), onCloseRequested(callback), requestCloseDecision(token,decision); setTheme(theme) reserved for TASK-026 |
+| app | getBootstrap(), getTheme(), setTheme(light/dark/system), onCloseRequested(callback), requestCloseDecision(token,decision) |
 | workspaces | list(), create(name), rename(id,name), delete(id), select(id) |
 | collections | list(workspaceId), create(workspaceId,name), rename(workspaceId,id,name), delete(workspaceId,id) |
 | environments | list(workspaceId), create(workspaceId,name), rename(workspaceId,id,name), delete(workspaceId,id), select(workspaceId,idOrNull) |
@@ -43,6 +43,9 @@ Normal window close and app quit are intercepted in main after startup subscript
 `transfer.chooseImport` accepts no path or content from renderer. Main opens an owned single-file native dialog, reads at most 10 MiB, decodes strict UTF-8 and validates format v1, limits, IDs, relationships and omissions before retaining one parsed preview. The renderer receives only a random token, workspace/collection/environment names, entity counts and omission counts. Choosing another file invalidates the prior token. Confirmation imports exactly the validated preview, without re-reading a changed file; a new choice requires new validation/preview. Success consumes the token; `cancelImport` consumes it without writes. Reload/crash/window close invalidate pending previews and in-flight selections. Unknown/stale tokens share a sanitized expired-preview error.
 
 `transfer.importWorkspace` accepts only the preview UUID and creates a new workspace in one transaction, regenerating entity/row/secret IDs and remapping owned collection/environment references. Sensitive values and omitted literal credentials become unresolved session records; files have metadata without capabilities. The new name ends in ` (imported)` within 100 Unicode characters; identical names remain allowed. New state is None/no selected request. Current app selection, existing workspaces, drafts and responses stay intact; the UI refreshes the workspace list without navigating. Import never executes a request. Write failure rolls back all descendants and retains the preview for retry.
+
+
+`app.getTheme` takes no arguments and returns `light`, `dark` or `system`, defaulting to System when no local setting exists. `app.setTheme` accepts only that enum and transactionally persists the preference in SQLite app_settings; invalid/foreign input cannot change it. Both use the owned main-frame guard. The renderer applies bundled Chakra v3 light/dark classes and semantic colors, observing the system media query only for effective System appearance. Successful changes update appearance without remounting the editor; failures keep the prior appearance/draft and show a sanitized retry message. Theme selection never navigates, saves a request or sends one.
 
 ## Domain errors
 

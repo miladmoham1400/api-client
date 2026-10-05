@@ -100,7 +100,7 @@ export function CollectionSidebar({ workspaceId, requestController, guard }: { g
             <Dialog.Description mb="3">Names are trimmed and may contain 1–100 characters. Duplicate names are allowed.</Dialog.Description>
             <label htmlFor="collection-name">Collection name</label>
             <Input ref={input} id="collection-name" value={name} disabled={busy} aria-invalid={fieldError !== null} aria-describedby={fieldError ? 'collection-name-error' : undefined} onChange={event => { setName(event.target.value); setFieldError(null) }} onKeyDown={event => { if (event.key === 'Enter' && !event.nativeEvent.isComposing) { event.preventDefault(); void submit() } }} />
-            {fieldError && <Text id="collection-name-error" role="alert" color="fg.error">{fieldError}</Text>}
+            {fieldError && <Text id="collection-name-error" role="alert" color="red.fg">{fieldError}</Text>}
           </>}
           {error && <Text role="alert" mt="3">{error}</Text>}
         </Dialog.Body>

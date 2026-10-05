@@ -6,7 +6,7 @@ export function MultipartEditor({ controller: c }: { controller: RequestControll
   const body = c.draft?.body
   if (body?.kind !== 'multipart') return null
   const rows = body.rows
-  const error = (path: string) => c.validation[path] || c.executionField === path ? <Text id={`${path}-error`} role="alert" color="fg.error">{c.validation[path] ?? c.executionError}</Text> : null
+  const error = (path: string) => c.validation[path] || c.executionField === path ? <Text id={`${path}-error`} role="alert" color="red.fg">{c.validation[path] ?? c.executionError}</Text> : null
   return <VStack align="stretch" gap="3">
     <Text fontSize="sm">Enabled fields retain order and duplicate keys. Keys and text values resolve variables at send time. Content-Type and boundary are generated automatically; remove an explicit Content-Type header.</Text>
     <Text fontSize="sm">Files: 20 MiB each, 50 MiB total; complete payload: 55 MiB. Saved files require selection again after reopening. Maximum 200 rows.</Text>

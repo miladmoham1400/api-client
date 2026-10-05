@@ -79,7 +79,7 @@ export function WorkspaceControls({ controller, placement, guard, locked = false
             <Dialog.Description mb="3">Names are trimmed and may contain 1–100 characters. Duplicate names are allowed.</Dialog.Description>
             <label htmlFor={`workspace-name-${placement}`}>Workspace name</label>
             <Input ref={input} id={`workspace-name-${placement}`} value={name} disabled={busy} aria-invalid={fieldError !== null} aria-describedby={fieldError ? `workspace-name-error-${placement}` : undefined} onChange={event => { setName(event.target.value); setFieldError(null) }} onKeyDown={event => { if (event.key === 'Enter' && !event.nativeEvent.isComposing) { event.preventDefault(); void submit() } }} />
-            {fieldError && <Text id={`workspace-name-error-${placement}`} role="alert" color="fg.error">{fieldError}</Text>}
+            {fieldError && <Text id={`workspace-name-error-${placement}`} role="alert" color="red.fg">{fieldError}</Text>}
           </>}
           {error && <Text role="alert" mt="3">{error}</Text>}
         </Dialog.Body>

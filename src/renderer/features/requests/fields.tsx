@@ -5,7 +5,7 @@ import type { RequestController } from './controller'
 
 export function RowsEditor({ controller: c, group }: { controller: RequestController; group: RowGroup }) {
   const label = group === 'queryRows' ? 'Param' : group === 'body.rows' ? 'Form' : 'Header', rows = getRows(c.draft, group)
-  function error(path: string) { return c.validation[path] ? <Text id={`${path}-error`} role="alert" fontSize="sm" color="fg.error">{path}: {c.validation[path]}</Text> : null }
+  function error(path: string) { return c.validation[path] ? <Text id={`${path}-error`} role="alert" fontSize="sm" color="red.fg">{path}: {c.validation[path]}</Text> : null }
   return <VStack align="stretch" gap="3">
     <Text fontSize="sm" color="fg.muted">Rows keep their order and duplicate keys. Disabled rows are saved. Maximum 200 rows; 10,000 characters per key/value.</Text>
     {rows.map((row, index) => {
@@ -30,8 +30,8 @@ export function SettingsEditor({ controller: c }: { controller: RequestControlle
   const path = 'timeoutMs'
   return <VStack align="stretch" gap="3">
     <Box><label htmlFor="request-timeout">Overall timeout (ms)</label><Input id="request-timeout" type="number" min={100} max={300000} step={1} value={Number.isNaN(c.draft?.timeoutMs) ? '' : c.draft?.timeoutMs ?? ''} disabled={!c.draft || c.busy} aria-invalid={!!c.validation[path]} aria-describedby={c.validation[path] ? 'timeout-error' : 'timeout-help'} onChange={event => { if (c.draft) c.setDraft({ ...c.draft, timeoutMs: event.target.value === '' ? Number.NaN : Number(event.target.value) }) }} />
-      <Text id="timeout-help" fontSize="sm">100–300,000 ms. The timeout covers the entire request, including redirects.</Text>
-      {c.validation[path] && <Text id="timeout-error" role="alert" color="fg.error">timeoutMs: {c.validation[path]}</Text>}
+      <Text id="timeout-help" mt="2" fontSize="sm">100–300,000 ms. The timeout covers the entire request, including redirects.</Text>
+      {c.validation[path] && <Text id="timeout-error" mt="1" role="alert" color="red.fg">timeoutMs: {c.validation[path]}</Text>}
     </Box>
     <label><input type="checkbox" aria-label="Follow redirects" checked={c.draft?.followRedirects ?? false} disabled={!c.draft || c.busy} onChange={event => { if (c.draft) c.setDraft({ ...c.draft, followRedirects: event.target.checked }) }} /> Follow redirects</label>
     <Text>Secure TLS certificate verification is always enabled.</Text>

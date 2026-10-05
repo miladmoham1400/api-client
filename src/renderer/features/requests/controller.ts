@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { RequestDraft, RequestSnapshot } from '../../../shared/requests'
 import { requestDraftSchema } from '../../../shared/requests'
 import { initialBodyDrafts, switchBody, persistedBody, retainSelections } from './body-state'
@@ -27,6 +27,16 @@ export function useRequests(workspace: string | null) {
     const copy = copyDraft(value)
     return JSON.stringify({ ...copy, ...(copy.body ? { body: persistedBody(copy.body) } : {}) })
   }
+  const pendingFocus = useRef<Element | null>(null)
+  const [focusVersion, setFocusVersion] = useState(0)
+  useLayoutEffect(() => {
+    if (busy) return
+    const focused = pendingFocus.current
+    pendingFocus.current = null
+    if (focused instanceof HTMLElement && focused.isConnected && !focused.matches(':disabled') &&
+      (document.activeElement === document.body || document.activeElement === focused) &&
+      !document.querySelector('[role="dialog"][data-state="open"]')) focused.focus()
+  }, [busy, focusVersion])
   const running = useRef(false), generation = useRef(0)
   const dirty = currentWorkspace && draft !== null && (!saved || comparison(draft) !== comparison(saved))
   const apply = useCallback(async (operation: () => Promise<Result<RequestSnapshot>>, refresh = false, preserveBody = false) => {
@@ -62,7 +72,16 @@ export function useRequests(workspace: string | null) {
   }, [currentWorkspace, workspace, draft, saved, apply])
   useEffect(() => {
     function shortcut(event: KeyboardEvent) {
-      if (event.ctrlKey && event.key.toLowerCase() === 's') { event.preventDefault(); if (!document.querySelector('[role="dialog"][data-state="open"]')) void save() }
+      if (event.ctrlKey && !event.isComposing && event.key.toLowerCase() === 's') {
+        event.preventDefault()
+        if (document.querySelector('[role="dialog"][data-state="open"]')) return
+        const focused = document.activeElement
+        void save().then(() => {
+          // Restore after React commits the enabled inputs, without stealing a user's new focus.
+          pendingFocus.current = focused
+          setFocusVersion(value => value + 1)
+        })
+      }
     }
     window.addEventListener('keydown', shortcut)
     return () => window.removeEventListener('keydown', shortcut)

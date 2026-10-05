@@ -6,7 +6,7 @@ import type { RequestController } from './controller'
 
 export function BodyEditor({ controller: c }: { controller: RequestController }) {
   const body = c.draft?.body
-  const error = (path: string) => c.validation[path] ? <Text id={`${path}-error`} role="alert" color="fg.error">{path}: {c.validation[path]}</Text> : null
+  const error = (path: string) => c.validation[path] ? <Text id={`${path}-error`} role="alert" color="red.fg">{path}: {c.validation[path]}</Text> : null
   return <VStack align="stretch" gap="3">
     <Box><label htmlFor="body-mode">Body mode</label><NativeSelect.Root disabled={!c.draft || c.busy}><NativeSelect.Field id="body-mode" value={body?.kind ?? 'unavailable'} onChange={event => { const kind = event.target.value; if (kind === 'none' || kind === 'json' || kind === 'raw' || kind === 'urlencoded' || kind === 'multipart') c.changeBody(kind) }}>
       {!body && <option value="unavailable">Existing body mode unavailable</option>}<option value="none">None</option><option value="json">JSON</option><option value="raw">Raw</option><option value="urlencoded">URL-encoded form</option><option value="multipart">Multipart form</option>

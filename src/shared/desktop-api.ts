@@ -1,3 +1,4 @@
+import type { ThemeApi } from './theme'
 import type { ImportApi } from './import'
 import type { ExportApi } from './export'
 import type { CloseApi } from './close'
@@ -31,5 +32,5 @@ export interface DesktopApi {
   readonly collections: CollectionApi
   readonly requests: RequestGroupingApi & RequestPersistenceApi
   readonly execution: ExecutionApi
-  readonly app: CloseApi & { readonly getBootstrap: () => Promise<Result<Bootstrap>> }
+  readonly app: CloseApi & ThemeApi & { readonly getBootstrap: () => Promise<Result<Bootstrap>> }
 }

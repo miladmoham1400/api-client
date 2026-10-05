@@ -1,3 +1,4 @@
+import { themeSchema, type ThemePreference } from '../../../shared/theme'
 import { importWorkspaceDataSchema } from '../../../shared/import'
 import type Database from 'better-sqlite3'
 import { randomUUID } from 'node:crypto'
@@ -84,6 +85,15 @@ export class Repositories {
       return w
     })
   }
+  getTheme(): ThemePreference { return this.read(() => {
+    const row = this.db.prepare("SELECT value_json AS value FROM app_settings WHERE key='theme'").get()
+    return row ? themeSchema.parse(JSON.parse(z.strictObject({ value: z.string() }).parse(row).value)) : 'system'
+  }) }
+  setTheme(theme: ThemePreference): ThemePreference { return this.write(() => {
+    const value = themeSchema.parse(theme)
+    this.db.prepare("INSERT INTO app_settings VALUES ('theme',?) ON CONFLICT(key) DO UPDATE SET value_json=excluded.value_json").run(JSON.stringify(value))
+    return this.getTheme()
+  }) }
   listWorkspaces() { return this.read(() => z.array(workspaceSchema).parse(this.db.prepare(`SELECT ${identity} FROM workspaces ORDER BY created_at,id`).all())) }
   getWorkspace(id: string) { return this.read(() => { this.workspace(id); return workspaceSchema.parse(this.db.prepare(`SELECT ${identity} FROM workspaces WHERE id=?`).get(id)) }) }
   createWorkspace(name: string) {

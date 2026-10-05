@@ -3,7 +3,7 @@ import { StrictMode, useEffect, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Box, Button, Dialog, Flex, Heading, Portal, Text, VStack } from '@chakra-ui/react'
 import type { Bootstrap } from '../shared/desktop-api'
-import { LocalProvider } from './theme/provider'
+import { LocalProvider, ThemeControl } from './theme/provider'
 import './shell.css'
 import { useWorkspaces } from './features/workspaces/use-workspaces'
 import { CollectionSidebar } from './features/collections/sidebar'
@@ -58,23 +58,23 @@ function Desktop({ workspaces, closeGuard }: { workspaces: WorkspaceController; 
       <Heading size="md" mr="2">Offline API Client</Heading>
       <WorkspaceControls controller={workspaces} locked={requests.busy} guard={navigation.guard} placement="top" />
       <VariableControls key={workspaces.snapshot?.selectedWorkspaceId ?? 'none'} workspace={workspaces.snapshot?.selectedWorkspaceId ?? null} />
-      <Button disabled variant="outline" size="sm">System theme</Button>
+      <ThemeControl />
       <Dialog.Root initialFocusEl={() => closeButton.current}>
         <Dialog.Trigger asChild><Button size="sm" variant="ghost">About this shell</Button></Dialog.Trigger>
         <Portal><Dialog.Backdrop /><Dialog.Positioner><Dialog.Content>
           <Dialog.Header><Dialog.Title>Local desktop shell</Dialog.Title></Dialog.Header>
-          <Dialog.Body><Dialog.Description>Workspaces and collections can be managed locally. Existing saved requests can move between collections and root. Request fields, JSON/raw bodies and URL-encoded forms and timeout/redirect settings support explicit Save. Environments and variables can be managed locally. Auth editing supports explicit Save. Send and Cancel execute the current draft without saving it. Responses are shown as safe text, with raw headers and optional JSON formatting. No sample data or automatic requests are created. Appearance follows your system.</Dialog.Description></Dialog.Body>
+          <Dialog.Body><Dialog.Description>Workspaces and collections can be managed locally. Existing saved requests can move between collections and root. Request fields, JSON/raw bodies and URL-encoded forms and timeout/redirect settings support explicit Save. Environments and variables can be managed locally. Auth editing supports explicit Save. Send and Cancel execute the current draft without saving it. Responses are shown as safe text, with raw headers and optional JSON formatting. No sample data or automatic requests are created. Light, Dark and System appearance preferences are saved locally.</Dialog.Description></Dialog.Body>
           <Dialog.Footer><Dialog.CloseTrigger asChild><Button ref={closeButton}>Close</Button></Dialog.CloseTrigger></Dialog.Footer>
         </Dialog.Content></Dialog.Positioner></Portal>
       </Dialog.Root>
     </Flex>
     <Flex flex="1" minH="0">
-      <VStack as="aside" aria-label="Collections and requests" align="stretch" gap="4" w="250px" minW="210px" p="4" overflow="auto" borderRightWidth="1px">
+      <VStack as="aside" aria-label="Collections and requests" tabIndex={0} align="stretch" gap="4" w="250px" minW="210px" p="4" overflow="auto" borderRightWidth="1px">
         <Heading size="sm">Workspace</Heading>
         <WorkspaceControls controller={workspaces} locked={requests.busy} guard={navigation.guard} placement="sidebar" />
         <CollectionSidebar key={workspaces.snapshot?.selectedWorkspaceId ?? "none"} workspaceId={workspaces.snapshot?.selectedWorkspaceId ?? null} requestController={requests} guard={navigation.guard} />
       </VStack>
-      <Flex as="main" direction="column" flex="1" minW="0" minH="0" p="4" gap="3" overflow="auto">
+      <Flex as="main" aria-label="Request and response panels" tabIndex={0} direction="column" flex="1" minW="0" minH="0" p="4" gap="3" overflow="auto">
         <RequestEditor key={workspaces.snapshot?.selectedWorkspaceId ?? "none"} controller={requests} guard={navigation.guard} />
         <ResponseViewer controller={requests} />
       </Flex>
