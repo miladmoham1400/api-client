@@ -5,7 +5,7 @@ import { httpMethodSchema, limitedText, nameSchema, uuidSchema, timeoutSchema, t
 import { textRowsSchema, textRowSchema } from './request-config'
 import { resultSchema, type Result } from './results'
 
-export const editableBodySchema = z.discriminatedUnion('kind', [z.strictObject({ kind: z.literal('none') }), z.strictObject({ kind: z.literal('json'), text: textBodySchema }), z.strictObject({ kind: z.literal('raw'), text: textBodySchema, mediaType: mediaTypeSchema })])
+export const editableBodySchema = z.discriminatedUnion('kind', [z.strictObject({ kind: z.literal('none') }), z.strictObject({ kind: z.literal('json'), text: textBodySchema }), z.strictObject({ kind: z.literal('raw'), text: textBodySchema, mediaType: mediaTypeSchema }), z.strictObject({ kind: z.literal('urlencoded'), rows: textRowsSchema })])
 export type EditableBody = z.infer<typeof editableBodySchema>
 const fields = { queryRows: textRowsSchema, headerRows: textRowsSchema, timeoutMs: timeoutSchema, followRedirects: z.boolean() }
 export const requestDraftSchema = z.strictObject({ name: nameSchema, method: httpMethodSchema, urlTemplate: limitedText(), queryRows: fields.queryRows.optional(), headerRows: fields.headerRows.optional(), timeoutMs: fields.timeoutMs.optional(), followRedirects: fields.followRedirects.optional(), body: editableBodySchema.optional(), auth: authDraftSchema.optional() }).refine(data => !data.body || data.body.kind === 'none' || !['GET', 'HEAD'].includes(data.method), { path: ['body'], message: 'GET and HEAD cannot have a body' })

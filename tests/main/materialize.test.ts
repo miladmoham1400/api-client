@@ -41,14 +41,14 @@ it('rejects managed/duplicate headers, auth conflicts and invalid wire character
   expect(materialize({ ...config(), headerRows: [row(1, '{{bad-key}}', '{{missing}}', false), row(2, 'Authorization', 'synthetic')], auth: { mode: 'bearer', tokenTemplate: 'synthetic' } }, new Map())).toMatchObject({ ok: false, error: { code: 'AUTH_CONFLICT', field: 'auth' } })
   expect(materialize({ ...config(), headerRows: [row(1, 'Authorization', 'synthetic'), row(2, 'X-Repeat', 'a'), row(3, 'X-Repeat', 'b')] }, new Map())).toMatchObject({ ok: true })
 })
-it('enforces JSON Content-Type, accepts +json and raw overrides, and rejects invalid URLs/form serialization', () => {
+it('enforces JSON Content-Type, accepts +json and raw overrides, and rejects invalid URLs/multipart serialization', () => {
   const body = { kind: 'json' as const, text: '{}' }
   expect(materialize({ ...config(), body, headerRows: [row(1, 'Content-Type', 'text/plain')] }, new Map())).toMatchObject({ ok: false, error: { code: 'CONTENT_TYPE_CONFLICT' } })
   expect(materialize({ ...config(), body, headerRows: [row(1, 'Content-Type', 'application/problem+json; charset=utf-8')] }, new Map())).toMatchObject({ ok: true })
   expect(materialize({ ...config(), body: { kind: 'raw', text: 'value', mediaType: 'text/plain' }, headerRows: [row(1, 'Content-Type', 'application/xml')] }, new Map())).toMatchObject({ ok: true })
   for (const urlTemplate of ['/relative', 'http://user:pass@localhost/', 'http://localhost/#', 'http://localhost/\r\n']) expect(materialize({ ...config(), urlTemplate }, new Map())).toMatchObject({ ok: false, error: { code: 'INVALID_URL' } })
   expect(materialize({ ...config(), urlTemplate: 'file:///tmp/file' }, new Map())).toMatchObject({ ok: false, error: { code: 'UNSUPPORTED_SCHEME' } })
-  expect(materialize({ ...config(), body: { kind: 'urlencoded', rows: [] } }, new Map())).toMatchObject({ ok: false, error: { field: 'body' } })
+  expect(materialize({ ...config(), body: { kind: 'multipart', rows: [] } }, new Map())).toMatchObject({ ok: false, error: { field: 'body' } })
 })
 it('returns field-specific missing/unavailable failures without consuming a snapshot or exposing values', () => {
   let accepted = 0

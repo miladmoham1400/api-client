@@ -3,7 +3,7 @@ import type { RequestDraft, RequestSnapshot } from '../../../shared/requests'
 import { requestDraftSchema } from '../../../shared/requests'
 import { initialBodyDrafts, switchBody } from './body-state'
 import type { EditableBody } from '../../../shared/requests'
-import { copyDraft, fieldErrors, type RowGroup } from './fields-state'
+import { copyDraft, fieldErrors, getRows, replaceRows, type RowGroup } from './fields-state'
 import type { Result } from '../../../shared/results'
 import { useExecution } from './execution'
 
@@ -59,13 +59,13 @@ export function useRequests(workspace: string | null) {
     return () => window.removeEventListener('keydown', shortcut)
   }, [save])
   async function addRow(group: RowGroup) {
-    if (!workspace || !draft || running.current || (draft[group]?.length ?? 0) >= 200) return
+    if (!workspace || !draft || running.current || getRows(draft, group).length >= 200) return
     running.current = true; setBusy(true); setError(null)
     const current = ++generation.current
     try {
       const result = await window.offlineApi.requests.newRow(workspace)
       if (current !== generation.current) return
-      if (result.ok) { setDraft(value => value ? { ...value, [group]: [...(value[group] ?? []), result.data] } : value); setValidation({}) }
+      if (result.ok) { setDraft(value => value ? replaceRows(value, group, [...getRows(value, group), result.data]) : value); setValidation({}) }
       else setError('A row could not be added. Your draft has been kept.')
     } catch { if (current === generation.current) setError('A row could not be added. Try again.') }
     finally { if (current === generation.current) { running.current = false; setBusy(false) } }

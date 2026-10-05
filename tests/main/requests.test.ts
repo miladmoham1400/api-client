@@ -125,10 +125,21 @@ it('persists only the active text body unchanged and preserves it on partial sav
   f.db.close(); const reopened = openDatabase(f.path)
   try { expect(new RequestService(reopened).list(f.a).editor?.body).toEqual({ kind: 'raw', text: 'سلام 🌍\n', mediaType: 'text/plain; charset=utf-8' }) } finally { reopened.close() }
 })
-it('keeps unsupported stored form configuration in main on basic saves without exposing an editor for it', () => {
+it('exposes stored URL-encoded forms and preserves them on partial saves', () => {
   const f = fixture(), body = { kind: 'urlencoded' as const, rows: [{ ...f.service.newRow(f.a), key: 'field', value: 'saved' }] }
   const request = f.r.createRequest(f.a, 'Existing', null, { ...createDefaultRequestConfig(), method: 'POST', body, auth: { mode: 'none' } })
-  expect(f.service.get(f.a, request.id).editor?.body).toBeNull()
+  expect(f.service.get(f.a, request.id).editor?.body).toEqual(body)
   f.service.save(f.a, request.id, { name: 'Renamed', method: 'POST', urlTemplate: '' })
   expect(f.r.getRequest(f.a, request.id).config.body).toEqual(body)
+})
+it('validated form create/save preserves row values, rejects invalid rows and reopens after restart', () => {
+  const f = fixture(), body = { kind: 'urlencoded' as const, rows: [{ ...f.service.newRow(f.a), key: 'same', value: '' }, { ...f.service.newRow(f.a), key: 'same', value: 'سلام %', enabled: false }] }
+  const created = f.handlers.create(f.event, f.a, { ...input(), method: 'POST', body })
+  expect(created).toMatchObject({ ok: true, data: { editor: { body } } })
+  const selected = f.service.list(f.a).editor
+  if (!selected) throw new Error('Missing form editor')
+  expect(f.handlers.save(f.event, f.a, selected.id, { name: 'Invalid', method: 'POST', urlTemplate: '', body: { ...body, rows: [body.rows[0], body.rows[0]] } })).toMatchObject({ ok: false, error: { code: 'VALIDATION' } })
+  expect(f.service.list(f.a).editor?.body).toEqual(body)
+  f.db.close(); const reopened = openDatabase(f.path)
+  try { expect(new RequestService(reopened).list(f.a).editor?.body).toEqual(body) } finally { reopened.close() }
 })

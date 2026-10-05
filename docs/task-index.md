@@ -25,7 +25,7 @@ There are 30 tasks: foundation (001–006), local project/request features (007�
 | 17 | [TASK-017 — Implement documented redirect policy](tasks/TASK-017-redirect-policy.md) | TASK-016 | done |
 | 18 | [TASK-018 — Implement overall timeout and cancellation](tasks/TASK-018-cancel-timeout.md) | TASK-017 | done |
 | 19 | [TASK-019 — Build response viewer and execution feedback](tasks/TASK-019-response-viewer.md) | TASK-018, TASK-006 | done |
-| 20 | [TASK-020 — Add URL-encoded form requests](tasks/TASK-020-urlencoded-body.md) | TASK-019 | todo |
+| 20 | [TASK-020 — Add URL-encoded form requests](tasks/TASK-020-urlencoded-body.md) | TASK-019 | done |
 | 21 | [TASK-021 — Implement upload file capabilities](tasks/TASK-021-upload-capabilities.md) | TASK-013, TASK-019 | todo |
 | 22 | [TASK-022 — Add multipart text/file requests](tasks/TASK-022-multipart-body.md) | TASK-020, TASK-021, TASK-017, TASK-018 | todo |
 | 23 | [TASK-023 — Finish draft navigation and destructive-action guards](tasks/TASK-023-draft-navigation.md) | TASK-022, TASK-007, TASK-008, TASK-009 | todo |

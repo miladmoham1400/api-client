@@ -16,7 +16,7 @@ export function materialize(config: RuntimeRequestConfig, variables: EffectiveVa
   if (!parsed.success) return { ok: false, error: validationError(parsed.error) }
   const source = parsed.data
   if (source.body.kind !== 'none' && ['GET', 'HEAD'].includes(source.method)) return fail('VALIDATION', 'body', 'GET and HEAD cannot have a body')
-  if (source.body.kind === 'multipart' || source.body.kind === 'urlencoded') return fail('VALIDATION', 'body', 'Form serialization is not available yet')
+  if (source.body.kind === 'multipart') return fail('VALIDATION', 'body', 'Multipart serialization is not available yet')
   const resolved = resolveRequestTemplates(source, variables, { maxBytes: field => field === 'body.text' ? LIMITS.textBodyBytes : LIMITS.fieldCharacters * 4 })
   if (!resolved.ok) return resolved
   const c = resolved.data
@@ -67,6 +67,23 @@ export function materialize(config: RuntimeRequestConfig, variables: EffectiveVa
       const type = explicit.value.split(';')[0]!.trim().toLowerCase()
       if (c.body.kind === 'json' && type !== 'application/json' && !type.endsWith('+json')) return fail('CONTENT_TYPE_CONFLICT', 'headerRows', 'JSON body requires a JSON Content-Type')
     } else headers.push({ name: 'Content-Type', value: c.body.kind === 'json' ? 'application/json' : c.body.kind === 'raw' ? c.body.mediaType : 'text/plain' })
+    headers.push({ name: 'Content-Length', value: String(bytes.length) })
+  }
+  if (c.body.kind === 'urlencoded' && source.body.kind === 'urlencoded') {
+    const params = new URLSearchParams()
+    const indexes = source.body.rows.flatMap((row, index) => row.enabled ? [index] : [])
+    for (const [index, row] of c.body.rows.entries()) {
+      if (!limitedText().safeParse(row.key).success) return fail('VALIDATION', `body.rows[${indexes[index]}].key`, 'Resolved key exceeds character limit')
+      if (!limitedText().safeParse(row.value).success) return fail('VALIDATION', `body.rows[${indexes[index]}].value`, 'Resolved value exceeds character limit')
+      params.append(row.key, row.value)
+    }
+    const explicit = headers.find(h => h.name.toLowerCase() === 'content-type')
+    if (explicit) {
+      const parts = explicit.value.split(';')
+      if (!mediaTypeSchema.safeParse(explicit.value).success || parts[0]!.trim().toLowerCase() !== 'application/x-www-form-urlencoded' || parts.length > 2 || (parts.length === 2 && !/^charset=/i.test(parts[1]!.trim()))) return fail('CONTENT_TYPE_CONFLICT', 'headerRows', 'URL-encoded body requires application/x-www-form-urlencoded with only an optional charset')
+    } else headers.push({ name: 'Content-Type', value: 'application/x-www-form-urlencoded' })
+    bytes = Buffer.from(params.toString(), 'utf8')
+    if (bytes.length > LIMITS.requestPayloadBytes) return fail('VALIDATION', 'body', 'Serialized body exceeds payload limit')
     headers.push({ name: 'Content-Length', value: String(bytes.length) })
   }
   headers.push({ name: 'Accept-Encoding', value: 'gzip, deflate, br' })

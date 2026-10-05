@@ -30,3 +30,17 @@ it('timeout boundaries, row limits/identity, disabled values and sanitized field
   if (parsed.success) throw new Error('Expected rejection')
   expect(validationError(parsed.error, true)).toEqual({ code: 'VALIDATION', message: 'Invalid input', retryable: false, field: 'headerRows[0].value' })
 })
+it('form row edits/reorder/remove preserve IDs and saved body independence', () => {
+  const a = { id: randomUUID(), key: 'same', value: '', enabled: true }, b = { ...a, id: randomUUID(), value: '%', enabled: false }
+  const saved = { name: 'Form', method: 'POST' as const, urlTemplate: '', body: { kind: 'urlencoded' as const, rows: [a, b] } }
+  let draft = copyDraft(saved)
+  if (draft.body?.kind !== 'urlencoded') throw new Error('Missing form')
+  draft.body.rows[0]!.value = 'local'
+  expect(saved.body.rows[0]?.value).toBe('')
+  draft = updateRow(draft, 'body.rows', b.id, { enabled: true })
+  draft = moveRow(draft, 'body.rows', b.id, -1)
+  expect(draft.body).toMatchObject({ rows: [{ ...b, enabled: true }, { ...a, value: 'local' }] })
+  draft = removeRow(draft, 'body.rows', a.id)
+  expect(draft.body).toMatchObject({ rows: [{ ...b, enabled: true }] })
+  expect(saved.body.rows).toEqual([a, b])
+})

@@ -26,3 +26,16 @@ it('distinguishes empty JSON from None and enforces UTF-8 size, method and media
   expect(requestDraftSchema.safeParse({ ...base, body: { kind: 'raw', text: '', mediaType: 'bad\r\nvalue' } }).success).toBe(false)
   expect(requestDraftSchema.safeParse({ ...base, body: { kind: 'none', text: 'inactive' } }).success).toBe(false)
 })
+it('retains form rows independently across body-mode switches and saved-draft copies', () => {
+  const form = { kind: 'urlencoded' as const, rows: [{ id: '00000000-0000-4000-8000-000000000001', key: 'same', value: '', enabled: false }] }
+  const cache = initialBodyDrafts(form)
+  const raw = switchBody(cache, form, 'raw')
+  const restored = switchBody(raw.cache, raw.body, 'urlencoded')
+  expect(restored.body).toEqual(form)
+  if (restored.body.kind !== 'urlencoded') throw new Error('Missing form')
+  restored.body.rows[0]!.value = 'edited'
+  expect(form.rows[0]?.value).toBe('')
+  expect(cache.urlencoded.rows[0]?.value).toBe('')
+  expect(requestDraftSchema.safeParse({ ...base, body: form }).success).toBe(true)
+  expect(requestDraftSchema.safeParse({ ...base, body: { kind: 'multipart', rows: [] } }).success).toBe(false)
+})

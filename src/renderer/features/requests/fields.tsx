@@ -1,10 +1,10 @@
 import { Box, Button, Flex, Input, Text, VStack } from '@chakra-ui/react'
 import { LIMITS } from '../../../shared/primitives'
-import { updateRow, removeRow, moveRow, type RowGroup } from './fields-state'
+import { updateRow, removeRow, moveRow, getRows, type RowGroup } from './fields-state'
 import type { RequestController } from './controller'
 
 export function RowsEditor({ controller: c, group }: { controller: RequestController; group: RowGroup }) {
-  const label = group === 'queryRows' ? 'Param' : 'Header', rows = c.draft?.[group] ?? []
+  const label = group === 'queryRows' ? 'Param' : group === 'body.rows' ? 'Form' : 'Header', rows = getRows(c.draft, group)
   function error(path: string) { return c.validation[path] ? <Text id={`${path}-error`} role="alert" fontSize="sm" color="fg.error">{path}: {c.validation[path]}</Text> : null }
   return <VStack align="stretch" gap="3">
     <Text fontSize="sm" color="fg.muted">Rows keep their order and duplicate keys. Disabled rows are saved. Maximum 200 rows; 10,000 characters per key/value.</Text>
@@ -21,7 +21,7 @@ export function RowsEditor({ controller: c, group }: { controller: RequestContro
         {error(`${path}.key`)}{error(`${path}.value`)}{error(`${path}.id`)}
       </Box>
     })}
-    {rows.length === 0 && <Text color="fg.muted">No {group === 'queryRows' ? 'params' : 'headers'}.</Text>}
+    {rows.length === 0 && <Text color="fg.muted">No {group === 'queryRows' ? 'params' : group === 'body.rows' ? 'form fields' : 'headers'}.</Text>}
     {error(group)}
     <Button alignSelf="start" disabled={!c.draft || c.busy || rows.length >= LIMITS.rowsPerGroup} onClick={() => { void c.addRow(group) }}>Add {label.toLowerCase()}</Button>
   </VStack>
