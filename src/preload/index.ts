@@ -1,3 +1,4 @@
+import { IMPORT_CHANNELS, importChooseInput, importTokenInput, importChooseResult, importCreatedResult, importCancelResult } from '../shared/import'
 import { EXPORT_CHANNEL, exportInputSchema, exportResultSchema } from '../shared/export'
 import { CLOSE_CHANNELS, closeRequestedSchema, closeDecisionInput, closeDecisionResult } from '../shared/close'
 import { subscribeValidated } from './listeners'
@@ -46,8 +47,17 @@ async function variableCall<I extends z.ZodType<unknown[]>, O extends z.ZodType>
   catch { return { ok: false as const, error: { code: 'VALIDATION' as const, message: 'Operation unavailable', retryable: false } } }
 }
 
+async function importCall<I extends z.ZodType<unknown[]>, O extends z.ZodType>(channel: (typeof IMPORT_CHANNELS)[keyof typeof IMPORT_CHANNELS], schema: I, output: O, args: unknown[]): Promise<z.infer<O>> {
+  const input = schema.safeParse(args)
+  if (!input.success) return output.parse({ ok: false, error: validationError(input.error, true) })
+  try { return output.parse(await ipcRenderer.invoke(channel, ...input.data)) }
+  catch { return output.parse({ ok: false, error: { code: 'INVALID_IMPORT', message: 'Import unavailable', retryable: false } }) }
+}
 const api: DesktopApi = Object.freeze({
   transfer: Object.freeze({
+    chooseImport: () => importCall(IMPORT_CHANNELS.choose, importChooseInput, importChooseResult, []),
+    importWorkspace: (token: string) => importCall(IMPORT_CHANNELS.confirm, importTokenInput, importCreatedResult, [token]),
+    cancelImport: (token: string) => importCall(IMPORT_CHANNELS.cancel, importTokenInput, importCancelResult, [token]),
     exportWorkspace: async (workspace: string) => {
       const input = exportInputSchema.safeParse([workspace])
       if (!input.success) return { ok: false as const, error: validationError(input.error, true) }

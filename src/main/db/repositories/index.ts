@@ -1,3 +1,4 @@
+import { importWorkspaceDataSchema } from '../../../shared/import'
 import type Database from 'better-sqlite3'
 import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
@@ -49,6 +50,39 @@ export class Repositories {
   private workspace(id: string): void {
     uuidSchema.parse(id)
     if (!this.db.prepare('SELECT id FROM workspaces WHERE id=?').get(id)) throw new RepositoryError('NOT_FOUND')
+  }
+  importWorkspace(input: unknown) {
+    // Validate the complete graph before any write; nested repository transactions are savepoints.
+    const source = importWorkspaceDataSchema.parse(input)
+    return this.write(() => {
+      const w = this.createWorkspace(Array.from(source.name).slice(0, LIMITS.nameCharacters - 11).join('') + ' (imported)')
+      const collections = new Map<string, string>(), environments = new Map<string, string>()
+      for (const c of source.collections) {
+        const created = this.createCollection(w.id, c.name)
+        this.db.prepare('UPDATE collections SET sort_order=? WHERE workspace_id=? AND id=?').run(c.sortOrder, w.id, created.id)
+        collections.set(c.id, created.id)
+      }
+      for (const e of source.environments) environments.set(e.id, this.createEnvironment(w.id, e.name).id)
+      for (const v of source.variables) this.upsertVariable(w.id, v.environmentId === null ? null : environments.get(v.environmentId)!, v.key,
+        v.isSensitive ? { isSensitive: true, plainValue: null, secretId: this.createSecret(w.id, 'session', null).id } : { isSensitive: false, plainValue: v.value, secretId: null })
+      const row = (r: { key: string; value: string; enabled: boolean }) => ({ id: randomUUID(), key: r.key, value: r.value, enabled: r.enabled })
+      const credential = (template: string, missing: boolean): StoredCredential => template === '' && missing
+        ? { kind: 'secret', secretId: this.createSecret(w.id, 'session', null).id } : { kind: 'template', template }
+      for (const request of source.requests) {
+        const config = request.config, auth = config.auth
+        const stored: StoredRequestConfig = { configVersion: 1, method: config.method, urlTemplate: config.urlTemplate,
+          queryRows: config.queryRows.map(row), headerRows: config.headerRows.map(row), timeoutMs: config.timeoutMs, followRedirects: config.followRedirects,
+          auth: auth.mode === 'none' ? { mode: 'none' } : auth.mode === 'bearer' ? { mode: 'bearer', token: credential(auth.tokenTemplate, auth.requiresCredentials) }
+            : { mode: 'basic', username: credential(auth.usernameTemplate, auth.requiresCredentials), password: credential(auth.passwordTemplate, auth.requiresCredentials) },
+          body: config.body.kind === 'multipart' ? { kind: 'multipart', rows: config.body.rows.map(r => r.kind === 'text' ? { ...row(r), kind: 'text' }
+            : { id: randomUUID(), key: r.key, kind: 'file', enabled: r.enabled, ...(r.fileName === undefined ? {} : { fileName: r.fileName }), ...(r.fileSize === undefined ? {} : { fileSize: r.fileSize }) }) }
+            : config.body.kind === 'urlencoded' ? { kind: 'urlencoded', rows: config.body.rows.map(row) } : { ...config.body }
+        }
+        this.createRequest(w.id, request.name, request.collectionId === null ? null : collections.get(request.collectionId)!, stored)
+      }
+      // createWorkspace supplies None/no request; app selection and existing workspaces stay unchanged.
+      return w
+    })
   }
   listWorkspaces() { return this.read(() => z.array(workspaceSchema).parse(this.db.prepare(`SELECT ${identity} FROM workspaces ORDER BY created_at,id`).all())) }
   getWorkspace(id: string) { return this.read(() => { this.workspace(id); return workspaceSchema.parse(this.db.prepare(`SELECT ${identity} FROM workspaces WHERE id=?`).get(id)) }) }

@@ -1,0 +1,39 @@
+# TASK-025 — Previewed transactional workspace import
+
+Status: done
+Date: 2026-10-05
+
+## Inspection and scope
+
+Initial working tree was clean. Read AGENTS.md, product.md, decisions.md, task-index.md, TASK-025, import-export.md, data-model.md, ui-flows.md, architecture.md, secrets.md and IPC contract; queried the existing local Graphify graph, then inspected the relevant source. TASK-024 is done in its task file/index; TASK-025 was the earliest unfinished task with completed dependencies. No later task, merging, external format, arbitrary file reference or dependency upgrade was implemented.
+
+## Implementation and acceptance evidence
+
+- Main-owned native single-file Open reads at most 10 MiB, including growth during reading. Strict UTF-8 decoding/JSON parsing precedes strict v1 schemas, entity/scope limits, unique IDs/keys, relationship checks and secret/path/capability/script-field rejection. Import also enforces the existing saved-request GET/HEAD body prohibition. Non-regular files are rejected; nonblocking descriptor opening prevents a selected FIFO from blocking main on Linux.
+- One main-owned random preview token refers to the fully validated parsed content. Renderer receives only workspace/collection/environment names, entity counts and omission counts. Confirmation uses the preview content even if the source file changes; choosing again re-reads/revalidates and replaces the previous token. Cancel/success/reload/crash/window close invalidate previews; owner loss/invalidation during native selection prevents a new preview. No renderer-selected paths, JSON payload or generic IPC runner are exposed.
+- One outer SQLite transaction uses existing workspace-scoped repositories/savepoints to create a new workspace, collections, environments, variables, requests and unresolved secrets. All entity/row/secret IDs are regenerated; collection/environment references and sort order are preserved. Request settings, body modes, ordered duplicate/disabled rows, Unicode and placeholder/whitespace templates are retained. The name adds ` (imported)` within 100 Unicode characters; duplicate display names remain allowed.
+- Sensitive variables and omitted literal Auth fields become unresolved session records without ciphertext or in-memory values. Pure templates remain templates, including whitespace-only templates when the other Basic credential was omitted. Files retain only display metadata and require reselection. New workspace state is environment None/no selected request; the existing app/workspace selection and existing saved data remain unchanged.
+- The import button works without a selected workspace. The product dialog uses safe React text, neutral initial Cancel focus, native file selection, bounded scrollable preview, explicit Import as new workspace and focus restoration. Success refreshes the workspace list without navigating or saving/discarding the current draft. Import never invokes the HTTP engine. Write failure rolls back all descendants and leaves the preview available for retry.
+- 18 focused import unit cases establish round-trip configuration/ID remapping, reference integrity, default selections, unresolved omissions, collection order/all body modes, safe name truncation, duplicate names, late injected write rollback, unsupported/malicious/orphan/duplicate/key/row/header/limit/method rejection, bounded/invalid-UTF-8 reads, Linux FIFO rejection, preview content binding, token consumption/invalidation and exact sender/input checks. Injected failure after descendant/secret creation leaves database serialization identical and no partial workspace. Invalid repository inputs are rejected before writes.
+- Native Linux X11 smoke exports a real saved synthetic workspace, opens it for import, cancels native selection and preview with byte-for-byte database checks, confirms a new workspace after the file is changed, rejects invalid subsequent input, checks old saved configuration and unsaved draft preservation, then navigates using the normal dirty-draft guard. Imported request ID differs, state defaults hold, sensitive values report missing/session mode, file UI requires reselection and Auth prompts re-entry. A loopback fixture receives zero requests throughout. Preview screenshot `/tmp/api-client-import-preview.png` was visually inspected for readable names/counts/omissions and controls.
+
+## Commands and actual results
+
+Environment: Ubuntu 24.04.3 x64/X11. Developer Node 22.18.0/npm 11.6.2; Electron 44.5.1 embeds Node 24.21.0, ABI 149, Chromium 152.0.7977.130. SQLite rebuilds for Node/Electron were sequential. Final bindings are rebuilt for Electron.
+
+- Initial `npm run typecheck` found an insufficient generic constraint for spreading parsed input. The private preload helper now requires validated array output; subsequent typecheck/lint passed.
+- Initial `npm run test:unit`: 311 passed/27 files (6.16 s). **Final `npm run test:unit`: 313 passed/27 files (6.54 s)**, including all 18 import cases and the final method/whitespace/FIFO behavior.
+- `npm run rebuild:electron && npm run build`: passed, including typecheck. `npm run lint`: passed. `git diff --check`: passed, including final report/task/index edits.
+- First native import/security run: 1 passed/1 failed (15.5 s). The test attempted to query the imported workspace while the original workspace stayed selected; existing active-workspace ownership correctly rejected it. Corrected the test to preserve selection and then use normal navigation/Discard before querying the import. No product ownership rule was weakened. `env NODE_OPTIONS=--dns-result-order=ipv4first npx playwright test tests/import.spec.ts`: **1 passed (18.7 s)**.
+- First `env NODE_OPTIONS=--dns-result-order=ipv4first npm run test:smoke`: **24 passed (2.1 min)** with sandbox enabled. **Final rebuilt `env NODE_OPTIONS=--dns-result-order=ipv4first npm run test:smoke`: 24 passed (2.1 min)** after the method/body rule, whitespace preservation, nonblocking read and scrollable preview refinements. This command also passed Electron native rebuild, build and typecheck; final lint passed.
+- `python3 scripts/graphify.py update`: passed after final source changes; 917 nodes/2882 edges/38 communities. Local code-only extraction, no semantic/cloud/model extraction or runtime dependency. The extractor reported no symbols for security.spec.ts on the initial update; unsupported/sensitive files and docs remain excluded. Graph output is ignored discovery data, not test evidence.
+
+Existing Zod/Rollup PURE-comment and Playwright color-environment warnings were non-fatal. Actual desktop safeStorage reported unavailable/basic_text/session; this task does not claim real secure-backend encryption validation. Test teardown forcibly terminates isolated fixtures; that is not normal-close evidence.
+
+## Official API verification
+
+Native Open options/result checked against [Electron dialog documentation](https://www.electronjs.org/docs/latest/api/dialog#dialogshowopendialogwindow-options). File descriptor read/stat/close and nonblocking flag behavior checked against [Node 22 filesystem documentation](https://nodejs.org/docs/latest-v22.x/api/fs.html). Existing pinned dependencies/lockfile were retained.
+
+## Limitations and boundary
+
+Windows, Wayland and packaged/installed-app checks are untested and are not marked passed. Native dialog automation uses the existing Linux X11 helper and supported Latin fixture paths. Ordinary URL/query/body/custom-header/plain-variable text is retained as specified and may contain user-entered secrets; import does not evaluate or send that text. Existing draft-navigation/destructive/active-request behavior remains in place. TASK-026 and later were not started. All TASK-025 acceptance criteria have the Linux/unit evidence above; no task blocker remains. Task file and index are both marked done. Untested platform/release checks remain limitations, not passes.

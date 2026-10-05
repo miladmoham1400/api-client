@@ -1,6 +1,6 @@
 # TASK-025 — Implement previewed transactional workspace import
 
-Status: todo
+Status: done
 Dependencies: TASK-024
 
 ## Read first
@@ -29,3 +29,5 @@ No merging, Postman/OpenAPI import or arbitrary file references.
 ## Completion procedure
 
 Record actual changes, commands/results, environment, evidence and blockers in `docs/task-reports/TASK-025.md`. Update this status and the index together. Mark `done` only when acceptance is verified; otherwise `in_progress` or `blocked`. Stop at this task boundary.
+
+Completion evidence: [TASK-025 report](../task-reports/TASK-025.md). Strict validation, transactional rollback and fresh-ID round trip are unit-verified; native Linux preview/import/cancel and full desktop smoke pass. Windows/Wayland and packaged-app checks remain unverified.

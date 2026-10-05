@@ -1,0 +1,109 @@
+import { execFile } from 'node:child_process'
+import { promisify } from 'node:util'
+import { mkdtempSync, readFileSync, writeFileSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { _electron, expect, test } from '@playwright/test'
+import { workspaceExportSchema } from '../src/shared/transfer'
+import { startFixture } from './fixtures/http'
+import { shutdown } from './fixtures/shutdown'
+const execute = promisify(execFile)
+test('native export/import preview confirms only a new workspace, cancels neutrally, rejects invalid data and never sends', async () => {
+  test.skip(process.platform !== 'linux' || !process.env.DISPLAY, 'Native chooser is Linux X11 only; other platforms unverified')
+  test.setTimeout(60_000)
+  const directory = mkdtempSync(join(tmpdir(), 'api-client-import-ui-')), path = join(directory,'workspace.json'), fixture = await startFixture(), captures: string[] = []
+  fixture.server.on('request', request => captures.push(request.url ?? ''))
+  const env = { ...Object.fromEntries(Object.entries(process.env).filter((entry): entry is [string, string] => entry[1] !== undefined && !['ELECTRON_RUN_AS_NODE','ELECTRON_RENDERER_URL'].includes(entry[0]))), XDG_CONFIG_HOME: directory, APPDATA: directory }
+  const application = await _electron.launch({ args: ['.'], chromiumSandbox: true, env })
+  try {
+    const page = await application.firstWindow()
+    await expect(page.getByRole('heading', { name: 'No request selected' })).toBeVisible()
+    const workspace = await page.evaluate(async url => {
+      const api = window.offlineApi, result = await api.workspaces.create('Import fixture')
+      if (!result.ok || !result.data.selectedWorkspaceId) throw new Error('Missing workspace')
+      const w = result.data.selectedWorkspaceId
+      await api.variables.upsert(w,null,'token','synthetic-import-sensitive',true)
+      await api.variables.upsert(w,null,'plain','سلام',false)
+      const row = await api.requests.newRow(w)
+      if (!row.ok) throw new Error('Missing row')
+      const request = await api.requests.create(w,{ name: 'Saved fixture', method: 'POST', urlTemplate: url+'/echo', collectionId: null,
+        auth: { mode: 'bearer', token: { kind: 'value', value: 'synthetic-import-auth' } }, body: { kind: 'multipart', rows: [{ id: row.data.id, key: 'upload', kind: 'file', enabled: true, fileName: 'fixture.bin', fileSize: 6 }] } })
+      if (!request.ok) throw new Error('Missing request')
+      return w
+    }, fixture.url)
+    await page.reload()
+    await expect(page.getByLabel('Request name', { exact: true })).toHaveValue('Saved fixture')
+    await page.getByLabel('Request name', { exact: true }).fill('Unsaved draft kept')
+    await page.getByRole('button',{ name:'Workspace menu',exact:true }).click()
+    await page.getByRole('menuitem',{ name:'Export workspace JSON',exact:true }).click()
+    await page.getByRole('button',{ name:'Choose save location',exact:true }).click()
+    await execute('python3',['tests/fixtures/native-upload-dialog.py',path,'Export workspace JSON'],{ timeout:15_000 })
+    await expect(page.getByRole('dialog',{name:'Export workspace JSON',exact:true})).not.toBeVisible()
+    const bytes = readFileSync(path,'utf8'), source = workspaceExportSchema.parse(JSON.parse(bytes)), saved = await page.evaluate(w => window.offlineApi.requests.list(w),workspace)
+    const databaseBytes = () => application.evaluate(({ app }) => {
+      const load = process.getBuiltinModule('module').createRequire(`${app.getAppPath()}/package.json`)
+      const Driver: typeof import('better-sqlite3') = load('better-sqlite3'), db = new Driver(`${app.getPath('userData')}/offline-api-client.sqlite`)
+      try { return Array.from(db.serialize()) } finally { db.close() }
+    })
+    const before = await databaseBytes()
+    async function choose(cancel = false) {
+      await page.getByRole('button',{name:'Import workspace JSON',exact:true}).click()
+      const dialog = page.getByRole('dialog',{name:'Import workspace JSON',exact:true})
+      await expect(dialog.getByRole('button',{name:'Cancel',exact:true})).toBeFocused()
+      await dialog.getByRole('button',{name:'Choose JSON file',exact:true}).click()
+      await execute('python3',['tests/fixtures/native-upload-dialog.py',cancel ? 'cancel' : path,'Import workspace JSON'],{timeout:15_000})
+      return dialog
+    }
+    let dialog = await choose(true)
+    await expect(dialog).not.toBeVisible()
+    expect(await databaseBytes()).toEqual(before)
+    dialog = await choose()
+    await expect(dialog).toContainText('1 sensitive variable values, 1 requests requiring credentials, 1 files requiring selection')
+    await page.screenshot({path:'/tmp/api-client-import-preview.png',animations:'disabled'})
+    await dialog.getByRole('button',{name:'Cancel',exact:true}).click()
+    await expect(dialog).not.toBeVisible()
+    await expect(page.getByRole('button',{name:'Import workspace JSON',exact:true})).toBeFocused()
+    expect(await databaseBytes()).toEqual(before)
+    dialog = await choose()
+    await expect(dialog.getByRole('button',{name:'Import as new workspace',exact:true})).toBeVisible()
+    writeFileSync(path,'{"script":"synthetic-untrusted"}') // Confirmation must use the already validated preview.
+    await dialog.getByRole('button',{name:'Import as new workspace',exact:true}).click()
+    await expect(dialog).not.toBeVisible()
+    await expect(page.getByLabel('Workspace',{exact:true}).getByRole('option',{name:'Import fixture (imported)',exact:true})).toHaveCount(1)
+    await expect(page.getByLabel('Workspace',{exact:true})).toHaveValue(workspace)
+    await expect(page.getByLabel('Request name',{exact:true})).toHaveValue('Unsaved draft kept')
+    expect(await page.evaluate(w=>window.offlineApi.requests.list(w),workspace)).toEqual(saved)
+    const imported = await page.evaluate(async () => {
+      const list = await window.offlineApi.workspaces.list()
+      if (!list.ok) throw new Error('Missing list')
+      const w = list.data.workspaces.find(w=>w.name==='Import fixture (imported)')
+      if (!w) throw new Error('Missing import')
+      return { id:w.id }
+    })
+    expect(imported.id).not.toBe(workspace)
+    expect(JSON.stringify(imported)).not.toContain('synthetic-import-sensitive')
+    expect(JSON.stringify(imported)).not.toContain('synthetic-import-auth')
+    const after = await databaseBytes()
+    dialog = await choose()
+    await expect(dialog.getByRole('alert')).toContainText('Invalid workspace import')
+    expect(await databaseBytes()).toEqual(after)
+    await dialog.getByRole('button',{name:'Cancel',exact:true}).click()
+    await page.getByLabel('Workspace',{exact:true}).selectOption(imported.id)
+    await page.getByRole('dialog',{name:'Unsaved request changes',exact:true}).getByRole('button',{name:'Discard',exact:true}).click()
+    await expect(page.getByRole('heading',{name:'No request selected',exact:true})).toBeVisible()
+    const state = await page.evaluate(async w => ({ requests: await window.offlineApi.requests.list(w), variables: await window.offlineApi.variables.list(w,null), environments: await window.offlineApi.environments.list(w) }),imported.id)
+    if (!state.requests.ok || !state.variables.ok || !state.environments.ok) throw new Error('Missing selected import')
+    expect(state.requests.data.editor).toBeNull()
+    expect(state.environments.data.activeEnvironmentId).toBeNull()
+    expect(state.requests.data.requests[0]?.id).not.toBe(source.workspace.requests[0]?.id)
+    expect(state.variables.data.items.find(v=>v.isSensitive)).toMatchObject({hasValue:false,storageMode:'session'})
+    await page.getByRole('button',{name:'Saved fixture',exact:true}).click()
+    const editor = page.getByRole('region',{name:'Request editor',exact:true})
+    await editor.getByRole('tab',{name:'Body',exact:true}).click()
+    await expect(page.getByRole('group',{name:'Multipart row 1',exact:true})).toContainText('select again')
+    await editor.getByRole('tab',{name:'Auth',exact:true}).click()
+    await expect(editor).toContainText('re-enter')
+    expect(captures).toEqual([])
+    writeFileSync(path,bytes)
+  } finally { await shutdown(application); await fixture.close(); rmSync(directory,{recursive:true,force:true}) }
+})

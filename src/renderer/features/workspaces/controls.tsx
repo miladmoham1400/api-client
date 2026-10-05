@@ -1,3 +1,4 @@
+import { WorkspaceImportDialog } from './import-dialog'
 import { WorkspaceExportDialog } from './export-dialog'
 import type { GuardTransition } from '../navigation/transition'
 import { useRef, useState } from 'react'
@@ -10,6 +11,8 @@ type Editing = { kind: 'create' } | { kind: 'rename' | 'delete'; id: string; nam
 export function WorkspaceControls({ controller, placement, guard, locked = false }: { guard: GuardTransition; controller: WorkspaceController; placement: 'top' | 'sidebar'; locked?: boolean }) {
   const { snapshot, busy, error, apply, reload } = controller
   const selected = snapshot?.workspaces.find(workspace => workspace.id === snapshot.selectedWorkspaceId)
+  const [importOpen, setImportOpen] = useState(false), [importStatus, setImportStatus] = useState<string | null>(null)
+  const importButton = useRef<HTMLButtonElement>(null)
   const [exportTarget, setExportTarget] = useState<{ id: string; name: string } | null>(null)
   const [exportStatus, setExportStatus] = useState<string | null>(null)
   const [editing, setEditing] = useState<Editing | null>(null)
@@ -48,6 +51,7 @@ export function WorkspaceControls({ controller, placement, guard, locked = false
           {snapshot?.workspaces.map(workspace => <option key={workspace.id} value={workspace.id}>{workspace.name}</option>)}
         </NativeSelect.Field><NativeSelect.Indicator />
       </NativeSelect.Root>
+      <Button ref={importButton} size="sm" variant="outline" disabled={!snapshot || busy || locked} onClick={() => { setImportStatus(null); setImportOpen(true) }}>Import workspace JSON</Button>
       <Menu.Root><Menu.Trigger asChild><Button ref={menu} disabled={!selected || busy || locked} size="sm" variant="outline" aria-label="Workspace menu">Workspace menu</Button></Menu.Trigger>
         <Portal><Menu.Positioner><Menu.Content>
           <Menu.Item value="export" onClick={() => { if (selected) { setExportStatus(null); setExportTarget({ id: selected.id, name: selected.name }) } }}>Export workspace JSON</Menu.Item>
@@ -61,6 +65,8 @@ export function WorkspaceControls({ controller, placement, guard, locked = false
       {busy && <Text role="status" fontSize="sm">Updating workspaces…</Text>}
       {error && <Box role="alert"><Text fontSize="sm">{error}</Text><Button variant="outline" size="sm" disabled={busy} onClick={() => { void guard(reload, true) }}>Reload workspaces</Button></Box>}
     </>}
+    {importOpen && <WorkspaceImportDialog returnFocus={() => importButton.current} close={name => { setImportOpen(false); setImportStatus(name ? `Imported “${name}”. Select it from Workspace when ready.` : 'Import cancelled.'); if (name) void reload() }} />}
+    {placement === 'top' && importStatus && <Text role="status" fontSize="sm">{importStatus}</Text>}
     {placement === 'top' && exportStatus && <Text role="status" fontSize="sm">{exportStatus}</Text>}
     {exportTarget && <WorkspaceExportDialog workspace={exportTarget} returnFocus={() => menu.current} close={status => { setExportTarget(null); if (status) setExportStatus(status === 'saved' ? 'Workspace exported.' : 'Export cancelled.') }} />}
     <Dialog.Root open={editing !== null} onOpenChange={({ open: isOpen }) => { if (!isOpen && !busy) setEditing(null) }}

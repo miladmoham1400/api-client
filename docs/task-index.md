@@ -30,7 +30,7 @@ There are 30 tasks: foundation (001–006), local project/request features (007�
 | 22 | [TASK-022 — Add multipart text/file requests](tasks/TASK-022-multipart-body.md) | TASK-020, TASK-021, TASK-017, TASK-018 | done |
 | 23 | [TASK-023 — Finish draft navigation and destructive-action guards](tasks/TASK-023-draft-navigation.md) | TASK-022, TASK-007, TASK-008, TASK-009 | done |
 | 24 | [TASK-024 — Implement safe workspace JSON export](tasks/TASK-024-workspace-export.md) | TASK-023, TASK-013 | done |
-| 25 | [TASK-025 — Implement previewed transactional workspace import](tasks/TASK-025-workspace-import.md) | TASK-024 | todo |
+| 25 | [TASK-025 — Implement previewed transactional workspace import](tasks/TASK-025-workspace-import.md) | TASK-024 | done |
 | 26 | [TASK-026 — Complete themes and accessibility polish](tasks/TASK-026-theme-accessibility.md) | TASK-025 | todo |
 | 27 | [TASK-027 — Run integrated offline acceptance and close defects](tasks/TASK-027-offline-acceptance.md) | TASK-026 | todo |
 | 28 | [TASK-028 — Package and verify Linux build](tasks/TASK-028-linux-package.md) | TASK-027 | todo |
