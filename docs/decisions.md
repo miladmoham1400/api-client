@@ -43,3 +43,7 @@ Record material changes here with reason, user authorization if scope changes, a
 ## Developer tooling — 2026-10-05
 
 User authorized project-local Graphify installation and documentation before the next task. Use pinned Python tooling and a project Agent Skill, code-only local extraction, no model labeling and bundled graph visualization assets. Graphify assists source discovery; specifications, source and actual checks remain authoritative. It adds no application runtime dependency, product feature, global assistant settings or task-status change. See [configuration](graphify.md) and [evidence](tooling-reports/graphify.md).
+
+## Multipart encoding — TASK-022, 2026-10-05
+
+Use pinned form-data-encoder 4.1.0 for multipart delimiters, name escaping, FormData text normalization and exact content length. A small ordered FormDataLike adapter preserves interleaved duplicate fields; file adapters read asynchronously in bounded chunks from preflighted main-owned descriptors. Capture file selections independently from editable capabilities, reopen per allowed redirect and close all upload resources on terminal paths. This implements the existing TASK-022/request-engine scope; it adds no browser networking, persistent file paths or new product feature. Busboy is test-only fixture parsing.

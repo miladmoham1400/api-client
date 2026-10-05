@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest'
 import { requestDraftSchema } from '../../src/shared/requests'
-import { initialBodyDrafts, switchBody } from '../../src/renderer/features/requests/body-state'
+import { initialBodyDrafts, switchBody, copyBody, persistedBody, retainSelections } from '../../src/renderer/features/requests/body-state'
 import { LIMITS } from '../../src/shared/primitives'
 const base = { name: 'Body', method: 'POST', urlTemplate: '' }
 it('retains inactive source drafts without putting them in the active body', () => {
@@ -37,5 +37,20 @@ it('retains form rows independently across body-mode switches and saved-draft co
   expect(form.rows[0]?.value).toBe('')
   expect(cache.urlencoded.rows[0]?.value).toBe('')
   expect(requestDraftSchema.safeParse({ ...base, body: form }).success).toBe(true)
-  expect(requestDraftSchema.safeParse({ ...base, body: { kind: 'multipart', rows: [] } }).success).toBe(false)
+  expect(requestDraftSchema.safeParse({ ...base, body: { kind: 'multipart', rows: [] } }).success).toBe(true)
+})
+
+it('keeps multipart selections independent across modes and Save, but excludes them from saved edits', () => {
+  const row = { id: '00000000-0000-4000-8000-000000000001', key: 'upload', kind: 'file' as const, enabled: true, fileId: '00000000-0000-4000-8000-000000000002', fileName: 'file.bin', fileSize: 6 }
+  const source = { kind: 'multipart' as const, rows: [row] }
+  const raw = switchBody(initialBodyDrafts(source), source, 'raw'), restored = switchBody(raw.cache, raw.body, 'multipart').body
+  expect(restored).toEqual(source)
+  if (restored.kind !== 'multipart') throw new Error('Wrong body')
+  restored.rows[0]!.key = 'edited'
+  expect(row.key).toBe('upload')
+  const metadata = persistedBody(source)
+  expect(metadata).toEqual({ kind: 'multipart', rows: [{ id: row.id, key: row.key, kind: row.kind, enabled: row.enabled, fileName: row.fileName, fileSize: row.fileSize }] })
+  expect(retainSelections(metadata, source)).toEqual(source)
+  expect(copyBody(source)).toEqual(source)
+  for (const property of ['path', 'filePath']) expect(requestDraftSchema.safeParse({ ...base, body: { kind: 'multipart', rows: [{ ...row, [property]: '/arbitrary/path' }] } }).success).toBe(false)
 })

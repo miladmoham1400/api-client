@@ -6,6 +6,7 @@ import type { ExecutionCompleted } from '../../../shared/results'
 export function useExecution(workspace: string | null, draft: RequestDraft | null, requestId: string | null) {
   const [ready, setReady] = useState(false), [sending, setSending] = useState(false), [executionId, setExecutionId] = useState<string | null>(null)
   const [cancelling, setCancelling] = useState(false), [status, setStatus] = useState<string | null>(null), [error, setError] = useState<string | null>(null)
+  const [executionField, setExecutionField] = useState<string | null>(null)
   const [executionResult, setExecutionResult] = useState<ExecutionCompleted['result'] | null>(null)
   const [completedExecutionId, setCompletedExecutionId] = useState<string | null>(null)
   const [sentSnapshot, setSentSnapshot] = useState<{ name: string; method: string; urlTemplate: string; environment: string } | null>(null)
@@ -21,7 +22,7 @@ export function useExecution(workspace: string | null, draft: RequestDraft | nul
     setExecutionId(null); setSending(false); setCancelling(false)
     if ('statusCode' in event.result) { setStatus('Request completed'); setError(null) }
     else if (event.result.code === 'CANCELLED') { setStatus('Request cancelled'); setError(null) }
-    else { setStatus(null); setError(`${event.result.code}: ${event.result.message}${event.result.field ? ` (${event.result.field})` : ''}`) }
+    else { setExecutionField(event.result.field ?? null); setStatus(null); setError(`${event.result.code}: ${event.result.message}${event.result.field ? ` (${event.result.field})` : ''}`) }
   }, [])
   useEffect(() => {
     mounted.current = true
@@ -41,13 +42,13 @@ export function useExecution(workspace: string | null, draft: RequestDraft | nul
     sentDraft.current = null; setSentSnapshot(null); setExecutionResult(null); setCompletedExecutionId(null)
     if (active.current) void window.offlineApi.execution.cancel(active.current).catch(() => {})
     active.current = null; pending.current = false; early.current = null
-    setExecutionId(null); setSending(false); setCancelling(false); setStatus(null); setError(null)
+    setExecutionId(null); setSending(false); setCancelling(false); setStatus(null); setError(null); setExecutionField(null)
   }, [workspace])
   const send = useCallback(async () => {
     if (!ready || !mounted.current || pending.current || !workspace || !draft) return
     const captured = structuredClone(draft), current = generation.current
     sentDraft.current = JSON.stringify(captured); setSentSnapshot({ name: captured.name, method: captured.method, urlTemplate: captured.urlTemplate, environment: 'Selecting…' }); setExecutionResult(null); setCompletedExecutionId(null)
-    pending.current = true; early.current = null; setSending(true); setError(null); setStatus('Preparing request…')
+    pending.current = true; early.current = null; setSending(true); setError(null); setExecutionField(null); setStatus('Preparing request…')
     try {
       const environments = await window.offlineApi.environments.list(workspace)
       if (!mounted.current || current !== generation.current) return
@@ -58,7 +59,7 @@ export function useExecution(workspace: string | null, draft: RequestDraft | nul
         if (accepted.ok) void window.offlineApi.execution.cancel(accepted.data.executionId).catch(() => {})
         return
       }
-      if (!accepted.ok) { pending.current = false; early.current = null; setSending(false); setStatus(null); setError(`${accepted.error.code}: ${accepted.error.message}${accepted.error.field ? ` (${accepted.error.field})` : ''}`); return }
+      if (!accepted.ok) { setExecutionField(accepted.error.field ?? null); pending.current = false; early.current = null; setSending(false); setStatus(null); setError(`${accepted.error.code}: ${accepted.error.message}${accepted.error.field ? ` (${accepted.error.field})` : ''}`); return }
       active.current = accepted.data.executionId; setExecutionId(active.current); setStatus('Sending request…')
       const queued = takeEarly()
       if (queued?.executionId === active.current) complete(queued)
@@ -75,6 +76,6 @@ export function useExecution(workspace: string | null, draft: RequestDraft | nul
       if (!result.ok && mounted.current && active.current === id) { setCancelling(false); setError('Cancellation is unavailable. Try again.') }
     } catch { if (mounted.current && active.current === id) { setCancelling(false); setError('Cancellation is unavailable. Try again.') } }
   }, [cancelling])
-  return { executionResult, completedExecutionId, sentSnapshot, draftChangedSinceSend: sentDraft.current !== null && JSON.stringify(draft) !== sentDraft.current, sending, cancelling, executionStatus: status, executionError: error, canSend: ready && !!workspace && !!draft?.urlTemplate.trim() && !sending,
+  return { executionField, executionResult, completedExecutionId, sentSnapshot, draftChangedSinceSend: sentDraft.current !== null && JSON.stringify(draft) !== sentDraft.current, sending, cancelling, executionStatus: status, executionError: error, canSend: ready && !!workspace && !!draft?.urlTemplate.trim() && !sending,
     canCancel: executionId !== null && !cancelling, send, cancel }
 }

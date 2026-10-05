@@ -1,6 +1,6 @@
 import type { SecretStore } from '../security/secrets'
 import type { AuthDraft } from '../../shared/auth-editor'
-import { credentialTemplateSchema, type StoredAuth } from '../../shared/request-config'
+import { credentialTemplateSchema, storedBodySchema, type StoredAuth } from '../../shared/request-config'
 import { randomUUID } from 'node:crypto'
 import type Database from 'better-sqlite3'
 import { Repositories, RepositoryError } from '../db/repositories'
@@ -28,7 +28,7 @@ export class RequestService {
     this.active(workspace)
     const selected = this.r.getState(workspace).selectedRequestId
     const request = selected ? this.r.getRequest(workspace, selected) : null
-    const editor = request ? { id: request.id, workspaceId: request.workspaceId, collectionId: request.collectionId, name: request.name, createdAt: request.createdAt, updatedAt: request.updatedAt, method: request.config.method, urlTemplate: request.config.urlTemplate, queryRows: request.config.queryRows, headerRows: request.config.headerRows, timeoutMs: request.config.timeoutMs, followRedirects: request.config.followRedirects, auth: this.authEditor(workspace, request.config.auth), credentialStorage: this.store?.capability() ?? 'session', body: ['none', 'json', 'raw', 'urlencoded'].includes(request.config.body.kind) ? request.config.body : null } : null
+    const editor = request ? { id: request.id, workspaceId: request.workspaceId, collectionId: request.collectionId, name: request.name, createdAt: request.createdAt, updatedAt: request.updatedAt, method: request.config.method, urlTemplate: request.config.urlTemplate, queryRows: request.config.queryRows, headerRows: request.config.headerRows, timeoutMs: request.config.timeoutMs, followRedirects: request.config.followRedirects, auth: this.authEditor(workspace, request.config.auth), credentialStorage: this.store?.capability() ?? 'session', body: request.config.body } : null
     return requestSnapshotSchema.parse({ workspaceId: workspace, requests: this.r.listRequests(workspace), editor })
   }
   private authEditor(w: string, auth: StoredAuth) {
@@ -72,7 +72,7 @@ export class RequestService {
     }))
   }
   private fields(draft: RequestDraft) {
-    return { ...(draft.body === undefined ? {} : { body: draft.body }), ...(draft.queryRows === undefined ? {} : { queryRows: draft.queryRows }), ...(draft.headerRows === undefined ? {} : { headerRows: draft.headerRows }), ...(draft.timeoutMs === undefined ? {} : { timeoutMs: draft.timeoutMs }), ...(draft.followRedirects === undefined ? {} : { followRedirects: draft.followRedirects }) }
+    return { ...(draft.body === undefined ? {} : { body: storedBodySchema.parse(draft.body.kind === 'multipart' ? { ...draft.body, rows: draft.body.rows.map(row => row.kind === 'file' ? { id: row.id, kind: row.kind, key: row.key, enabled: row.enabled, ...(row.fileName === undefined ? {} : { fileName: row.fileName }), ...(row.fileSize === undefined ? {} : { fileSize: row.fileSize }) } : row) } : draft.body) }), ...(draft.queryRows === undefined ? {} : { queryRows: draft.queryRows }), ...(draft.headerRows === undefined ? {} : { headerRows: draft.headerRows }), ...(draft.timeoutMs === undefined ? {} : { timeoutMs: draft.timeoutMs }), ...(draft.followRedirects === undefined ? {} : { followRedirects: draft.followRedirects }) }
   }
   save(workspace: string, id: string, input: RequestDraft) {
     id = uuidSchema.parse(id); const draft = requestDraftSchema.parse(input)

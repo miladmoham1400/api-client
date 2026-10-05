@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { closeSync, constants, fstatSync, openSync } from 'node:fs'
+import { closeSync, constants, fstatSync, openSync, read } from 'node:fs'
 import { basename } from 'node:path'
 import { runtimeBodySchema } from '../../shared/request-config'
 import { LIMITS, uuidSchema } from '../../shared/primitives'
@@ -17,7 +17,7 @@ export class UploadError extends Error {
 }
 interface Capability { workspace: string; path: string; size: number }
 // Main-only descriptors. The caller must close the entire batch on every terminal path.
-export interface UploadLease { readonly rowId: string; readonly name: string; readonly size: number; readonly fd: number; close(): void }
+export interface UploadLease { readonly rowId: string; readonly name: string; readonly size: number; readonly fd: number; stream(): AsyncIterable<Uint8Array>; close(): void }
 export class UploadService {
   #files = new Map<string, Capability>()
   #epoch = 0
@@ -71,7 +71,27 @@ export class UploadService {
     }
   }
   // TASK-022 must call this before connecting and keep these descriptors private to main.
+  captureForSend(workspace: string, body: unknown): () => UploadLease[] {
+    const parsed = runtimeBodySchema.parse(body), captured = new Map<string, Capability>()
+    this.assertWorkspace(uuidSchema.parse(workspace))
+    if (parsed.kind === 'multipart') parsed.rows.forEach((row, index) => {
+      if (row.kind !== 'file' || !row.enabled) return
+      const field: FieldPath = `body.rows[${index}].fileId`
+      if (!row.fileId) throw new UploadError('FILE_REQUIRED', field)
+      try { captured.set(row.fileId, { ...this.lookup(workspace, row.fileId) }) }
+      catch (error) { if (error instanceof UploadError) throw new UploadError(error.code, field); throw error }
+    })
+    // Row edits/reselection may release the draft capability without mutating an accepted execution.
+    return () => this.openRows(workspace, parsed, (_workspace, id) => {
+      const file = captured.get(id)
+      if (!file) throw new UploadError('FILE_REQUIRED')
+      return file
+    })
+  }
   openForSend(workspace: string, body: unknown): UploadLease[] {
+    return this.openRows(workspace, body, (w, id) => this.lookup(w, id))
+  }
+  private openRows(workspace: string, body: unknown, lookup: (workspace: string, id: string) => Capability): UploadLease[] {
     workspace = uuidSchema.parse(workspace); this.assertWorkspace(workspace)
     const parsed = runtimeBodySchema.parse(body), leases: UploadLease[] = []
     if (parsed.kind !== 'multipart') return leases
@@ -82,12 +102,32 @@ export class UploadService {
         const field: FieldPath = `body.rows[${index}].fileId`
         if (!row.fileId) throw new UploadError('FILE_REQUIRED', field)
         let file: Capability
-        try { file = this.lookup(workspace, row.fileId) }
+        try { file = lookup(workspace, row.fileId) }
         catch (error) { if (error instanceof UploadError) throw new UploadError(error.code, field); throw error }
         const fd = this.open(file.path, file.size, field)
-        let closed = false
-        leases.push({ rowId: row.id, name: basename(file.path), size: file.size, fd,
-          close() { if (!closed) { closed = true; closeSync(fd) } } })
+        let closing = false, closed = false, pending = false, used = false
+        const close = () => { closing = true; if (!closed && !pending) { closed = true; closeSync(fd) } }
+        leases.push({ rowId: row.id, name: basename(file.path), size: file.size, fd, close,
+          async *stream() {
+            if (used || closing) throw new UploadError('FILE_CHANGED', field)
+            used = true
+            let position = 0
+            try {
+              while (position < file.size) {
+                if (closing) return
+                const buffer = Buffer.allocUnsafe(Math.min(64 * 1024, file.size - position))
+                pending = true
+                let count: number
+                try { count = await new Promise<number>((resolve, reject) => read(fd, buffer, 0, buffer.length, position, (error, bytes) => error ? reject(error) : resolve(bytes))) }
+                finally { pending = false; if (closing) close() }
+                if (closing) return
+                if (count === 0) throw new UploadError('FILE_CHANGED', field)
+                position += count
+                yield buffer.subarray(0, count)
+              }
+              if (!closing && fstatSync(fd).size !== file.size) throw new UploadError('FILE_CHANGED', field)
+            } catch { throw new UploadError('FILE_CHANGED', field) }
+          } })
         total += file.size
         if (total > LIMITS.selectedFileBytes) throw new UploadError('FILE_TOO_LARGE', field)
       })

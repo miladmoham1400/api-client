@@ -1,3 +1,5 @@
+import { UploadError, type UploadService } from '../files/uploads'
+import { BodyError } from '../http/body'
 import type Database from 'better-sqlite3'
 import { Repositories, RepositoryError } from '../db/repositories'
 import type { SecretStore } from '../security/secrets'
@@ -10,7 +12,7 @@ import { validationError, type Result } from '../../shared/results'
 
 export class MaterializationService {
   private readonly r: Repositories
-  constructor(db: Database.Database, private readonly store: SecretStore) { this.r = new Repositories(db) }
+  constructor(db: Database.Database, private readonly store: SecretStore, private readonly uploads?: UploadService) { this.r = new Repositories(db) }
   capture(workspace: string, requestId: string | null, draft: RequestDraft, environmentId: string | null): Result<MaterializedRequest> {
     const checked = requestDraftSchema.safeParse(draft)
     if (!checked.success) return { ok: false, error: validationError(checked.error) }
@@ -42,7 +44,13 @@ export class MaterializationService {
       }
       const merged = mergeVariables(workspace, environmentId, entries)
       if (!merged.ok) return merged
-      return materialize({ ...createDefaultRequestConfig(), ...previous, method: d.method, urlTemplate: d.urlTemplate, queryRows: d.queryRows ?? previous?.queryRows ?? [], headerRows: d.headerRows ?? previous?.headerRows ?? [], body: d.body ?? previous?.body ?? { kind: 'none' }, timeoutMs: d.timeoutMs ?? previous?.timeoutMs ?? 30000, followRedirects: d.followRedirects ?? previous?.followRedirects ?? false, auth: runtime }, merged.data)
+      let capturedFiles: ReturnType<UploadService['captureForSend']> | undefined
+      return materialize({ ...createDefaultRequestConfig(), ...previous, method: d.method, urlTemplate: d.urlTemplate, queryRows: d.queryRows ?? previous?.queryRows ?? [], headerRows: d.headerRows ?? previous?.headerRows ?? [], body: d.body ?? previous?.body ?? { kind: 'none' }, timeoutMs: d.timeoutMs ?? previous?.timeoutMs ?? 30000, followRedirects: d.followRedirects ?? previous?.followRedirects ?? false, auth: runtime }, merged.data, this.uploads ? source => {
+        try { capturedFiles ??= this.uploads!.captureForSend(workspace, source); return capturedFiles().map(lease => ({ ...lease, async *stream() {
+          try { yield* lease.stream() } catch (error) { throw error instanceof UploadError ? new BodyError(error.dto()) : error }
+        } })) }
+        catch (error) { throw error instanceof UploadError ? new BodyError(error.dto()) : error }
+      } : undefined)
     } catch (error) {
       return { ok: false, error: { code: error instanceof RepositoryError ? error.code : 'VALIDATION', message: 'Request configuration or credential unavailable', field: 'auth', retryable: false } }
     }

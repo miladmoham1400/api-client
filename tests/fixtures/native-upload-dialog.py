@@ -13,6 +13,19 @@ x11.XOpenDisplay.restype = ctypes.c_void_p
 x11.XDefaultRootWindow.argtypes = [ctypes.c_void_p]
 x11.XDefaultRootWindow.restype = ctypes.c_ulong
 x11.XQueryTree.argtypes = [ctypes.c_void_p, ctypes.c_ulong, ctypes.POINTER(ctypes.c_ulong), ctypes.POINTER(ctypes.c_ulong), ctypes.POINTER(ctypes.POINTER(ctypes.c_ulong)), ctypes.POINTER(ctypes.c_uint)]
+class Attributes(ctypes.Structure):
+    _fields_ = [(name, kind) for name, kind in [
+        ('x', ctypes.c_int), ('y', ctypes.c_int), ('width', ctypes.c_int), ('height', ctypes.c_int),
+        ('border_width', ctypes.c_int), ('depth', ctypes.c_int), ('visual', ctypes.c_void_p),
+        ('root', ctypes.c_ulong), ('window_class', ctypes.c_int), ('bit_gravity', ctypes.c_int),
+        ('win_gravity', ctypes.c_int), ('backing_store', ctypes.c_int), ('backing_planes', ctypes.c_ulong),
+        ('backing_pixel', ctypes.c_ulong), ('save_under', ctypes.c_int), ('colormap', ctypes.c_ulong),
+        ('map_installed', ctypes.c_int), ('map_state', ctypes.c_int), ('all_event_masks', ctypes.c_long),
+        ('your_event_mask', ctypes.c_long), ('do_not_propagate_mask', ctypes.c_long),
+        ('override_redirect', ctypes.c_int), ('screen', ctypes.c_void_p)
+    ]]
+
+x11.XGetWindowAttributes.argtypes = [ctypes.c_void_p, ctypes.c_ulong, ctypes.POINTER(Attributes)]
 x11.XFetchName.argtypes = [ctypes.c_void_p, ctypes.c_ulong, ctypes.POINTER(ctypes.c_char_p)]
 x11.XFree.argtypes = [ctypes.c_void_p]
 x11.XRaiseWindow.argtypes = [ctypes.c_void_p, ctypes.c_ulong]
@@ -36,7 +49,10 @@ def find(window):
     if name:
         x11.XFree(name)
     if title == 'Select upload file':
-        return window
+        attributes = Attributes()
+        x11.XGetWindowAttributes(display, window, ctypes.byref(attributes))
+        if attributes.map_state == 2:
+            return window
     root, parent, children, count = ctypes.c_ulong(), ctypes.c_ulong(), ctypes.POINTER(ctypes.c_ulong)(), ctypes.c_uint()
     x11.XQueryTree(display, window, ctypes.byref(root), ctypes.byref(parent), ctypes.byref(children), ctypes.byref(count))
     found = 0
@@ -91,8 +107,15 @@ try:
             tap({'/': 'slash', '.': 'period', '-': 'minus'}.get(char, char.lower()))
             if char.isupper():
                 key('Shift_L', False)
-        tap('Return')
-        time.sleep(0.3)
-        tap('Return')
+        # GTK location completion is asynchronous. Retry confirmation only while this chooser is visible.
+        time.sleep(0.2)
+        for _ in range(12):
+            if not find(x11.XDefaultRootWindow(display)):
+                break
+            x11.XSetInputFocus(display, window, 2, 0)
+            tap('Return')
+            time.sleep(0.4)
+        else:
+            raise RuntimeError('Native chooser did not accept the fixture location')
 finally:
     x11.XCloseDisplay(display)

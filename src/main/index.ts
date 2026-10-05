@@ -82,12 +82,12 @@ else {
     })
     ownedWindow = window
     const contents = window.webContents
-    executionService = database && secretStore ? new ExecutionService(new MaterializationService(database, secretStore), completion => {
+    uploadService = database ? new UploadService(id => { if (!database) throw new Error('Unavailable'); new Repositories(database).getWorkspace(id) }) : null
+    executionService = database && secretStore ? new ExecutionService(new MaterializationService(database, secretStore, uploadService ?? undefined), completion => {
       if (ownedWindow !== window || window.isDestroyed() || contents.isDestroyed()) return
       try { contents.send(EXECUTION_CHANNELS.completed, completion) }
       catch { /* A disappearing renderer cannot undo completion or committed deletion. */ }
     }) : null
-    uploadService = database ? new UploadService(id => { if (!database) throw new Error('Unavailable'); new Repositories(database).getWorkspace(id) }) : null
     const fileHandlers = createFileHandlers(() => ownedWindow, trustedUrl, () => uploadService, async () => {
       const result = await dialog.showOpenDialog(window, { title: 'Select upload file', properties: ['openFile', 'dontAddToRecent'] })
       return result.canceled ? null : result.filePaths[0] ?? null

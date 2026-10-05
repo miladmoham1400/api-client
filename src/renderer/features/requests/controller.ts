@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { RequestDraft, RequestSnapshot } from '../../../shared/requests'
 import { requestDraftSchema } from '../../../shared/requests'
-import { initialBodyDrafts, switchBody } from './body-state'
+import { initialBodyDrafts, switchBody, persistedBody, retainSelections } from './body-state'
 import type { EditableBody } from '../../../shared/requests'
 import { copyDraft, fieldErrors, getRows, replaceRows, type RowGroup } from './fields-state'
 import type { Result } from '../../../shared/results'
@@ -18,8 +18,17 @@ export function useRequests(workspace: string | null) {
   const [revision, setRevision] = useState(0)
   const execution = useExecution(workspace, currentWorkspace ? draft : null, currentWorkspace ? saved?.id ?? null : null)
   const bodyCache = useRef(initialBodyDrafts())
+  const selections = useRef(new Map<string, string>())
+  const releaseSelections = useCallback(() => {
+    for (const [id, w] of selections.current) void window.offlineApi.files.releaseUpload(w, id).catch(() => {})
+    selections.current.clear()
+  }, [])
+  const comparison = (value: Parameters<typeof copyDraft>[0]) => {
+    const copy = copyDraft(value)
+    return JSON.stringify({ ...copy, ...(copy.body ? { body: persistedBody(copy.body) } : {}) })
+  }
   const running = useRef(false), generation = useRef(0)
-  const dirty = currentWorkspace && draft !== null && (!saved || JSON.stringify(copyDraft(draft)) !== JSON.stringify(copyDraft(saved)))
+  const dirty = currentWorkspace && draft !== null && (!saved || comparison(draft) !== comparison(saved))
   const apply = useCallback(async (operation: () => Promise<Result<RequestSnapshot>>, refresh = false, preserveBody = false) => {
     if (running.current) return false
     running.current = true; setBusy(true); setError(null); setValidation({})
@@ -29,8 +38,8 @@ export function useRequests(workspace: string | null) {
       if (current !== generation.current) return false
       if (result.ok && result.data.workspaceId === workspace) {
         const editor = result.data.editor
-        setSaved(editor); setDraft(editor ? copyDraft(editor) : null)
-        if (!preserveBody) bodyCache.current = initialBodyDrafts(editor?.body ?? undefined)
+        setSaved(editor); setDraft(previous => editor ? { ...copyDraft(editor), ...(preserveBody ? { body: retainSelections(editor.body ?? undefined, previous?.body) } : {}) } : null)
+        if (!preserveBody) { releaseSelections(); bodyCache.current = initialBodyDrafts(editor?.body ?? undefined) }
         if (refresh) setRevision(value => value + 1)
         return true
       }
@@ -39,12 +48,12 @@ export function useRequests(workspace: string | null) {
       return false
     } catch { if (current === generation.current) setError('Request operation unavailable. Your draft has been kept.'); return false }
     finally { if (current === generation.current) { running.current = false; setBusy(false) } }
-  }, [workspace])
+  }, [workspace, releaseSelections])
   useEffect(() => {
     setLoadedWorkspace(workspace); setSaved(null); setDraft(null); setError(null); setValidation({}); setBusy(false)
     if (workspace) void apply(() => window.offlineApi.requests.list(workspace))
-    return () => { generation.current++; running.current = false }
-  }, [apply, workspace])
+    return () => { generation.current++; running.current = false; releaseSelections() }
+  }, [apply, workspace, releaseSelections])
   const save = useCallback(async () => {
     if (!currentWorkspace || !workspace || !draft) return false
     const parsed = requestDraftSchema.safeParse(draft)
@@ -58,23 +67,56 @@ export function useRequests(workspace: string | null) {
     window.addEventListener('keydown', shortcut)
     return () => window.removeEventListener('keydown', shortcut)
   }, [save])
-  async function addRow(group: RowGroup) {
-    if (!workspace || !draft || running.current || getRows(draft, group).length >= 200) return
+  async function addRow(group: RowGroup, kind: 'text' | 'file' = 'text') {
+    if (!workspace || !draft || running.current || (group === 'body.rows' && draft.body?.kind === 'multipart' ? draft.body.rows.length : getRows(draft, group).length) >= 200) return
     running.current = true; setBusy(true); setError(null)
     const current = ++generation.current
     try {
       const result = await window.offlineApi.requests.newRow(workspace)
       if (current !== generation.current) return
-      if (result.ok) { setDraft(value => value ? replaceRows(value, group, [...getRows(value, group), result.data]) : value); setValidation({}) }
+      if (result.ok) { setDraft(value => value ? group === 'body.rows' && value.body?.kind === 'multipart' ? { ...value, body: { ...value.body, rows: [...value.body.rows, kind === 'text' ? { ...result.data, kind } : { id: result.data.id, key: '', enabled: true, kind }] } } : replaceRows(value, group, [...getRows(value, group), result.data]) : value); setValidation({}) }
       else setError('A row could not be added. Your draft has been kept.')
     } catch { if (current === generation.current) setError('A row could not be added. Try again.') }
     finally { if (current === generation.current) { running.current = false; setBusy(false) } }
   }
+  function changeMultipart(rows: Extract<EditableBody, { kind: 'multipart' }>['rows']) {
+    if (!draft || draft.body?.kind !== 'multipart' || busy) return
+    const remaining = new Set(rows.flatMap(row => row.kind === 'file' && row.fileId ? [row.fileId] : []))
+    for (const row of draft.body.rows) if (row.kind === 'file' && row.fileId && !remaining.has(row.fileId)) {
+      selections.current.delete(row.fileId)
+      if (workspace) void window.offlineApi.files.releaseUpload(workspace, row.fileId).catch(() => {})
+    }
+    setDraft({ ...draft, body: { ...draft.body, rows } }); setValidation({})
+  }
+  async function chooseFile(rowId: string) {
+    if (!workspace || !draft || draft.body?.kind !== 'multipart' || running.current) return
+    running.current = true; setBusy(true); setError(null)
+    const current = ++generation.current
+    try {
+      const result = await window.offlineApi.files.chooseUpload(workspace)
+      if (current !== generation.current) {
+        if (result.ok && result.data) void window.offlineApi.files.releaseUpload(workspace, result.data.fileId).catch(() => {})
+        return
+      }
+      if (!result.ok) { setValidation({ [`body.rows[${draft.body.rows.findIndex(row => row.id === rowId)}].fileId`]: result.error.message }); return }
+      if (!result.data) return
+      const selected = result.data
+      selections.current.set(selected.fileId, workspace)
+      const old = draft.body.rows.find(row => row.id === rowId)
+      if (old?.kind === 'file' && old.fileId) {
+        selections.current.delete(old.fileId); void window.offlineApi.files.releaseUpload(workspace, old.fileId).catch(() => {})
+      }
+      setDraft(value => value?.body?.kind === 'multipart' ? { ...value, body: { ...value.body, rows: value.body.rows.map(row => row.id === rowId && row.kind === 'file' ? { ...row, fileId: selected.fileId, fileName: selected.name, fileSize: selected.size } : row) } } : value)
+      setValidation({})
+    } catch { if (current === generation.current) setError('File selection unavailable. Your draft has been kept.') }
+    finally { if (current === generation.current) { running.current = false; setBusy(false) } }
+  }
   return {
+    chooseFile, changeMultipart,
     ...execution,
     saved: currentWorkspace ? saved : null, draft: currentWorkspace ? draft : null, busy: currentWorkspace ? busy : workspace !== null, dirty, error: currentWorkspace ? error : null, revision, validation, addRow, changeBody: (kind: EditableBody['kind']) => { if (!draft || busy) return; const result = switchBody(bodyCache.current, draft.body, kind); bodyCache.current = result.cache; setDraft({ ...draft, body: result.body }); setValidation({}) }, setDraft: (value: RequestDraft) => { setDraft(value); setValidation({}) }, save,
-    create: () => { if (!workspace || busy || dirty || execution.sending) return; bodyCache.current = initialBodyDrafts(); setSaved(null); setDraft(copyDraft({ name: 'New request', method: 'GET', urlTemplate: '', body: { kind: 'none' }, auth: { mode: 'none' } })); setError(null) },
-    discard: () => { if (!busy) { bodyCache.current = initialBodyDrafts(saved?.body ?? undefined); setDraft(saved ? copyDraft(saved) : null); setError(null); setValidation({}) } },
+    create: () => { if (!workspace || busy || dirty || execution.sending) return; releaseSelections(); bodyCache.current = initialBodyDrafts(); setSaved(null); setDraft(copyDraft({ name: 'New request', method: 'GET', urlTemplate: '', body: { kind: 'none' }, auth: { mode: 'none' } })); setError(null) },
+    discard: () => { if (!busy) { releaseSelections(); bodyCache.current = initialBodyDrafts(saved?.body ?? undefined); setDraft(saved ? copyDraft(saved) : null); setError(null); setValidation({}) } },
     open: (id: string) => { if (workspace && !dirty && !execution.sending) void apply(() => window.offlineApi.requests.get(workspace, id)) },
     duplicate: () => { if (workspace && saved && !dirty && !execution.sending) void apply(() => window.offlineApi.requests.duplicate(workspace, saved.id), true) },
     delete: () => workspace && saved && !dirty && !execution.sending ? apply(() => window.offlineApi.requests.delete(workspace, saved.id), true) : Promise.resolve(false)

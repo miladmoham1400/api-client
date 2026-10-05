@@ -17,7 +17,7 @@ function replayPlan(source: MaterializedRequest, url: string, method = source.me
     if (stripCredentials && credentialHeaders.has(name)) return false
     return !dropBody || (!name.startsWith('content-') && !['transfer-encoding', 'trailer', 'expect'].includes(name))
   }).map(header => Object.freeze({ ...header }))
-  return Object.freeze({ method, url, headers: Object.freeze(headers), timeoutMs: source.timeoutMs, followRedirects: false,
+  return Object.freeze({ method, url, ...(!dropBody && source.streamingBody ? { streamingBody: source.streamingBody } : {}), headers: Object.freeze(headers), timeoutMs: source.timeoutMs, followRedirects: false,
     get bodyBytes() { return bytes === null ? null : Buffer.from(bytes) }
   })
 }

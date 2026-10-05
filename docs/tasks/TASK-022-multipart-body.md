@@ -1,6 +1,6 @@
 # TASK-022 — Add multipart text/file requests
 
-Status: todo
+Status: done
 Dependencies: TASK-020, TASK-021, TASK-017, TASK-018
 
 ## Read first
@@ -28,3 +28,7 @@ No handcrafted multipart encoding or file variable paths.
 ## Completion procedure
 
 Record actual changes, commands/results, environment, evidence and blockers in `docs/task-reports/TASK-022.md`. Update this status and the index together. Mark `done` only when acceptance is verified; otherwise `in_progress` or `blocked`. Stop at this task boundary.
+
+## Evidence
+
+See [TASK-022 report](../task-reports/TASK-022.md) for parsed multipart wire/limit tests, streaming cancellation/timeout and 307/308 replay, real Linux editor/native-dialog/restart smoke, commands and limitations. Windows and packaged-app acceptance remain untested. TASK-023 was not implemented.

@@ -1,3 +1,4 @@
+import { BodyError, type BodyStream } from './body'
 import { request as httpRequest, type ClientRequest, type IncomingMessage, type RequestOptions } from 'node:http'
 import type { ConnectionOptions } from 'node:tls'
 import { request as httpsRequest } from 'node:https'
@@ -10,6 +11,7 @@ import { httpResponseSchema, type DomainError, type ErrorCode, type HttpResponse
 import type { MaterializedRequest } from './materialize'
 
 export function transportError(error: unknown): DomainError {
+  if (error instanceof BodyError) return error.error
   const code = error && typeof error === 'object' ? Reflect.get(error, 'code') : undefined
   const mapped: ErrorCode = code === 'ENOTFOUND' || code === 'EAI_AGAIN' ? 'DNS_FAILURE'
     : code === 'ECONNREFUSED' ? 'CONNECTION_REFUSED'
@@ -42,12 +44,14 @@ const nativeRequest: RequestFactory = (url, options, callback) => (url.protocol 
 export function executeSingleHop(snapshot: MaterializedRequest, signal: AbortSignal, startedAt = performance.now(), send: RequestFactory = nativeRequest): Promise<Result<HttpResponse>> {
   if (snapshot.followRedirects) return Promise.resolve(failure('VALIDATION', 'Redirect following is not available yet'))
   return new Promise(resolve => {
+    let upload: BodyStream | undefined
     let settled = false, request: ClientRequest | undefined, response: IncomingMessage | undefined, decoder: Duplex | undefined
     const finish = (result: Result<HttpResponse>) => {
       if (settled) return
       settled = true
       signal.removeEventListener('abort', abort)
       // Tear down all streams on success as well as failure; agent:false prevents pooled sockets.
+      upload?.close()
       response?.destroy(); decoder?.destroy(); request?.destroy()
       resolve(result)
     }
@@ -55,6 +59,8 @@ export function executeSingleHop(snapshot: MaterializedRequest, signal: AbortSig
     if (signal.aborted) { abort(); return }
     signal.addEventListener('abort', abort, { once: true })
     try {
+      upload = snapshot.streamingBody?.open()
+      if (signal.aborted) { abort(); return }
       const url = new URL(snapshot.url)
       const headers = snapshot.headers.flatMap(header => [header.name, header.value])
       headers.push('Host', url.host, 'Connection', 'close')
@@ -98,7 +104,9 @@ export function executeSingleHop(snapshot: MaterializedRequest, signal: AbortSig
       })
       request.once('error', error => finish({ ok: false, error: transportError(error) }))
       request.once('upgrade', (_response, socket) => { socket.destroy(); finish(failure('NETWORK_FAILURE', 'Protocol upgrade is not supported')) })
-      request.end(snapshot.bodyBytes ?? undefined)
+      if (upload) {
+        void pipeline(upload.stream, request).catch((error: unknown) => { if (!settled) finish({ ok: false, error: transportError(error) }) })
+      } else request.end(snapshot.bodyBytes ?? undefined)
     } catch (error) { finish({ ok: false, error: transportError(error) }) }
   })
 }
