@@ -2,6 +2,16 @@
 
 An offline desktop HTTP client for Linux and Windows, built with Electron, React, TypeScript, SQLite and Chakra UI v3. Version 0.1.0 has independent unsigned internal-package acceptance on Ubuntu 24.04 x64 and Windows 11 Pro x64. AppImage acceptance uses extraction-and-run mode; default FUSE launch remains unverified. See the [release acceptance record](docs/release-acceptance.md) for hashes, exact environments and limits.
 
+## Download v0.1.1
+
+| Platform | Installer |
+|---|---|
+| Ubuntu / Debian x64 | [Download .deb](https://github.com/miladmoham1400/api-client/releases/download/v0.1.1/offline-api-client-0.1.1-amd64.deb) |
+| Windows x64 | [Download .exe](https://github.com/miladmoham1400/api-client/releases/download/v0.1.1/offline-api-client-0.1.1-x64-setup.exe) |
+| Linux x64 | [Download AppImage](https://github.com/miladmoham1400/api-client/releases/download/v0.1.1/offline-api-client-0.1.1-x86_64.AppImage) |
+
+Verify downloads with [SHA256SUMS.txt](https://github.com/miladmoham1400/api-client/releases/download/v0.1.1/SHA256SUMS.txt). See [release notes](https://github.com/miladmoham1400/api-client/releases/tag/v0.1.1) and the [installation guide](docs/user-guide.md). These installers are unsigned pre-release builds; Ubuntu 24.04 and Windows Server 2022 passed focused installed-app checks, while full Windows 11 acceptance for this version remains unverified.
+
 ## Confirmed decisions
 
 - Desktop app for Linux and Windows.
