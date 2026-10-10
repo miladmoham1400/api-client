@@ -6,7 +6,7 @@ An offline desktop HTTP client for Linux and Windows, built with Electron, React
 
 | Platform | Installer |
 |---|---|
-| Ubuntu / Debian x64 | [Download .deb](https://github.com/miladmoham1400/api-client/releases/download/v0.1.1/offline-api-client-0.1.1-amd64.deb) |
+| Ubuntu 24.04 x64 | [Download .deb](https://github.com/miladmoham1400/api-client/releases/download/v0.1.1/offline-api-client-0.1.1-amd64.deb) |
 | Windows x64 | [Download .exe](https://github.com/miladmoham1400/api-client/releases/download/v0.1.1/offline-api-client-0.1.1-x64-setup.exe) |
 | Linux x64 | [Download AppImage](https://github.com/miladmoham1400/api-client/releases/download/v0.1.1/offline-api-client-0.1.1-x86_64.AppImage) |
 
