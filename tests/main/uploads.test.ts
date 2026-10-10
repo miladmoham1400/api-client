@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { randomUUID } from 'node:crypto'
+import { execFileSync } from 'node:child_process'
 import { chmodSync, fstatSync, mkdtempSync, mkdirSync, readSync, rmSync, truncateSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -21,6 +22,11 @@ function fixture() {
   const service = new UploadService(assertWorkspace)
   const row = (fileId?: string, enabled = true) => ({ id: randomUUID(), key: 'file', kind: 'file' as const, enabled, ...(fileId ? { fileId } : {}) })
   return { directory, path, workspace, other, existing, service, row, assertWorkspace }
+}
+/** chmod cannot remove read access on Windows, so deny read-data to Everyone through the file ACL instead. */
+function makeUnreadable(path: string) {
+  if (process.platform !== 'win32') { chmodSync(path, 0); return }
+  execFileSync('icacls', [path, '/deny', '*S-1-1-0:(RD)'], { stdio: 'ignore', windowsHide: true })
 }
 function code(operation: () => unknown, expected: string) {
   try { operation(); throw new Error('Expected rejection') }
@@ -65,7 +71,7 @@ describe('main-only upload capabilities', () => {
     if (mode === 'changed') truncateSync(f.path, 4)
     if (mode === 'oversized') truncateSync(f.path, LIMITS.fileBytes + 1)
     if (mode === 'directory') { rmSync(f.path); mkdirSync(f.path) }
-    if (mode === 'unreadable') chmodSync(f.path, 0)
+    if (mode === 'unreadable') makeUnreadable(f.path)
     const operation = () => f.service.openForSend(f.workspace, { kind: 'multipart', rows: [f.row(selected.fileId)] })
     code(operation, mode === 'oversized' ? 'FILE_TOO_LARGE' : 'FILE_CHANGED')
     try { operation() } catch (error) { expect(error).toMatchObject({ field: 'body.rows[0].fileId' }) }

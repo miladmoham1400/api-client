@@ -1,0 +1,23 @@
+TASK-029 manual Windows checks. Internet DISCONNECTED during all of these.
+Write PASS or FAIL after each line, plus a short note if anything looked wrong.
+
+Windows version (winver):
+Date:
+
+A. App opens from Start menu with internet off:
+B. GET http://127.0.0.1:8787/hello returns 200 with echoed JSON:
+C. Request saved (Ctrl+S), shows as saved in sidebar:
+D. Environment beats global (global base_url=http://127.0.0.1:1, env "Local" base_url=http://127.0.0.1:8787, {{base_url}}/env goes to 8787):
+E. Missing variable ({{nope}}/x) shows a clear error and sends nothing:
+F. POST JSON body {"a":1} to /json, echo shows the body:
+G. URL-encoded form a=1, a=2 to /form, echo shows a=1&a=2:
+H. Multipart: text field + file chosen in the Windows file dialog, echo shows filename and file text:
+I. /delay?ms=10000 then Cancel -> cancelled; next /hello works:
+J. Timeout 1000 ms + /delay?ms=10000 -> timeout error; next /hello works:
+K. /status/401 and /status/500 shown as normal responses with their body text:
+L. /html shows literal text (<script> visible as text, no popup, nothing loaded):
+M. https://127.0.0.1:8788/hello -> TLS/certificate error, not a response:
+N. Workspace "Test B" does not show Test A's requests or variables:
+O. Export Test A (Windows save dialog) -> file does NOT contain synthetic-secret-123:
+P. Import that file (Windows open dialog) -> preview -> imported as new workspace with the requests:
+Q. Close app with X, reopen -> workspaces, requests, environment and theme all still there:

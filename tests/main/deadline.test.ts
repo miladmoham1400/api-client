@@ -18,6 +18,12 @@ import { startFixture } from '../fixtures/http'
 
 const cleanup: (() => void | Promise<void>)[] = []
 class PendingSocket extends Socket { override readonly connecting = true }
+/** Accepts request bytes but never acknowledges them, so an upload stalls regardless of OS loopback buffer sizes (Windows can buffer the whole body). */
+class StalledUploadSocket extends Socket {
+  // Write callbacks are intentionally never invoked.
+  override _write(): void {}
+  override _writev(): void {}
+}
 afterEach(async () => { for (const close of cleanup.splice(0).reverse()) await close() })
 function service(transport?: ConstructorParameters<typeof ExecutionService>[2]) {
   const directory = mkdtempSync(join(tmpdir(), 'api-client-deadline-')), db = openDatabase(join(directory, 'test.sqlite'))
@@ -112,15 +118,18 @@ it.each(['connect', 'upload'] as const)('deadline aborts stalled %s and closes i
   let capturedRequest: ClientRequest | undefined, pendingSocket: Socket | undefined, finished = false
   const api = service((plan, signal, started) => executeSingleHop(plan, signal, started, (url, options, callback) => {
     // An unconnected socket deterministically holds the connect phase without external routing.
+    // A connected socket that never acknowledges writes deterministically holds the upload phase.
     const agent = new Agent()
-    agent.createConnection = () => { pendingSocket = new PendingSocket(); return pendingSocket }
-    const req = request(url, mode === 'connect' ? { ...options, agent } : options, callback)
+    agent.createConnection = mode === 'connect'
+      ? () => { pendingSocket = new PendingSocket(); return pendingSocket }
+      : () => { const socket = new StalledUploadSocket(); socket.connect(address.port, '127.0.0.1'); return socket }
+    const req = request(url, { ...options, agent }, callback)
     capturedRequest = req; req.once('finish', () => { finished = true }); return req
   }))
   const options: Partial<RequestDraft> = mode === 'upload' ? { method: 'POST', body: { kind: 'raw', text: 'x'.repeat(5 * 1024 * 1024), mediaType: 'text/plain' } } : {}
   expect((await api.send(`http://127.0.0.1:${address.port}/`, options).completed).result).toMatchObject({ code: 'TIMEOUT' })
   await new Promise(resolve => setImmediate(resolve)); expect(capturedRequest?.destroyed).toBe(true)
-  if (mode === 'upload') expect(finished).toBe(false)
+  if (mode === 'upload') { expect(finished).toBe(false); await waitClosed(async () => sockets.size) }
   else { expect(pendingSocket?.destroyed).toBe(true); expect(sockets.size).toBe(0) }
   expect(api.received).toHaveLength(1)
 })

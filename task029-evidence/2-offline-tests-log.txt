@@ -1,0 +1,482 @@
+﻿**********************
+Windows PowerShell transcript start
+Start time: 20261010000558
+Username: SOLARSTONE-PC\javad
+RunAs User: SOLARSTONE-PC\javad
+Configuration Name: 
+Machine: SOLARSTONE-PC (Microsoft Windows NT 10.0.26300.0)
+Host Application: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+Process ID: 24736
+PSVersion: 5.1.26100.9549
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.9549
+BuildVersion: 10.0.26100.9549
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+Transcript started, output file is .\task029-evidence\2-offline-tests-log.txt
+PS G:\api-client-master> Test-NetConnection 1.1.1.1 -Port 443
+WARNING: TCP connect to (1.1.1.1 : 443) failed
+WARNING: Ping to 1.1.1.1 failed with status: 11050
+
+
+ComputerName           : 1.1.1.1
+RemoteAddress          : 1.1.1.1
+RemotePort             : 443
+InterfaceAlias         : Wi-Fi 3
+SourceAddress          : 192.168.0.172
+PingSucceeded          : False
+PingReplyDetails (RTT) : 0 ms
+TcpTestSucceeded       : False
+
+
+
+PS G:\api-client-master> $env:API_CLIENT_EXECUTABLE = "$env:LOCALAPPDATA\Programs\offline-api-client\offline-api-client.exe"
+PS G:\api-client-master> npm.cmd exec --no -- playwright test
+
+Running 26 tests using 1 worker
+
+  ok  1 …h editing saves literal handles, templates, replacements and missing session state without enabling Send (2.5s)
+      2 tests\baseline.spec.ts:7:5 › built local Electron window renders Chakra without remote resources
+Embedded runtime: {
+  node: '24.21.0',
+  acorn: '8.18.0',
+  ada: '4.0.0',
+  amaro: '1.1.11',
+  ares: '1.34.8',
+  brotli: '1.2.0',
+  cldr: '48.0',
+  icu: '78.2',
+  llhttp: '9.4.3',
+  merve: '1.2.2',
+  modules: '149',
+  napi: '10',
+  nbytes: '0.1.4',
+  ncrypto: '0.0.1',
+  nghttp2: '1.70.0',
+  nghttp3: '',
+  ngtcp2: '',
+  openssl: '0.0.0',
+  simdjson: '4.6.7',
+  simdutf: '7.7.0',
+  sqlite: '3.53.4',
+  tz: '2025c',
+  undici: '7.29.1',
+  unicode: '17.0',
+  uv: '1.52.1',
+  uvwasi: '0.0.23',
+  v8: '15.2.124.28-electron.0',
+  zlib: '1.3.2.1-motley',
+  zstd: '1.6.0',
+  electron: '44.5.1',
+  chrome: '152.0.7977.130'
+}
+  ok  2 tests\baseline.spec.ts:7:5 › built local Electron window renders Chakra without remote resources (577ms)
+  ok  3 …ditor.spec.ts:8:5 › body modes retain inactive drafts while Save/restart persists only the active source (2.5s)
+  x   4 …9:5 › Send/Cancel and Ctrl+Enter execute unsaved snapshots, release busy state and never save implicitly (6.3s)
+  x   5 …ts:10:5 › sidebar collection CRUD and grouping preserve temporary saved requests and workspace isolation (2.4s)
+  x   6 …5 › native SQLite loads in Electron, reopens saved data and reports corrupt startup without replacement (605ms)
+  x   7 …preload sends captured native requests, receives immediate completion and cleans up execution lifetimes (30.0s)
+Worker teardown timeout of 30000ms exceeded.
+
+Failed worker ran 1 test:
+tests\execution.spec.ts:10:5 › sandboxed preload sends captured native requests, receives immediate completion and clean
+s up execution lifetimes
+  -   8 …space export/cancel preserves saved configuration, omissions and unsaved editor; destination errors retain data
+  -   9 …ve export/import preview confirms only a new workspace, cancels neutrally, rejects invalid data and never sends
+  -  10 …or selects native files, sends unsaved rows, preserves selection on Save and requires reselection after restart
+  ok 11 …rty request/workspace navigation, failed Save and normal close preserve explicit decisions and selection (7.8s)
+  x  12 …s:133:5 › confirmed request/collection/workspace deletions cannot bypass dirty or active-request guards (12.4s)
+  x  13 …n.spec.ts:234:5 › cancel-and-navigate waits for an attempt still preparing before an execution ID exists (3.4s)
+  -  14 …line.spec.ts:15:5 › loopback-only integrated story: persistence, isolation, failures and safe transfer recovery
+  ok 15 …ndboxed Electron follows redirects, strips credentials permanently and rejects verified HTTPS downgrade (662ms)
+  ok 16 …ec.ts:8:5 › keyboard row editing preserves duplicate/disabled/order and validated settings after restart (2.8s)
+  ok 17 …ec.ts:8:5 › explicit Save/Ctrl+S persists independent drafts; failed save, duplicate and delete are safe (3.4s)
+  ok 18 … response viewer safely presents HTTP/error/binary states, snapshots, stale events and restart emptiness (3.6s)
+  ok 19 …ts\secrets.spec.ts:8:5 › real Electron reports safeStorage capability without exposing synthetic values (511ms)
+Actual safeStorage capability: {
+  available: true,
+  backend: 'platform',
+  mode: 'secure',
+  roundTrip: true,
+  plaintextAbsent: true
+}
+  x  20 …urity.spec.ts:9:5 › owned production window exposes only validated APIs and denies browser capabilities (805ms)
+  x  21 ….spec.ts:8:5 › shell fits desktop sizes, traps/restores dialog focus and recovers from bootstrap failure (5.6s)
+  ok 22 …art and failed saves without draft loss; keyboard scopes, contrast and resizing work in both appearances (4.0s)
+light field-error contrast 8.374706273455857
+dark field-error contrast 10.48245210373737
+  -  23 …loads.spec.ts:13:5 › Linux native selection/cancel, workspace isolation, reload and restart require reselection
+  ok 24 ….spec.ts:9:5 › form editor sends unsaved ordered snapshots, validates before I/O and reopens saved forms (3.4s)
+  ok 25 …c.ts:8:5 › two-workspace environments and variables preserve scope, masking, selection and restart state (4.9s)
+  x  26 …ts:8:5 › workspace CRUD and selection persist across restart; confirmation and failed writes retain data (5.4s)
+
+
+  1) tests\cancel-timeout.spec.ts:9:5 › Send/Cancel and Ctrl+Enter execute unsaved snapshots, release busy state and nev
+er save implicitly
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 1
+    Received: 0
+
+    Call Log:
+    - Timeout 5000ms exceeded while waiting on the predicate
+
+      36 |     await expect(send).toBeEnabled(); await send.click()
+      37 |     await expect(cancel).toBeEnabled(); await expect(send).toBeDisabled()
+    > 38 |     await expect.poll(() => urls.length).toBe(1)
+         |                                          ^
+      39 |     await page.getByLabel('Request URL', { exact: true }).fill(fixture.url + '/echo')
+      40 |     await page.keyboard.press('Control+Enter')
+      41 |     expect(urls).toEqual(['/hold']) // Editing and shortcut did not start a second request.
+        at G:\api-client-master\tests\cancel-timeout.spec.ts:38:42
+
+    Error Context: test-results\cancel-timeout-Send-Cancel-d24c6-e-and-never-save-implicitly\error-context.md
+
+  2) tests\collections.spec.ts:10:5 › sidebar collection CRUD and grouping preserve temporary saved requests and workspa
+ce isolation
+
+    Error: electronApplication.evaluate: Error: Fixture database must be temporary
+        at eval (eval at evaluate (:311:30), <anonymous>:5:51)
+        at UtilityScript.evaluate (<anonymous>:313:16)
+        at UtilityScript.<anonymous> (<anonymous>:1:44)
+        at eval (eval at evaluate (:311:30), <anonymous>:5:51)
+        at UtilityScript.evaluate (<anonymous>:313:16)
+        at UtilityScript.<anonymous> (<anonymous>:1:44)
+        at G:\api-client-master\tests\collections.spec.ts:42:23
+
+    Error Context: test-results\collections-sidebar-collec-d51c0-sts-and-workspace-isolation\error-context.md
+
+  3) tests\database.spec.ts:8:5 › native SQLite loads in Electron, reopens saved data and reports corrupt startup withou
+t replacement
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+      16 |     const id = randomUUID()
+      17 |     const location = await application.evaluate(({ app }) => `${app.getPath('userData')}/offline-api-client.s
+qlite`)
+    > 18 |     expect(location.startsWith(directory)).toBe(true)
+         |                                            ^
+      19 |     const evidence = await application.evaluate(({ app }, id) => {
+      20 |       const load = process.getBuiltinModule('module').createRequire(`${app.getAppPath()}/package.json`)
+      21 |       const Driver: typeof import('better-sqlite3') = load('better-sqlite3')
+        at G:\api-client-master\tests\database.spec.ts:18:44
+
+    Error Context: test-results\database-native-SQLite-loa-4eda1-startup-without-replacement\error-context.md
+
+  4) tests\execution.spec.ts:10:5 › sandboxed preload sends captured native requests, receives immediate completion and
+cleans up execution lifetimes
+
+    Test timeout of 30000ms exceeded.
+
+    Error Context: test-results\execution-sandboxed-preloa-dacbf-eans-up-execution-lifetimes\error-context.md
+
+  5) tests\navigation.spec.ts:133:5 › confirmed request/collection/workspace deletions cannot bypass dirty or active-req
+uest guards
+
+    Error: expect(locator).not.toBeVisible() failed
+
+    Locator:  getByRole('dialog', { name: 'Delete collection', exact: true })
+    Expected: not visible
+    Received: visible
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "not toBeVisible" getByRole('dialog', { name: 'Delete collection', exact: true }) with timeout 5000ms
+      - waiting for getByRole('dialog', { name: 'Delete collection', exact: true })
+        14 × locator resolved to <div dir="ltr" role="dialog" tabindex="-1" data-state="open" aria-modal="true" data-sco
+pe="dialog" data-part="content" id="dialog:_r_e_:content" aria-labelledby="dialog:_r_e_:title" class="chakra-dialog__con
+tent css-1n543c7" aria-describedby="dialog:_r_e_:description">…</div>
+           - unexpected value "visible"
+
+
+      214 |     await confirmation.getByRole('button', { name: 'Delete collection', exact: true }).click()
+      215 |     await dirty.getByRole('button', { name: 'Save', exact: true }).click()
+    > 216 |     await expect(confirmation).not.toBeVisible()
+          |                                    ^
+      217 |     expect(await page.evaluate(w => window.offlineApi.requests.list(w), a)).toMatchObject({ ok: true, data:
+{ editor: { name: 'Dirty in collection', collectionId: null } } })
+      218 |     await page.getByRole('button', { name: 'Send', exact: true }).click()
+      219 |     await expect(page.getByRole('status').filter({ hasText: /^Request completed$/ })).toBeVisible()
+        at G:\api-client-master\tests\navigation.spec.ts:216:36
+
+    Error Context: test-results\navigation-confirmed-reque-b6f1e-ty-or-active-request-guards\error-context.md
+
+  6) tests\navigation.spec.ts:234:5 › cancel-and-navigate waits for an attempt still preparing before an execution ID ex
+ists
+
+    Error: expect(received).toMatchObject(expected)
+
+    - Expected  -  1
+    + Received  + 52
+
+      Object {
+        "data": Object {
+          "selectedWorkspaceId": "39024644-2b9e-48f9-9feb-370b4da24659",
+          "workspaces": Array [
+    -       ObjectContaining {
+    +       Object {
+    +         "createdAt": "2026-10-09T20:36:39.523Z",
+    +         "id": "97d3cfe1-42d4-4f14-8a1c-81a0f37d7b75",
+    +         "name": "Auth workspace",
+    +         "updatedAt": "2026-10-09T20:36:39.523Z",
+    +       },
+    +       Object {
+    +         "createdAt": "2026-10-09T20:36:42.571Z",
+    +         "id": "d6899723-970e-4032-a342-fa52997bb88c",
+    +         "name": "Body workspace",
+    +         "updatedAt": "2026-10-09T20:36:42.571Z",
+    +       },
+    +       Object {
+    +         "createdAt": "2026-10-09T20:36:45.213Z",
+    +         "id": "21d561fc-c2a9-47e6-a764-3a59e3c69d1c",
+    +         "name": "Cancel fixture",
+    +         "updatedAt": "2026-10-09T20:36:45.213Z",
+    +       },
+    +       Object {
+    +         "createdAt": "2026-10-09T20:36:51.917Z",
+    +         "id": "42ccb897-3167-472c-b5c4-8a18da69fe61",
+    +         "name": "Collection workspace",
+    +         "updatedAt": "2026-10-09T20:36:51.917Z",
+    +       },
+    +       Object {
+    +         "createdAt": "2026-10-09T20:36:55.474Z",
+    +         "id": "9ab1d899-7196-4a1c-aabc-b99e01f5a830",
+    +         "name": "Reload fixture",
+    +         "updatedAt": "2026-10-09T20:36:55.474Z",
+    +       },
+    +       Object {
+    +         "createdAt": "2026-10-09T20:37:56.899Z",
+    +         "id": "fca8784c-d271-40c2-a1e8-f164fd5060d6",
+    +         "name": "A",
+    +         "updatedAt": "2026-10-09T20:37:56.899Z",
+    +       },
+    +       Object {
+    +         "createdAt": "2026-10-09T20:37:57.664Z",
+    +         "id": "83bc1df9-7e46-4272-9389-d83fb2df5abf",
+    +         "name": "B",
+    +         "updatedAt": "2026-10-09T20:37:57.664Z",
+    +       },
+    +       Object {
+    +         "createdAt": "2026-10-09T20:38:04.721Z",
+    +         "id": "b8b58926-65b1-4f45-9e25-0e0719ce821a",
+    +         "name": "Delete guards",
+    +         "updatedAt": "2026-10-09T20:38:04.721Z",
+    +       },
+    +       Object {
+    +         "createdAt": "2026-10-09T20:38:17.496Z",
+              "id": "39024644-2b9e-48f9-9feb-370b4da24659",
+    +         "name": "Preparing",
+    +         "updatedAt": "2026-10-09T20:38:17.496Z",
+            },
+          ],
+        },
+        "ok": true,
+      }
+
+      275 |     await expect(page.getByRole('status').filter({ hasText: /^Request cancelled$/ })).toBeVisible()
+      276 |     await expect(page.getByLabel('Request name', { exact: true })).toHaveValue('Hold')
+    > 277 |     expect(await page.evaluate(() => window.offlineApi.workspaces.list())).toMatchObject({ ok: true, data: {
+ selectedWorkspaceId: a, workspaces: [expect.objectContaining({ id: a })] } })
+          |                                                                            ^
+      278 |   } finally { await shutdown(application); await fixture.close(); rmSync(directory, { recursive: true, force
+: true }) }
+      279 | })
+      280 |
+        at G:\api-client-master\tests\navigation.spec.ts:277:76
+
+    Error Context: test-results\navigation-cancel-and-navi-16314-fore-an-execution-ID-exists\error-context.md
+
+  7) tests\security.spec.ts:9:5 › owned production window exposes only validated APIs and denies browser capabilities
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  -  2
+    + Received  + 81
+
+      Object {
+        "data": Object {
+    -     "selectedWorkspaceId": null,
+    -     "workspaces": Array [],
+    +     "selectedWorkspaceId": "8925ca97-fbaa-4b18-90c1-735102a3c456",
+    +     "workspaces": Array [
+    +       Object {
+    +         "createdAt": "2026-10-09T20:36:39.523Z",
+    +         "id": "97d3cfe1-42d4-4f14-8a1c-81a0f37d7b75",
+    +         "name": "Auth workspace",
+    +         "updatedAt": "2026-10-09T20:36:39.523Z",
+    +       },
+    +       Object {
+    +         "createdAt": "2026-10-09T20:36:42.571Z",
+    +         "id": "d6899723-970e-4032-a342-fa52997bb88c",
+    +         "name": "Body workspace",
+    +         "updatedAt": "2026-10-09T20:36:42.571Z",
+    +       },
+    +       Object {
+    +         "createdAt": "2026-10-09T20:36:45.213Z",
+    +         "id": "21d561fc-c2a9-47e6-a764-3a59e3c69d1c",
+    +         "name": "Cancel fixture",
+    +         "updatedAt": "2026-10-09T20:36:45.213Z",
+    +       },
+    +       Object {
+    +         "createdAt": "2026-10-09T20:36:51.917Z",
+    +         "id": "42ccb897-3167-472c-b5c4-8a18da69fe61",
+    +         "name": "Collection workspace",
+    +         "updatedAt": "2026-10-09T20:36:51.917Z",
+    +       },
+    +       Object {
+    +         "createdAt": "2026-10-09T20:36:55.474Z",
+    +         "id": "9ab1d899-7196-4a1c-aabc-b99e01f5a830",
+    +         "name": "Reload fixture",
+    +         "updatedAt": "2026-10-09T20:36:55.474Z",
+    +       },
+    +       Object {
+    +         "createdAt": "2026-10-09T20:37:56.899Z",
+    +         "id": "fca8784c-d271-40c2-a1e8-f164fd5060d6",
+    +         "name": "A",
+    +         "updatedAt": "2026-10-09T20:37:56.899Z",
+    +       },
+    +       Object {
+    +         "createdAt": "2026-10-09T20:37:57.664Z",
+    +         "id": "83bc1df9-7e46-4272-9389-d83fb2df5abf",
+    +         "name": "B",
+    +         "updatedAt": "2026-10-09T20:37:57.664Z",
+    +       },
+    +       Object {
+    +         "createdAt": "2026-10-09T20:38:04.721Z",
+    +         "id": "b8b58926-65b1-4f45-9e25-0e0719ce821a",
+    +         "name": "Delete guards",
+    +         "updatedAt": "2026-10-09T20:38:04.721Z",
+    +       },
+    +       Object {
+    +         "createdAt": "2026-10-09T20:38:17.496Z",
+    +         "id": "39024644-2b9e-48f9-9feb-370b4da24659",
+    +         "name": "Preparing",
+    +         "updatedAt": "2026-10-09T20:38:17.496Z",
+    +       },
+    +       Object {
+    +         "createdAt": "2026-10-09T20:38:20.882Z",
+    +         "id": "0e594908-df1f-41fe-8f2e-b6e8f497c6a7",
+    +         "name": "Redirect fixture",
+    +         "updatedAt": "2026-10-09T20:38:20.882Z",
+    +       },
+    +       Object {
+    +         "createdAt": "2026-10-09T20:38:22.054Z",
+    +         "id": "156e51e2-a17a-477f-b172-e215f977a9d3",
+    +         "name": "Fields workspace",
+    +         "updatedAt": "2026-10-09T20:38:22.054Z",
+    +       },
+    +       Object {
+    +         "createdAt": "2026-10-09T20:38:24.846Z",
+    +         "id": "e0347316-8fcd-4eac-ac13-30436f675469",
+    +         "name": "Request workspace",
+    +         "updatedAt": "2026-10-09T20:38:24.846Z",
+    +       },
+    +       Object {
+    +         "createdAt": "2026-10-09T20:38:28.254Z",
+    +         "id": "8925ca97-fbaa-4b18-90c1-735102a3c456",
+    +         "name": "Response fixture",
+    +         "updatedAt": "2026-10-09T20:38:28.254Z",
+    +       },
+    +     ],
+        },
+        "ok": true,
+      }
+
+      69 |       { ok: false, error: { code: 'NOT_FOUND', message: 'Operation unavailable', retryable: false } }
+      70 |     ])
+    > 71 |     expect(await page.evaluate(() => window.offlineApi.workspaces.list())).toEqual({ ok: true, data: { worksp
+aces: [], selectedWorkspaceId: null } })
+         |                                                                            ^
+      72 |     const executable = await application.evaluate(({ app }) => app.getPath('exe'))
+      73 |     const child = spawn(executable, ['.'], { env, stdio: 'ignore' })
+      74 |     try {
+        at G:\api-client-master\tests\security.spec.ts:71:76
+
+    Error Context: test-results\security-owned-production--32dc0-denies-browser-capabilities\error-context.md
+
+  8) tests\shell.spec.ts:8:5 › shell fits desktop sizes, traps/restores dialog focus and recovers from bootstrap failure
+
+
+    Error: expect(locator).toBeDisabled() failed
+
+    Locator:  getByRole('button', { name: 'Send', exact: true })
+    Expected: disabled
+    Received: enabled
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toBeDisabled" getByRole('button', { name: 'Send', exact: true }) with timeout 5000ms
+      - waiting for getByRole('button', { name: 'Send', exact: true })
+        14 × locator resolved to <button type="button" class="chakra-button css-kcj133">Send</button>
+           - unexpected value "enabled"
+
+
+      16 |     await page.emulateMedia({ colorScheme: 'light' })
+      17 |     await expect(page.locator('html')).toHaveClass('light')
+    > 18 |     await expect(page.getByRole('button', { name: 'Send', exact: true })).toBeDisabled()
+         |                                                                           ^
+      19 |     await expect(page.getByRole('button', { name: 'Create Workspace', exact: true })).toBeEnabled()
+      20 |     await page.screenshot({ path: '/tmp/api-client-shell-light.png' })
+      21 |     const about = page.getByRole('button', { name: 'About this shell' })
+        at G:\api-client-master\tests\shell.spec.ts:18:75
+
+    Error Context: test-results\shell-shell-fits-desktop-s-d808f-vers-from-bootstrap-failure\error-context.md
+
+  9) tests\workspaces.spec.ts:8:5 › workspace CRUD and selection persist across restart; confirmation and failed writes
+retain data
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('complementary', { name: 'Collections and requests' }).getByText('No workspace selected', { exact
+: true })
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByRole('complementary', { name: 'Collections and requests' }).getByText('No workspace se
+lected', { exact: true }) with timeout 5000ms
+      - waiting for getByRole('complementary', { name: 'Collections and requests' }).getByText('No workspace selected',
+{ exact: true })
+
+
+      25 |       await page.getByRole('menuitem', { name: action, exact: true }).click()
+      26 |     }
+    > 27 |     await expect(sidebar().getByText('No workspace selected', { exact: true })).toBeVisible()
+         |                                                                                 ^
+      28 |     expect(await page.evaluate(() => Reflect.apply(window.offlineApi.workspaces.create, null, [{ name: 'Inval
+id shape' }]))).toMatchObject({ ok: false, error: { code: 'VALIDATION' } })
+      29 |     expect(await page.evaluate(() => window.offlineApi.workspaces.list())).toEqual({ ok: true, data: { worksp
+aces: [], selectedWorkspaceId: null } })
+      30 |     await sidebar().getByRole('button', { name: 'Create Workspace', exact: true }).click()
+        at G:\api-client-master\tests\workspaces.spec.ts:27:81
+
+    Error Context: test-results\workspaces-workspace-CRUD--28174-d-failed-writes-retain-data\error-context.md
+
+  9 failed
+    tests\cancel-timeout.spec.ts:9:5 › Send/Cancel and Ctrl+Enter execute unsaved snapshots, release busy state and neve
+r save implicitly
+    tests\collections.spec.ts:10:5 › sidebar collection CRUD and grouping preserve temporary saved requests and workspac
+e isolation
+    tests\database.spec.ts:8:5 › native SQLite loads in Electron, reopens saved data and reports corrupt startup without
+ replacement
+    tests\execution.spec.ts:10:5 › sandboxed preload sends captured native requests, receives immediate completion and c
+leans up execution lifetimes
+    tests\navigation.spec.ts:133:5 › confirmed request/collection/workspace deletions cannot bypass dirty or active-requ
+est guards
+    tests\navigation.spec.ts:234:5 › cancel-and-navigate waits for an attempt still preparing before an execution ID exi
+sts
+    tests\security.spec.ts:9:5 › owned production window exposes only validated APIs and denies browser capabilities
+    tests\shell.spec.ts:8:5 › shell fits desktop sizes, traps/restores dialog focus and recovers from bootstrap failure
+    tests\workspaces.spec.ts:8:5 › workspace CRUD and selection persist across restart; confirmation and failed writes r
+etain data
+  5 skipped
+  12 passed (2.3m)
+  1 error was not a part of any test, see above for details

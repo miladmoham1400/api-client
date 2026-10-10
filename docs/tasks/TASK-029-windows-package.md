@@ -3,7 +3,7 @@
 Status: blocked
 Dependencies: TASK-027
 
-Packaging configuration/scripts are prepared and locally checked. Actual Windows 11 x64 build, install, offline matrix and uninstall/reinstall preservation are blocked: this session provides only a Linux host and no Windows runner/machine. See [TASK-029 report](../task-reports/TASK-029.md). No Windows acceptance is marked passed.
+Packaging configuration/scripts are prepared and locally checked. Actual Windows 11 x64 build, install, offline matrix and uninstall/reinstall preservation are blocked: this session provides only a Linux host and no Windows runner/machine. Reassessed 2026-10-09: a Windows x64 PC was linked for file access only, with no command shell, so the blocker remains (see report). See [TASK-029 report](../task-reports/TASK-029.md). No Windows acceptance is marked passed.
 
 ## Read first
 

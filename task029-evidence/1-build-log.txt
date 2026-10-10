@@ -1,0 +1,271 @@
+﻿**********************
+Windows PowerShell transcript start
+Start time: 20261009235643
+Username: SOLARSTONE-PC\javad
+RunAs User: SOLARSTONE-PC\javad
+Configuration Name: 
+Machine: SOLARSTONE-PC (Microsoft Windows NT 10.0.26300.0)
+Host Application: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+Process ID: 24736
+PSVersion: 5.1.26100.9549
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.9549
+BuildVersion: 10.0.26100.9549
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+Transcript started, output file is .\task029-evidence\1-build-log.txt
+PS G:\api-client-master> 
+node --version
+v22.18.0
+PS G:\api-client-master> 
+npm.cmd --version
+11.6.2
+PS G:\api-client-master> 
+npm.cmd ci
+npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache i
+f you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerfu
+l.
+npm warn deprecated rimraf@2.6.3: Rimraf versions prior to v4 are no longer supported
+npm warn deprecated glob@7.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabi
+lities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorb
+itant rates) by contacting i@izs.me
+npm warn deprecated boolean@3.2.0: Package no longer supported. Contact Support at https://www.npmjs.com/support for mor
+e info.
+
+added 589 packages, and audited 590 packages in 14s
+
+89 packages are looking for funding
+  run `npm fund` for details
+
+8 moderate severity vulnerabilities
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+PS G:\api-client-master> 
+npm.cmd exec --no -- install-electron
+
+PS G:\api-client-master> 
+npm.cmd run lint
+
+> offline-api-client@0.1.0 lint
+> eslint .
+PS G:\api-client-master> 
+npm.cmd run test:unit
+
+> offline-api-client@0.1.0 test:unit
+> npm run rebuild:node && vitest run
+
+
+> offline-api-client@0.1.0 rebuild:node
+> npm rebuild better-sqlite3
+
+rebuilt dependencies successfully
+
+ RUN  v5.0.3 G:/api-client-master
+
+
+ ❯ tests/main/collections.test.ts [queued]
+ ❯ tests/main/database.test.ts [queued]
+ ❯ tests/main/deadline.test.ts [queued]
+ ✓ tests/shared/navigation.test.ts (8 tests) 11ms
+ ✓ tests/shared/response-format.test.ts (3 tests) 30ms
+
+ ❯ tests/main/collections.test.ts [queued]
+ ❯ tests/main/database.test.ts [queued]
+
+ ❯ tests/main/collections.test.ts [queued]
+ ❯ tests/main/database.test.ts [queued]
+ ✓ tests/shared/variables.test.ts (8 tests) 14ms
+ ✓ tests/preload/files.test.ts (1 test) 13ms
+ ✓ tests/preload/listeners.test.ts (1 test) 13ms
+ ✓ tests/main/ipc-guard.test.ts (6 tests) 15ms
+ ✓ tests/shared/request-fields.test.ts (3 tests) 19ms
+ ✓ tests/shared/body-editor.test.ts (4 tests) 28ms
+ ✓ tests/preload/execution.test.ts (3 tests) 28ms
+ ✓ tests/main/materialize.test.ts (8 tests) 34ms
+ ✓ tests/main/urlencoded.test.ts (5 tests) 76ms
+ ✓ tests/shared/contracts.test.ts (76 tests) 113ms
+ ✓ tests/main/database.test.ts (6 tests) 218ms
+ ✓ tests/main/redirects.test.ts (24 tests) 411ms
+ ✓ tests/main/workspaces.test.ts (6 tests) 328ms
+ ✓ tests/main/transport.test.ts (25 tests) 472ms
+ ✓ tests/main/uploads.test.ts (14 tests) 458ms
+ ✓ tests/main/collections.test.ts (6 tests) 410ms
+ ✓ tests/main/theme.test.ts (2 tests) 527ms
+   ✓ rejects invalid/foreign IPC and rolls back a failed preference write 431ms
+ ✓ tests/main/variable-management.test.ts (6 tests) 456ms
+ ✓ tests/main/requests.test.ts (11 tests) 610ms
+ ✓ tests/main/secrets.test.ts (15 tests) 766ms
+ ✓ tests/main/execution.test.ts (15 tests) 787ms
+ ✓ tests/main/export.test.ts (11 tests) 826ms
+   ✓ cancelled save and export leave database bytes/selection unchanged; snapshot precedes native dialog 385ms
+ ✓ tests/main/repositories.test.ts (13 tests) 1177ms
+   ✓ upserts variables by case-sensitive scope, bounds entries and removes orphan secrets on conversion 677ms
+ ✓ tests/main/multipart.test.ts (13 tests) 1021ms
+ ✓ tests/main/deadline.test.ts (8 tests) 1151ms
+ ✓ tests/main/import.test.ts (18 tests) 3801ms
+   ✓ rolls back all entities/secrets on injected late write failure, keeping existing database bytes 419ms
+   ✓ rejects header before writes without leaking input 308ms
+
+ Test Files  28 passed (28)
+      Tests  319 passed (319)
+   Start at  23:57:53
+   Duration  6.04s (import 58%, tests 25%, transform 16%, worker 1%)
+PS G:\api-client-master> 
+npm.cmd run package:win
+
+> offline-api-client@0.1.0 package:win
+> node scripts/package-windows.mjs
+
+vite v7.3.6 building ssr environment for production...
+✓ 50 modules transformed.
+out/main/index.js  153.78 kB
+✓ built in 273ms
+vite v7.3.6 building ssr environment for production...
+node_modules/zod/v4/core/regexes.js (74:0): A comment
+
+"/** Anchors a pattern source. The interpolation lives here rather than at the call site because
+ * esbuild will not drop a `@__PURE__` call whose own argument interpolates a variable, but it
+ * will drop `anchor(dateSource)`. Keeping it inline pinned `date` into every bundle. */"
+
+in "node_modules/zod/v4/core/regexes.js" contains an annotation that Rollup cannot interpret due to the position of the
+comment. The comment will be removed to avoid issues.
+node_modules/zod/v4/core/util.js (400:0): A comment
+
+"// Wrapped in a `@__PURE__` IIFE: esbuild never tree-shakes a top-level initializer that contains a member access on `N
+umber`, so the bare object literal survived into every bundle."
+
+in "node_modules/zod/v4/core/util.js" contains an annotation that Rollup cannot interpret due to the position of the com
+ment. The comment will be removed to avoid issues.
+✓ 116 modules transformed.
+out/preload/index.js  223.66 kB
+✓ built in 364ms
+vite v7.3.6 building client environment for production...
+node_modules/zod/v4/core/util.js (400:0): A comment
+
+"// Wrapped in a `@__PURE__` IIFE: esbuild never tree-shakes a top-level initializer that contains a member access on `N
+umber`, so the bare object literal survived into every bundle."
+
+in "node_modules/zod/v4/core/util.js" contains an annotation that Rollup cannot interpret due to the position of the com
+ment. The comment will be removed to avoid issues.
+node_modules/zod/v4/core/regexes.js (74:0): A comment
+
+"/** Anchors a pattern source. The interpolation lives here rather than at the call site because
+ * esbuild will not drop a `@__PURE__` call whose own argument interpolates a variable, but it
+ * will drop `anchor(dateSource)`. Keeping it inline pinned `date` into every bundle. */"
+
+in "node_modules/zod/v4/core/regexes.js" contains an annotation that Rollup cannot interpret due to the position of the
+comment. The comment will be removed to avoid issues.
+✓ 2098 modules transformed.
+../../out/renderer/index.html                     0.67 kB
+../../out/renderer/assets/index-CwgHTJuK.css      0.35 kB
+../../out/renderer/assets/index-IGNCIo_b.js   1,722.68 kB
+✓ built in 7.67s
+  • electron-builder  version=26.15.3 os=10.0.26300
+  • loaded configuration  file=G:\api-client-master\electron-builder.windows.json
+  • loaded parent configuration  file=G:\api-client-master\electron-builder.json
+  • @electron/rebuild already used by electron-builder, please consider to remove excess dependency from devDependencies
+
+To ensure your native dependencies are always matched electron version, simply add script `"postinstall": "electron-buil
+der install-app-deps" to your `package.json`
+  • writing effective config  file=dist\windows\builder-effective-config.yaml
+  • executing @electron/rebuild  electronVersion=44.5.1 arch=x64 buildFromSource=false workspaceRoot=G:\api-client-maste
+r projectDir=./ appDir=./
+  • installing native dependencies  arch=x64
+  • preparing       moduleName=better-sqlite3 arch=x64
+  • finished        moduleName=better-sqlite3 arch=x64
+  • completed installing native dependencies
+  • packaging       platform=win32 arch=x64 electron=44.5.1 appOutDir=dist\windows\win-unpacked
+  • downloading     label=electron
+    [=================================================================================================] 100% | electron
+  • downloaded electron zip extracted successfully  output=G:\api-client-master\dist\windows\win-unpacked
+  • searching for node modules  pm=npm searchDir=G:\api-client-master
+  • duplicate dependency references  dependencies=["@zag-js/core@1.43.3","@zag-js/dom-query@1.43.3","@zag-js/types@1.43.
+3","@zag-js/core@1.43.3","@zag-js/dom-query@1.43.3","@zag-js/types@1.43.3","@zag-js/core@1.43.3","@zag-js/dom-query@1.43
+.3","@zag-js/core@1.43.3","@zag-js/dom-query@1.43.3","@zag-js/types@1.43.3","@zag-js/core@1.43.3","@zag-js/dom-query@1.4
+3.3","@zag-js/dom-query@1.43.3","@zag-js/types@1.43.3","@zag-js/collection@1.43.3","@zag-js/core@1.43.3","@zag-js/dom-qu
+ery@1.43.3","@zag-js/interact-outside@1.43.3","@zag-js/dom-query@1.43.3","@zag-js/focus-visible@1.43.3","@zag-js/dom-que
+ry@1.43.3","@zag-js/types@1.43.3","@zag-js/core@1.43.3","@zag-js/dom-query@1.43.3","@zag-js/focus-visible@1.43.3","@zag-
+js/types@1.43.3","@zag-js/core@1.43.3","@zag-js/dom-query@1.43.3","@zag-js/types@1.43.3","@zag-js/core@1.43.3","@zag-js/
+dom-query@1.43.3","@zag-js/types@1.43.3","@zag-js/color-utils@1.43.3","@zag-js/core@1.43.3","@zag-js/dismissable@1.43.3"
+,"@zag-js/dom-query@1.43.3","@zag-js/popper@1.43.3","@zag-js/types@1.43.3","@zag-js/collection@1.43.3","@zag-js/core@1.4
+3.3","@zag-js/dismissable@1.43.3","@zag-js/dom-query@1.43.3","@zag-js/focus-visible@1.43.3","@zag-js/popper@1.43.3","@za
+g-js/types@1.43.3","@zag-js/dom-query@1.43.3","@internationalized/date@3.12.3","@zag-js/core@1.43.3","@zag-js/dom-query@
+1.43.3","@zag-js/types@1.43.3","@internationalized/date@3.12.3","@zag-js/core@1.43.3","@zag-js/dismissable@1.43.3","@zag
+-js/dom-query@1.43.3","@zag-js/popper@1.43.3","@zag-js/types@1.43.3","@internationalized/date@3.12.3","@zag-js/dom-query
+@1.43.3","@zag-js/core@1.43.3","@zag-js/dismissable@1.43.3","@zag-js/dom-query@1.43.3","@zag-js/focus-trap@1.43.3","@zag
+-js/dom-query@1.43.3","@zag-js/types@1.43.3","@zag-js/types@1.43.3","@zag-js/aria-hidden@1.43.3","@zag-js/core@1.43.3","
+@zag-js/dismissable@1.43.3","@zag-js/dom-query@1.43.3","@zag-js/focus-trap@1.43.3","@zag-js/remove-scroll@1.43.3","@zag-
+js/types@1.43.3","@zag-js/core@1.43.3","@zag-js/dom-query@1.43.3","@zag-js/dom-query@1.43.3","@zag-js/types@1.43.3","@za
+g-js/core@1.43.3","@zag-js/dom-query@1.43.3","@zag-js/file-utils@1.43.3","@zag-js/i18n-utils@1.43.3","@zag-js/types@1.43
+.3","@zag-js/i18n-utils@1.43.3","@zag-js/core@1.43.3","@zag-js/dom-query@1.43.3","@zag-js/types@1.43.3","@zag-js/dom-que
+ry@1.43.3","@zag-js/dom-query@1.43.3","@zag-js/dom-query@1.43.3","@zag-js/core@1.43.3","@zag-js/dismissable@1.43.3","@za
+g-js/dom-query@1.43.3","@zag-js/popper@1.43.3","@zag-js/types@1.43.3","@zag-js/dom-query@1.43.3","@zag-js/core@1.43.3","
+@zag-js/dom-query@1.43.3","@zag-js/types@1.43.3","@zag-js/collection@1.43.3","@zag-js/core@1.43.3","@zag-js/dom-query@1.
+43.3","@zag-js/focus-visible@1.43.3","@zag-js/types@1.43.3","@zag-js/core@1.43.3","@zag-js/dom-query@1.43.3","@zag-js/ty
+pes@1.43.3","@zag-js/core@1.43.3","@zag-js/dismissable@1.43.3","@zag-js/dom-query@1.43.3","@zag-js/focus-visible@1.43.3"
+,"@zag-js/popper@1.43.3","@zag-js/types@1.43.3","@zag-js/core@1.43.3","@zag-js/dismissable@1.43.3","@zag-js/dom-query@1.
+43.3","@zag-js/types@1.43.3","@swc/helpers@0.5.23","@zag-js/core@1.43.3","@zag-js/dom-query@1.43.3","@zag-js/types@1.43.
+3","@zag-js/core@1.43.3","@zag-js/dom-query@1.43.3","@zag-js/types@1.43.3","@zag-js/core@1.43.3","@zag-js/dom-query@1.43
+.3","@zag-js/types@1.43.3","@zag-js/core@1.43.3","@zag-js/dom-query@1.43.3","@zag-js/types@1.43.3","@zag-js/aria-hidden@
+1.43.3","@zag-js/core@1.43.3","@zag-js/dismissable@1.43.3","@zag-js/dom-query@1.43.3","@zag-js/focus-trap@1.43.3","@zag-
+js/popper@1.43.3","@zag-js/remove-scroll@1.43.3","@zag-js/types@1.43.3","@zag-js/core@1.43.3","@zag-js/dom-query@1.43.3"
+,"@zag-js/types@1.43.3","@zag-js/core@1.43.3","@zag-js/dom-query@1.43.3","@zag-js/types@1.43.3","@zag-js/core@1.43.3","@
+zag-js/dom-query@1.43.3","@zag-js/types@1.43.3","@zag-js/core@1.43.3","@zag-js/dom-query@1.43.3","@zag-js/focus-visible@
+1.43.3","@zag-js/types@1.43.3","@zag-js/core@1.43.3","@zag-js/dom-query@1.43.3","@zag-js/types@1.43.3","@zag-js/core@1.4
+3.3","@zag-js/types@1.43.3","react-dom@19.3.0","@zag-js/core@1.43.3","@zag-js/dom-query@1.43.3","@zag-js/types@1.43.3","
+@zag-js/collection@1.43.3","@zag-js/core@1.43.3","@zag-js/dismissable@1.43.3","@zag-js/dom-query@1.43.3","@zag-js/focus-
+visible@1.43.3","@zag-js/popper@1.43.3","@zag-js/types@1.43.3","@zag-js/core@1.43.3","@zag-js/dom-query@1.43.3","@zag-js
+/types@1.43.3","@zag-js/core@1.43.3","@zag-js/dom-query@1.43.3","@zag-js/types@1.43.3","@zag-js/core@1.43.3","@zag-js/do
+m-query@1.43.3","@zag-js/types@1.43.3","@zag-js/core@1.43.3","@zag-js/dom-query@1.43.3","@zag-js/types@1.43.3","@zag-js/
+core@1.43.3","@zag-js/dom-query@1.43.3","@zag-js/focus-visible@1.43.3","@zag-js/types@1.43.3","@zag-js/core@1.43.3","@za
+g-js/dom-query@1.43.3","@zag-js/types@1.43.3","@zag-js/auto-resize@1.43.3","@zag-js/core@1.43.3","@zag-js/dom-query@1.43
+.3","@zag-js/interact-outside@1.43.3","@zag-js/types@1.43.3","@zag-js/core@1.43.3","@zag-js/dom-query@1.43.3","@zag-js/t
+ypes@1.43.3","@zag-js/core@1.43.3","@zag-js/dismissable@1.43.3","@zag-js/dom-query@1.43.3","@zag-js/types@1.43.3","@zag-
+js/core@1.43.3","@zag-js/dom-query@1.43.3","@zag-js/types@1.43.3","@zag-js/core@1.43.3","@zag-js/dom-query@1.43.3","@zag
+-js/types@1.43.3","@zag-js/core@1.43.3","@zag-js/dom-query@1.43.3","@zag-js/types@1.43.3","@zag-js/core@1.43.3","@zag-js
+/dom-query@1.43.3","@zag-js/focus-visible@1.43.3","@zag-js/popper@1.43.3","@zag-js/types@1.43.3","@zag-js/core@1.43.3","
+@zag-js/dismissable@1.43.3","@zag-js/dom-query@1.43.3","@zag-js/focus-trap@1.43.3","@zag-js/interact-outside@1.43.3","@z
+ag-js/popper@1.43.3","@zag-js/types@1.43.3","@zag-js/collection@1.43.3","@zag-js/core@1.43.3","@zag-js/dom-query@1.43.3"
+,"@zag-js/types@1.43.3","react-dom@19.3.0","@emotion/react@11.14.0","react-dom@19.3.0","@babel/parser@7.29.9","@babel/ty
+pes@7.29.8","@jridgewell/trace-mapping@0.3.31","@babel/types@7.29.8","@babel/code-frame@7.29.7","@babel/parser@7.29.9","
+@babel/types@7.29.8","@babel/types@7.29.8","@emotion/serialize@1.3.3","@babel/code-frame@7.29.7","@emotion/serialize@1.3
+.3"]
+  • updating asar integrity executable resource  executablePath=dist\windows\win-unpacked\offline-api-client.exe
+  • default Electron icon is used  reason=application icon is not set
+  • file signing skipped via signExecutable configuration  file=dist\windows\win-unpacked\offline-api-client.exe
+  • building        target=nsis file=dist\windows\offline-api-client-0.1.0-x64-setup.exe archs=x64 oneClick=true perMach
+ine=false
+  • downloading     label=nsis-3.0.4.1.7z
+    [==========================================================================================] 100% | nsis-3.0.4.1.7z
+Downloading nsis-3.0.4.1.7z: [=================================================================] 100% ETA: 0.0 seconds
+  • downloading     label=7zip-win-x64.tar.gz
+    [======================================================================================] 100% | 7zip-win-x64.tar.gz
+  • downloading     label=nsis-resources-3.4.1.7z
+    [==================================================================================] 100% | nsis-resources-3.4.1.7z
+Downloading nsis-resources-3.4.1.7z: [=========================================================] 100% ETA: 0.0 seconds
+  • file signing skipped via signExecutable configuration  file=dist\windows\offline-api-client-0.1.0-x64-setup.__uninst
+aller.exe
+  • file signing skipped via signExecutable configuration  file=dist\windows\offline-api-client-0.1.0-x64-setup.exe
+  • building block map  blockMapFile=dist\windows\offline-api-client-0.1.0-x64-setup.exe.blockmap
+PS G:\api-client-master> 
+Get-FileHash .\dist\windows\offline-api-client-0.1.0-x64-setup.exe -Algorithm SHA256
+
+Algorithm       Hash                                                                   Path
+---------       ----                                                                   ----
+SHA256          D8743C44C4B124361BF8B45C65E8EEB4CC6567C21ECA4A6BA74973D7D8E44A4B       G:\api-client-master\dist\win...
+
+
+PS G:\api-client-master> Stop-Transcript
+**********************
+Windows PowerShell transcript end
+End time: 20261010000256
+**********************
