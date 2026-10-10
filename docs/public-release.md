@@ -31,6 +31,8 @@ gh release create v0.1.1 <verified-assets> --target <verified-commit> --prerelea
 
 Publishing requires an authenticated GitHub account with repository write access and Actions enabled. Never put passwords or tokens in source, reports or chat.
 
+When transferring large artifacts through a developer connection is slow, manually dispatch **Publish verified pre-release** (`publish-release.yml`) with the successful native build run ID. It validates the run's repository, workflow, completion, source SHA and package version, downloads only that run's installer artifacts and checks all three SHA-256 values with `scripts/verify-release-artifacts.mjs`. Missing, duplicate or mismatched assets stop publication. It then creates a pre-release and matching source tag with the documented release notes. Its short-lived GitHub job token has contents-write/actions-read access; no personal token is stored. This workflow only runs on manual dispatch and does not overwrite existing releases.
+
 ## Official configuration references
 
 Verified 2026-10-10: [GitHub runner labels and OS limitations](https://docs.github.com/en/actions/reference/runners/github-hosted-runners), [checkout v7.0.1](https://github.com/actions/checkout/releases/tag/v7.0.1), [setup-node v7.1.0](https://github.com/actions/setup-node/releases/tag/v7.1.0), [upload-artifact v7.0.2](https://github.com/actions/upload-artifact/releases/tag/v7.0.2), and [GitHub Release management](https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository?tool=webui).

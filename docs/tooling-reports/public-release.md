@@ -2,6 +2,8 @@
 
 Date: 2026-10-10. Status: in progress; no upload or new Windows build is yet verified.
 
+Latest update: both final native jobs succeeded on commit `cbf33cb644d57cc2c8ddbb48c1a12f5ab7dec5b7`; publication is pending checksum verification/upload. Earlier entries below retain the actual failed attempts.
+
 ## Scope and changes
 
 User-authorized installer build and GitHub publication, outside the completed TASK-001–030 sequence. Existing task acceptance/history remains unchanged. Initial tree was clean at commit `4b4ebd1` (`finished phase 1`), branch `master`, origin `https://github.com/miladmoham1400/api-client.git`.
@@ -34,6 +36,8 @@ Finish local Linux build, inspect exact payload/hash and run packaged checks; va
 
 The keyring timeout is an access blocker, not evidence that the repository or password is wrong. User was asked to run `gh auth status` in their terminal and unlock the keyring if necessary; no password/token was requested. Official workflow versions/runner labels are linked in [public release procedure](../public-release.md).
 
+The login blocker was subsequently resolved, the repository was made public as requested, and both target jobs finished successfully. Remaining historical pending rows above describe the earlier stage, not current OS results.
+
 ## Local package evidence
 
 - Offline network namespace (`scripts/test-offline.sh`) against `dist/linux/linux-unpacked/offline-api-client`: all 5 focused desktop specs passed in 18.1 s (database persistence/corruption, JSON presentation, panel layout, response viewer, IPC security). This verifies the packaged payload, not an actual deb installation.
@@ -56,3 +60,9 @@ Local AppImage also passed the integrated offline story: 1 passed, 19.6 s. Actua
 Run 38053826114: Linux job succeeded (all 324 unit tests; actual deb installation and 5 installed-app focused smoke tests passed in 32.0 s). Windows job stopped before packaging: 323 passed / 1 failed, native unreadable-file fixture remained readable after applying its ACL on the elevated hosted runner. No Windows installer was accepted or uploaded by this failed job.
 
 To preserve meaningful permission evidence without changing application behavior, the upload tests now probe whether the native ACL/mode actually denies opening the fixture and explicitly skip that native check when it does not. A separate deterministic `EACCES` open-failure test verifies the service returns a redacted `FILE_CHANGED` with the correct row field on every platform. This test is not proof of native Windows ACL denial. No production file-access checks or permissions were weakened. The first edit used `it.each` with an unsupported context argument (typecheck failed); corrected to the installed Vitest `it.for` API before committing. Focused upload tests passed locally (15/15); Final local checks: all 325 unit tests passed in 36.30 s; typecheck, lint and diff whitespace checks exited 0.
+
+## Final native build evidence
+
+[Run 38054460266](https://github.com/miladmoham1400/api-client/actions/runs/38054460266) succeeded on the same source commit for both platforms. Linux: 325 unit tests passed and 5 installed-deb desktop tests passed (13.5 s). Windows Server 2022: 324 passed, 1 native unreadable-file fixture skipped (runner retained read access), followed by native NSIS build/install and 5 installed-app tests passed (19.1 s). No skipped native ACL check or Windows 11 acceptance is claimed as passed.
+
+Local downloads were progressing slowly (approximately 23 MB Linux / 6 MB Windows at inspection), so a separate manual publication workflow was prepared to transfer the already-tested artifacts within GitHub. It verifies successful build provenance and all three installer checksums before creating a pre-release. Local synthetic verifier checks: complete set accepted, tampered content rejected, missing platform rejected. Publisher YAML parsed successfully; lint and whitespace checks passed. Official download-artifact v8.0.1 was verified against https://github.com/actions/download-artifact/releases/tag/v8.0.1. Publication has not yet run.
