@@ -42,3 +42,17 @@ The keyring timeout is an access blocker, not evidence that the repository or pa
 - Local AppImage SHA-256: `104759fc84abd340e7230f3fcf905c28c04d59145b0d2c48c4de35ed904bb3ca`.
 - YAML parsed successfully with local PyYAML; `git diff --check` exit 0. Workflow execution remains required; parsing does not validate hosted behavior.
 - Limited high-confidence token pattern scan of 657 unique Git-history blobs found no matches. No actual credential values were emitted. This is not a complete audit.
+
+## Remote build started
+
+Repository changed to PUBLIC as authorized; verified by `gh repo view`. Release preparation committed/pushed as `2bfecb4bc70e9942e37ed60efe490e0122655e87`. Manual workflow run [38053826114](https://github.com/miladmoham1400/api-client/actions/runs/38053826114) started both native targets on that exact commit. Results are pending.
+
+Local AppImage extraction-and-run passed the same 5 focused desktop tests with network namespaces blocking egress: 33.9 s. Default FUSE mounting remains unverified. Local Graphify update completed (1024 nodes, 3186 edges); graph output is not test evidence.
+
+Local AppImage also passed the integrated offline story: 1 passed, 19.6 s. Actual runner proof: only loopback interface, no IPv4 route, non-root sandboxed Electron and external probe `ENETUNREACH`; persistence, isolation, failure recovery and safe transfer exercised. Actual secret storage mode was secure in this local environment. This does not prove Windows offline behavior or Linux installation/uninstall preservation for the new deb.
+
+## First hosted build results and test correction
+
+Run 38053826114: Linux job succeeded (all 324 unit tests; actual deb installation and 5 installed-app focused smoke tests passed in 32.0 s). Windows job stopped before packaging: 323 passed / 1 failed, native unreadable-file fixture remained readable after applying its ACL on the elevated hosted runner. No Windows installer was accepted or uploaded by this failed job.
+
+To preserve meaningful permission evidence without changing application behavior, the upload tests now probe whether the native ACL/mode actually denies opening the fixture and explicitly skip that native check when it does not. A separate deterministic `EACCES` open-failure test verifies the service returns a redacted `FILE_CHANGED` with the correct row field on every platform. This test is not proof of native Windows ACL denial. No production file-access checks or permissions were weakened. The first edit used `it.each` with an unsupported context argument (typecheck failed); corrected to the installed Vitest `it.for` API before committing. Focused upload tests passed locally (15/15); Final local checks: all 325 unit tests passed in 36.30 s; typecheck, lint and diff whitespace checks exited 0.

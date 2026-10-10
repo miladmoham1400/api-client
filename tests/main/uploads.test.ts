@@ -1,7 +1,7 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { randomUUID } from 'node:crypto'
 import { execFileSync } from 'node:child_process'
-import { chmodSync, fstatSync, mkdtempSync, mkdirSync, readSync, rmSync, truncateSync, writeFileSync } from 'node:fs'
+import { chmodSync, closeSync, constants, fstatSync, mkdtempSync, mkdirSync, openSync, readSync, rmSync, truncateSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { UploadError, UploadService } from '../../src/main/files/uploads'
@@ -13,7 +13,11 @@ import { createDefaultRequestConfig } from '../../src/shared/request-config'
 import { storedBodySchema, exportBodySchema } from '../../src/shared/request-config'
 
 const directories: string[] = []
-afterEach(() => { for (const path of directories.splice(0)) rmSync(path, { recursive: true, force: true }) })
+vi.mock('node:fs', async importOriginal => {
+  const actual = await importOriginal<typeof import('node:fs')>()
+  return { ...actual, openSync: vi.fn(actual.openSync) }
+})
+afterEach(() => { vi.mocked(openSync).mockReset(); for (const path of directories.splice(0)) rmSync(path, { recursive: true, force: true }) })
 function fixture() {
   const directory = mkdtempSync(join(tmpdir(), 'upload-capability-')); directories.push(directory)
   const path = join(directory, 'فایل.txt'); writeFileSync(path, 'abc')
@@ -28,9 +32,9 @@ function makeUnreadable(path: string) {
   if (process.platform !== 'win32') { chmodSync(path, 0); return }
   execFileSync('icacls', [path, '/deny', '*S-1-1-0:(RD)'], { stdio: 'ignore', windowsHide: true })
 }
-function code(operation: () => unknown, expected: string) {
+function code(operation: () => unknown, expected: string, field?: string) {
   try { operation(); throw new Error('Expected rejection') }
-  catch (error) { expect(error).toBeInstanceOf(UploadError); expect(error).toMatchObject({ code: expected }); expect(String(error)).not.toContain(tmpdir()) }
+  catch (error) { expect(error).toBeInstanceOf(UploadError); expect(error).toMatchObject({ code: expected, ...(field ? { field } : {}) }); expect(String(error)).not.toContain(tmpdir()) }
 }
 describe('main-only upload capabilities', () => {
   it('returns only opaque metadata and opens verified readable descriptors with idempotent cleanup', async () => {
@@ -64,17 +68,33 @@ describe('main-only upload capabilities', () => {
     f.service.clear(); code(() => f.service.release(f.workspace, fresh.fileId), 'FILE_REQUIRED')
     f.existing.delete(f.workspace); await expect(f.service.choose(f.workspace, async () => f.path)).rejects.toMatchObject({ code: 'NOT_FOUND' })
   })
-  it.each(['missing', 'changed', 'oversized', 'directory', 'unreadable'])('rejects %s before a caller can connect', async mode => {
+  it.for(['missing', 'changed', 'oversized', 'directory', 'unreadable'])('rejects %s before a caller can connect', async (mode, context) => {
     const f = fixture(), selected = await f.service.choose(f.workspace, async () => f.path)
     if (!selected) throw new Error('Selection failed')
     if (mode === 'missing') rmSync(f.path)
     if (mode === 'changed') truncateSync(f.path, 4)
     if (mode === 'oversized') truncateSync(f.path, LIMITS.fileBytes + 1)
     if (mode === 'directory') { rmSync(f.path); mkdirSync(f.path) }
-    if (mode === 'unreadable') makeUnreadable(f.path)
+    if (mode === 'unreadable') {
+      makeUnreadable(f.path)
+      // Elevated runners can retain read access despite the fixture ACL/mode.
+      // Only claim native permission evidence when opening is actually denied.
+      let readable = false
+      try { const fd = openSync(f.path, constants.O_RDONLY | (constants.O_NONBLOCK ?? 0)); closeSync(fd); readable = true }
+      catch (error) {
+        if (!(error instanceof Error) || !['EACCES', 'EPERM'].includes(String(Reflect.get(error, 'code')))) throw error
+      }
+      if (readable) context.skip('Runner retains read access after fixture permissions change; native denial is unverified')
+    }
     const operation = () => f.service.openForSend(f.workspace, { kind: 'multipart', rows: [f.row(selected.fileId)] })
     code(operation, mode === 'oversized' ? 'FILE_TOO_LARGE' : 'FILE_CHANGED')
     try { operation() } catch (error) { expect(error).toMatchObject({ field: 'body.rows[0].fileId' }) }
+  })
+  it('maps a denied file open to a redacted FILE_CHANGED error before a caller can connect', async () => {
+    const f = fixture(), selected = await f.service.choose(f.workspace, async () => f.path)
+    if (!selected) throw new Error('Selection failed')
+    vi.mocked(openSync).mockImplementationOnce(() => { throw Object.assign(new Error(`Denied ${f.path}`), { code: 'EACCES' }) })
+    code(() => f.service.openForSend(f.workspace, { kind: 'multipart', rows: [f.row(selected.fileId)] }), 'FILE_CHANGED', 'body.rows[0].fileId')
   })
   it('rejects directories and oversize at selection; cancellation returns null', async () => {
     const f = fixture()
