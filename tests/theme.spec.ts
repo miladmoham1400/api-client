@@ -65,9 +65,9 @@ test('theme survives restart and failed saves without draft loss; keyboard scope
     await expect.poll(async()=>(await response.boundingBox())!.height).toBeGreaterThan(before)
     await page.getByRole('button',{name:'Decrease response panel height',exact:true}).focus(); await page.keyboard.press('Enter')
     await expect.poll(async()=>(await response.boundingBox())!.height).toBe(before)
-    await response.scrollIntoViewIfNeeded()
-    const bounds=(await response.boundingBox())!
-    await page.mouse.move(bounds.x+bounds.width-3,bounds.y+bounds.height-3);await page.mouse.down();await page.mouse.move(bounds.x+bounds.width-3,bounds.y+bounds.height+17,{steps:5});await page.mouse.up()
+    const divider=page.getByRole('separator',{name:'Resize request and response panels',exact:true})
+    const bounds=(await divider.boundingBox())!
+    await page.mouse.move(bounds.x+bounds.width/2,bounds.y+bounds.height/2);await page.mouse.down();await page.mouse.move(bounds.x+bounds.width/2,bounds.y+bounds.height/2-20,{steps:5});await page.mouse.up()
     await expect.poll(async()=>(await response.boundingBox())!.height).toBeGreaterThan(before)
     await page.getByRole('button',{name:'Decrease response panel height',exact:true}).focus();await page.keyboard.press('Enter')
     const editor=page.getByRole('region',{name:'Request editor',exact:true})

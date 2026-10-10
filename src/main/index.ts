@@ -53,6 +53,9 @@ app.on('will-quit', () => {
   database = null
 })
 app.enableSandbox()
+// Development runs must not inherit the icon of an older installed package.
+// Desktop identity does not change app.name or the existing userData directory.
+if (process.platform === 'linux' && !app.isPackaged) app.setDesktopName('offline-api-client-dev.desktop')
 if (process.platform === 'win32') app.setAppUserModelId('local.offline-api-client')
 const hasLock = app.requestSingleInstanceLock()
 if (!hasLock) app.quit()

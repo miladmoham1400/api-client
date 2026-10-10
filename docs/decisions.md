@@ -40,6 +40,14 @@ React local state/context is sufficient initially. Avoid adding a global state l
 
 Record material changes here with reason, user authorization if scope changes, and affected tasks. Routine internal choices do not require a new approval.
 
+## Adjustable request/response layout — 2026-10-10
+
+User authorized a stacked/side-by-side toggle with adjustable panel proportions. Use a local CSS grid and pointer/keyboard separator; keep both React subtrees mounted, separate session ratios, independent scrolling and existing Save/Send/snapshot behavior. No layout persistence, dependency, transport or phase-2 feature is added. The divider and axis-aware Smaller/Larger replace the old response-only native resize corner. This is a post-task UI enhancement; completed task statuses and historical installer acceptance remain unchanged. See [verification and known regression-test limitation](tooling-reports/panel-layout.md).
+
+## JSON presentation — 2026-10-10
+
+User requested readable colored JSON payload/response display, preferring no new package. Use a bounded local lexical tokenizer and React text spans, with a decorative layer over the existing native textarea for JSON editing. Preserve source/wire bytes, Raw defaults, explicit Pretty formatting and existing validation. No dependency, transport, persistence or phase-2 feature is added. This is a post-task presentation enhancement; completed task statuses and historical packaged release evidence remain unchanged. See [verification report](tooling-reports/json-display.md).
+
 ## Developer tooling — 2026-10-05
 
 User authorized project-local Graphify installation and documentation before the next task. Use pinned Python tooling and a project Agent Skill, code-only local extraction, no model labeling and bundled graph visualization assets. Graphify assists source discovery; specifications, source and actual checks remain authoritative. It adds no application runtime dependency, product feature, global assistant settings or task-status change. See [configuration](graphify.md) and [evidence](tooling-reports/graphify.md).

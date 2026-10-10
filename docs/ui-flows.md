@@ -2,7 +2,7 @@
 
 ## Main layout
 
-Top bar: workspace selector, environment selector, variables button, theme toggle and workspace menu. Left sidebar: collections and root requests with create/rename/delete menus. Main: request name/save state, method + URL + Send/Cancel, tabs for Params/Headers/Body/Auth/Settings. Lower resizable response area: Status, duration, body size, Body/Headers tabs and raw/pretty toggle. Use Chakra v3 components and local icons/assets.
+Top bar: workspace selector, environment selector, variables button, theme toggle and workspace menu. Left sidebar: collections and root requests with create/rename/delete menus. Main: request name/save state, method + URL + Send/Cancel, tabs for Params/Headers/Body/Auth/Settings. Response area: Status, duration, body size, Body/Headers tabs and raw/pretty toggle. Default layout stacks request above response; a toggle can place request left of response. Use Chakra v3 components and local icons/assets.
 
 Start with no workspace: empty state with Create Workspace. Workspace with no request: Create Request. Do not create demo workspaces or send sample requests automatically. A single editor keeps phase 1 manageable; min window ~1000x700 with panels scrollable/resizable, controls usable at 1280x720.
 
@@ -29,6 +29,16 @@ Keyboard navigation and focus restoration in dialogs, meaningful labels, visible
 
 Default system theme on first launch; Light/Dark/System preference stored locally. Use Chakra v3 compatible provider setup, no v2 imports. Theme change never remounts editor with data loss.
 
+## Request/response layout — 2026-10-10
+
+User authorized a toggle between stacked and side-by-side panels and freely adjustable relative sizes. The **Stacked / Side by side** toggle has a pressed state indicating side-by-side mode. Each panel scrolls independently. A pointer-draggable, keyboard-focusable separator changes heights in stacked mode and widths in side-by-side mode. Keep request share between 20% and 80% so both panels remain available; preserve proportional sizing as the window resizes. Arrow Up/Down adjust stacked sizes; Left/Right adjust side-by-side sizes; Shift increases the step, Home/End go to the limits. Response **Smaller/Larger** also adjust its size along the current axis. The separator replaces the response panel's old native resize corner.
+
+Keep separate ratios for each layout within the running session, initially 55% request in stacked mode and 50% side by side. Layout/ratios are presentation state and reset on restart; no new persistence or IPC command. Switching layout must not remount either panel, clear active/inactive body drafts, reset selected request/response tabs or Pretty, save edits, send/cancel requests or change snapshot ownership. Existing workspace-keyed request-editor resets remain unchanged.
+
 ## Response safety
 
 Text renderer only. Response containing `<script>` or HTML must appear as text and must not load resources or execute. Header values/cookies are visible to the local user but never copied to logs/export automatically. Do not reveal stack traces in UI.
+
+## JSON presentation — 2026-10-10
+
+JSON body editing and JSON response Raw/Pretty views use bundled, dependency-free lexical colors for keys, strings, numbers, booleans, null and punctuation, with light/dark palettes. Coloring never reformats the editable or raw text; Pretty remains an explicitly selected derived response view. Incomplete JSON and variable templates remain editable. Native textarea selection, keyboard editing, resizing and scrolling remain available; the decorative coloring layer is hidden from assistive technology. Editor highlighting is bounded to 64 Ki characters and 4,096 tokens; larger or denser editor content stays readable as plain text. Response highlighting has a separate 1 Mi-character / 32,768-token budget so Pretty expansion and ordinary dense responses retain their colors. Beyond the response budget, preserve a colored prefix and show the entire unchanged remainder as plain text, with an explicit explanatory notice outside the response text. Forced-colors mode uses system text colors. Render every token as React text, never executable HTML.

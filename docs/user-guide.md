@@ -73,6 +73,8 @@ Choose one **Body mode**:
 
 Changing body mode retains inactive drafts within the current editor session. Only the active mode is saved or sent. GET and HEAD cannot carry bodies. Empty JSON is invalid; it differs from None. JSON/raw text is limited to 5 MiB.
 
+JSON source editing colors keys and different value types in both Light and Dark themes. It keeps your original spacing and text unchanged, including variable templates. JSON responses use the same colors in Raw and Pretty; select Pretty to format a derived response view. Editor coloring falls back to plain text above 64 Ki characters or 4,096 tokens. Responses use a larger coloring budget; if that is exceeded, a notice explains that only the beginning is colored, and the entire remaining text stays visible. These coloring limits do not restrict editing, sending or the raw response.
+
 The app supplies framing headers. Do not add Host, Content-Length, Transfer-Encoding, Connection or Accept-Encoding yourself. Multipart Content-Type is generated automatically. An incompatible Content-Type produces a field error. See [HTTP behavior](request-engine.md) for exact header and content-type rules.
 
 In **Auth**, choose **None**, **Bearer** or **Basic**. Bearer token and Basic username/password accept literals or templates such as `{{token}}`. Auth is per request. If you select Bearer/Basic and also enable an Authorization header, sending fails with `AUTH_CONFLICT`; remove the conflicting row or use Auth=None. A Basic username cannot contain a colon.
@@ -108,6 +110,8 @@ Choose **Send**, or **Ctrl+Enter** with focus in the request editor while idle. 
 With **Follow redirects** off, the original 3xx is displayed. With it on, at most five hops are followed. Redirects can change the method/body according to HTTP rules; cross-origin redirects strip credentials, and HTTPS-to-HTTP redirects are rejected. TLS certificate verification is always enforced; self-signed/untrusted certificates can produce `TLS_FAILURE`.
 
 The **Response** panel shows status, duration, decoded body size, final URL, redirects and the environment/request at Send. **Body** offers **Raw** and **Pretty** (bounded JSON formatting); **Headers** shows response headers. **Smaller/Larger** resize the panel. HTML and scripts appear as literal text. Binary or unsupported-charset responses show metadata; binary preview/download is unavailable. Encoded and decoded responses are each limited to 10 MiB.
+
+Use the **Stacked / Side by side** toggle above the editor to place the request and response beneath one another or beside one another. Drag the divider to choose their relative heights or widths; each panel scrolls independently. You can also focus the divider and use arrow keys (Up/Down when stacked, Left/Right when side by side), Shift for a larger step, or Home/End for the size limits. **Smaller/Larger** adjusts the response along the current layout's axis. Each panel retains at least 20% of the split area. Your chosen ratio for each layout stays during the session and resets when the app restarts. Changing layout keeps drafts and the current response/Pretty selection intact.
 
 HTTP 401/500 are normal responses with status and body. DNS/refusal/TLS/timeouts are request errors, without an invented HTTP status. If you edit during an active send, the response still belongs to the captured original settings. Startup and restart never resend a saved request.
 

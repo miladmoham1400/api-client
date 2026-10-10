@@ -10,6 +10,7 @@ import { startFixture } from './fixtures/http'
 test('response viewer safely presents HTTP/error/binary states, snapshots, stale events and restart emptiness', async () => {
   let delayed: ServerResponse | undefined
   const html = '<script>window.syntheticResponseExecuted=true</script><img src="http://127.0.0.1:1/untrusted" onerror="window.syntheticResponseExecuted=true">'
+  const dense = JSON.stringify(Array.from({ length: 1100 }, (_, id) => ({ id, name: 'سلام', active: true })))
   const fixture = await startFixture(false, (request, response) => {
     const path = request.url
     if (path === '/hold') { delayed = response; response.writeHead(200, { 'Content-Type': 'application/json' }); return }
@@ -17,7 +18,7 @@ test('response viewer safely presents HTTP/error/binary states, snapshots, stale
     if (path === '/redirect') { response.writeHead(302, { Location: '/json' }); response.end(); return }
     if (path === '/binary') { response.writeHead(200, { 'Content-Type': 'application/octet-stream' }); response.end(Buffer.from([0, 255, 1])); return }
     response.writeHead(path === '/401' ? 401 : path === '/500' ? 500 : 200, { 'Content-Type': path === '/html' ? 'text/html' : 'application/json', 'Set-Cookie': ['synthetic=a', 'synthetic=b'] })
-    response.end(path === '/html' ? html : path === '/invalid' ? '{"broken":' : path === '/large' ? JSON.stringify({ text: 'x'.repeat(65536) }) : '{"message":"سلام","items":[1,2]}')
+    response.end(path === '/html' ? html : path === '/dense' ? dense : path === '/invalid' ? '{"broken":' : path === '/large' ? JSON.stringify({ text: 'x'.repeat(65536) }) : '{"message":"سلام","items":[1,2]}')
   })
   const directory = mkdtempSync(join(tmpdir(), 'api-client-response-ui-'))
   const env = { ...Object.fromEntries(Object.entries(process.env).filter((entry): entry is [string, string] => entry[1] !== undefined && !['ELECTRON_RUN_AS_NODE', 'ELECTRON_RENDERER_URL'].includes(entry[0]))), XDG_CONFIG_HOME: directory, APPDATA: directory }
@@ -58,6 +59,31 @@ test('response viewer safely presents HTTP/error/binary states, snapshots, stale
     await region.getByRole('button', { name: 'Raw', exact: true }).click()
     await expect(body).toHaveText('{"message":"سلام","items":[1,2]}')
     await page.screenshot({ path: '/tmp/api-client-response-raw.png' })
+    await run('/dense')
+    expect(await body.textContent()).toBe(dense)
+    await region.getByRole('button', { name: 'Pretty', exact: true }).click()
+    const densePretty = JSON.stringify(JSON.parse(dense), null, 2)
+    expect(densePretty.length).toBeGreaterThan(65536)
+    expect(await body.textContent()).toBe(densePretty)
+    for (const theme of ['dark', 'light']) {
+      await page.getByLabel('Theme', { exact: true }).selectOption(theme)
+      await expect(page.locator('html')).toHaveClass(theme)
+      const colors = await body.evaluate(element => {
+        const key = element.querySelector('.json-key'), value = element.querySelector('.json-string')
+        if (!key || !value) throw new Error('Dense Pretty response lost syntax colors')
+        return [getComputedStyle(key).color, getComputedStyle(value).color]
+      })
+      expect(colors[0]).not.toBe(colors[1])
+      await expect(body.locator('.json-key')).toHaveCount(3300)
+      await expect(region).not.toContainText('Syntax colors cover the beginning')
+      await body.evaluate(element => {
+        const panel = element.closest('section'), key = element.querySelector('.json-key')
+        if (panel && key) panel.scrollTop += key.getBoundingClientRect().top - panel.getBoundingClientRect().top - 48
+      })
+      await page.screenshot({ path: `/tmp/api-client-response-dense-${theme}.png`, animations: 'disabled' })
+    }
+    await region.getByRole('button', { name: 'Raw', exact: true }).click()
+    expect(await body.textContent()).toBe(dense)
     await run('/invalid')
     await region.getByRole('button', { name: 'Pretty', exact: true }).click()
     await expect(body).toHaveText('{"broken":')

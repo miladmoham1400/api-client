@@ -24,3 +24,5 @@ Environment: Ubuntu 24.04.3 x64/X11, Node 22.18.0, npm 11.6.2. This pass uses so
 - `git diff --check`: exit 0.
 
 No new Linux installer or Windows installer was built/installed in this pass; Windows taskbar/installer appearance is configured but not independently tested. Desktop launchers may prefer a cached installed desktop-entry icon over a source-run window icon; rebuilding and reinstalling the target package is needed to replace the old installed resource. Previous release-acceptance hashes/results remain a historical baseline and do not certify the new icon build. Native TLS/sandbox and offline asset rules remain intact.
+
+Follow-up: user reported the Electron icon still appeared in Ubuntu's dock. [Development desktop identity fix](linux-dev-icon.md) records the diagnosed association with the old installed entry and the separate development launcher registered locally; source-run dock integration no longer relies on rebuilding the installed package.

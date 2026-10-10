@@ -29,6 +29,8 @@ npm run dev
 
 On Windows PowerShell, invoke `npm.cmd` instead of `npm` if script policy blocks `npm.ps1`. Initial downloads require internet or prepared caches; installed startup/local work do not. `npm run dev` rebuilds SQLite for Electron. See [release](docs/release.md) for target-native packaging and [testing](docs/testing.md) for sequential native rebuild/acceptance procedures.
 
+On Linux, `npm run dev` and `npm run start` also register a per-user **Offline API Client (Development)** launcher with the checkout's icon in `${XDG_DATA_HOME:-~/.local/share}/applications/offline-api-client-dev.desktop`. It has a separate desktop identity so an older installed package cannot supply its dock icon; application data stays in the existing directory. No sudo is needed. `npm run desktop:install-dev` refreshes this entry after moving the checkout. Close an already running instance before restarting to apply the new identity. Windows skips this registration.
+
 The specifications remain the behavioral contract. Follow [AGENTS.md](AGENTS.md), task dependencies and actual evidence when changing the project; untested platform checks must not be marked passed.
 
 ## Documents

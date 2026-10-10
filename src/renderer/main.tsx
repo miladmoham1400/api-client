@@ -10,8 +10,7 @@ import { CollectionSidebar } from './features/collections/sidebar'
 import { WorkspaceControls } from './features/workspaces/controls'
 import { useRequests } from './features/requests/controller'
 import { VariableControls } from './features/variables/controls'
-import { ResponseViewer } from './features/response/viewer'
-import { RequestEditor } from './features/requests/editor'
+import { RequestResponsePanels } from './features/layout/panels'
 import type { WorkspaceController } from './features/workspaces/use-workspaces'
 import appIcon from '../../build/icons/64x64.png?url'
 
@@ -78,10 +77,7 @@ function Desktop({ workspaces, closeGuard }: { workspaces: WorkspaceController; 
         <WorkspaceControls controller={workspaces} locked={requests.busy} guard={navigation.guard} placement="sidebar" />
         <CollectionSidebar key={workspaces.snapshot?.selectedWorkspaceId ?? "none"} workspaceId={workspaces.snapshot?.selectedWorkspaceId ?? null} requestController={requests} guard={navigation.guard} />
       </VStack>
-      <Flex as="main" aria-label="Request and response panels" tabIndex={0} direction="column" flex="1" minW="0" minH="0" p="4" gap="3" overflow="auto">
-        <RequestEditor key={workspaces.snapshot?.selectedWorkspaceId ?? "none"} controller={requests} guard={navigation.guard} />
-        <ResponseViewer controller={requests} />
-      </Flex>
+      <RequestResponsePanels controller={requests} guard={navigation.guard} workspace={workspaces.snapshot?.selectedWorkspaceId ?? null} />
     </Flex>
     {navigation.dialog}
     <Box as="footer" borderTopWidth="1px" px="4" py="2"><Text fontSize="xs" color="fg.muted">Local storage ready</Text></Box>

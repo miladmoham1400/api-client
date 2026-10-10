@@ -20,8 +20,9 @@
     "test:unit": "npm run rebuild:node && vitest run",
     "rebuild:electron": "electron-rebuild -f -w better-sqlite3",
     "rebuild:node": "npm rebuild better-sqlite3",
-    "predev": "npm run rebuild:electron",
-    "prestart": "npm run rebuild:electron",
+    "desktop:install-dev": "node scripts/install-dev-desktop.mjs",
+    "predev": "npm run desktop:install-dev && npm run rebuild:electron",
+    "prestart": "npm run desktop:install-dev && npm run rebuild:electron",
     "test:offline": "npm run rebuild:electron && npm run build && bash scripts/test-offline.sh",
     "package:linux": "node scripts/clean-linux.mjs && npm run build && electron-builder --config electron-builder.json --linux AppImage deb --x64 --publish never",
     "package:win": "node scripts/package-windows.mjs"

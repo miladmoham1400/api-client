@@ -23,7 +23,7 @@ export function RequestEditor({ controller: c, guard }: { controller: RequestCon
     window.addEventListener('keydown', shortcut)
     return () => window.removeEventListener('keydown', shortcut)
   }, [c.canSend, c.busy, c.send])
-  return <Box ref={editor} as="section" aria-label="Request editor" tabIndex={0} flex="1" minH="220px" overflow="auto">
+  return <Box ref={editor} as="section" aria-label="Request editor" tabIndex={0} h="100%" minH="0" minW="0" overflow="auto">
     <Flex gap="2" align="center" mb="3" flexWrap="wrap">
       <Heading size="md">{c.draft ? 'Request editor' : 'No request selected'}</Heading>
       <Text role="status" fontSize="sm">{c.busy ? 'Loading or saving…' : c.draft ? c.dirty ? 'Unsaved changes' : 'Saved' : 'Select or create a request'}</Text>
@@ -34,11 +34,11 @@ export function RequestEditor({ controller: c, guard }: { controller: RequestCon
     </Flex>
     {c.error && <Text role="alert" mb="3">{c.error}</Text>}
     {c.draft && <Box mb="3"><label htmlFor="request-name">Request name</label><Input id="request-name" value={c.draft.name} aria-invalid={!!c.validation.name} aria-describedby={c.validation.name ? "request-name-error" : undefined} disabled={c.busy} onChange={event => { if (c.draft) c.setDraft({ ...c.draft, name: event.target.value }) }} />{c.validation.name && <Text id="request-name-error" role="alert" color="red.fg">name: {c.validation.name}</Text>}</Box>}
-    <Flex gap="2" mb="3">
+    <Flex gap="2" mb="3" flexWrap="wrap">
       <NativeSelect.Root width="110px" flexShrink="0" disabled={!c.draft || c.busy}><NativeSelect.Field aria-label="HTTP method" value={c.draft?.method ?? ''} onChange={event => { if (c.draft) c.setDraft({ ...c.draft, method: httpMethodSchema.parse(event.target.value) }) }}>
         {!c.draft && <option value="">Method</option>}{httpMethodSchema.options.map(method => <option key={method} value={method}>{method}</option>)}
       </NativeSelect.Field><NativeSelect.Indicator /></NativeSelect.Root>
-      <Input aria-label="Request URL" placeholder="Request URL" aria-invalid={!!c.validation.urlTemplate} aria-describedby={c.validation.urlTemplate ? "request-url-error" : undefined} value={c.draft?.urlTemplate ?? ''} disabled={!c.draft || c.busy} onChange={event => { if (c.draft) c.setDraft({ ...c.draft, urlTemplate: event.target.value }) }} />
+      <Input flex="1" minW="140px" aria-label="Request URL" placeholder="Request URL" aria-invalid={!!c.validation.urlTemplate} aria-describedby={c.validation.urlTemplate ? "request-url-error" : undefined} value={c.draft?.urlTemplate ?? ''} disabled={!c.draft || c.busy} onChange={event => { if (c.draft) c.setDraft({ ...c.draft, urlTemplate: event.target.value }) }} />
       <Button disabled={!c.canSend || c.busy} onClick={() => { void c.send() }}>Send</Button><Button disabled={!c.canCancel} variant="outline" onClick={() => { void c.cancel() }}>{c.cancelling ? 'Cancelling…' : 'Cancel'}</Button>
     </Flex>
     {c.executionStatus && <Text role="status" mb="3">{c.executionStatus}</Text>}
