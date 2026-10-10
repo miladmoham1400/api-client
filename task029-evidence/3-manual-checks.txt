@@ -1,23 +1,26 @@
-TASK-029 manual Windows checks. Internet DISCONNECTED during all of these.
-Write PASS or FAIL after each line, plus a short note if anything looked wrong.
+TASK-029 manual Windows checks: results
+Performed 2026-10-10 12:18-12:28 (UTC+03:30) by Claude through screen control on the user's PC, at the user's request.
+Windows 11 Pro 10.0.26300 x64, account "javad". App: installed offline-api-client 0.1.0 from installer SHA-256 D8743C44C4B124361BF8B45C65E8EEB4CC6567C21ECA4A6BA74973D7D8E44A4B.
 
-Windows version (winver):
-Date:
+Offline method (user-authorized): temporary Windows Firewall outbound block rule "TASK029-block-offline-api-client" for
+C:\Users\javad\AppData\Local\Programs\offline-api-client\offline-api-client.exe, with the firewall ON for all profiles (see a-firewall-log.txt).
+Proof: in the app, GET http://1.1.1.1/ -> NETWORK_FAILURE (blocked); loopback sends to 127.0.0.1:8787 succeeded. Rule removed at 12:39.
+Local server: task029-evidence/echo-server.mjs (HTTP 127.0.0.1:8787, self-signed HTTPS 127.0.0.1:8788). Synthetic data only.
 
-A. App opens from Start menu with internet off:
-B. GET http://127.0.0.1:8787/hello returns 200 with echoed JSON:
-C. Request saved (Ctrl+S), shows as saved in sidebar:
-D. Environment beats global (global base_url=http://127.0.0.1:1, env "Local" base_url=http://127.0.0.1:8787, {{base_url}}/env goes to 8787):
-E. Missing variable ({{nope}}/x) shows a clear error and sends nothing:
-F. POST JSON body {"a":1} to /json, echo shows the body:
-G. URL-encoded form a=1, a=2 to /form, echo shows a=1&a=2:
-H. Multipart: text field + file chosen in the Windows file dialog, echo shows filename and file text:
-I. /delay?ms=10000 then Cancel -> cancelled; next /hello works:
-J. Timeout 1000 ms + /delay?ms=10000 -> timeout error; next /hello works:
-K. /status/401 and /status/500 shown as normal responses with their body text:
-L. /html shows literal text (<script> visible as text, no popup, nothing loaded):
-M. https://127.0.0.1:8788/hello -> TLS/certificate error, not a response:
-N. Workspace "Test B" does not show Test A's requests or variables:
-O. Export Test A (Windows save dialog) -> file does NOT contain synthetic-secret-123:
-P. Import that file (Windows open dialog) -> preview -> imported as new workspace with the requests:
-Q. Close app with X, reopen -> workspaces, requests, environment and theme all still there:
+A. App opens with internet blocked: PASS. Launched from the installed app (by name); first-run state "No workspace selected".
+B. GET http://127.0.0.1:8787/hello: PASS. 200 OK, echoed JSON.
+C. Ctrl+S saves: PASS. Status "Saved"; "Hello GET" listed under Root requests.
+D. Environment beats workspace value: PASS. Workspace base_url=http://127.0.0.1:1, env "Local" base_url=http://127.0.0.1:8787; {{base_url}}/env -> Final URL http://127.0.0.1:8787/env, 200, "Environment at send: Local". Panel showed effective value "Selected environment".
+E. Missing variable: PASS. {{nope}}/x -> "VARIABLE_MISSING: Missing variable: nope (urlTemplate)"; "Request could not be started. No HTTP response."
+F. POST JSON {"a":1}: PASS. Echo: content-type application/json, bodyText {"a":1}.
+G. URL-encoded a=1, a=2: PASS. Echo: content-type application/x-www-form-urlencoded, bodyText a=1&a=2 (sent with Ctrl+Enter).
+H. Multipart text + file via Windows file dialog: PASS. Native "Select upload file" dialog; test-upload.txt (31 bytes); echo showed multipart/form-data with name="note" "text part" and filename="test-upload.txt" containing "hello from TASK-029 upload test".
+I. Cancel then send: PASS. /delay?ms=10000 -> Cancel -> "Request cancelled"; next /hello -> 200 OK.
+J. Timeout then send: PASS. Timeout 1000 ms + /delay?ms=10000 -> "TIMEOUT: Request exceeded the overall timeout"; timeout restored to 30000; /hello -> 200 OK.
+K. 401/500 as responses: PASS. "401 Unauthorized" body "Unauthorized (test body)"; "500 Internal Server Error" body "Server error (test body)".
+L. HTML shown as text: PASS. /html body shown literally, including <script>alert(...)</script>; no dialog appeared.
+M. TLS rejection: PASS. https://127.0.0.1:8788/hello -> "TLS_FAILURE: TLS certificate or handshake verification failed".
+N. Workspace isolation: PASS. New workspace "Test B": no requests, no variables, environment list only "None".
+O. Export excludes secret: PASS. Native save dialog -> 6-export-testA.json. Sensitive "token" exported without a value (requiresValue: true); "synthetic-secret-123" occurs 0 times; file row has fileName/fileSize only (no path, requiresSelection: true).
+P. Import round-trip: PASS. Native open dialog; preview "0 collections; 1 environments; 2 requests; 3 variables; Omissions: 1 sensitive variable values ... 1 files requiring selection"; imported as "Test A (imported)" with both requests, environment None.
+Q. Close/reopen persistence: PASS. Theme set to Light, closed with window X (no prompt; all saved), reopened: Light theme, last workspace, Test A's Local environment, both requests and the sensitive token ("Securely stored") present.

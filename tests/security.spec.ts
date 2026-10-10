@@ -1,4 +1,4 @@
-import { launchDesktop } from './fixtures/desktop'
+import { isolationArgs, launchDesktop } from './fixtures/desktop'
 import { shutdown } from './fixtures/shutdown'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -70,7 +70,8 @@ test('owned production window exposes only validated APIs and denies browser cap
     ])
     expect(await page.evaluate(() => window.offlineApi.workspaces.list())).toEqual({ ok: true, data: { workspaces: [], selectedWorkspaceId: null } })
     const executable = await application.evaluate(({ app }) => app.getPath('exe'))
-    const child = spawn(executable, ['.'], { env, stdio: 'ignore' })
+    // The single-instance lock is per user-data directory, so the second instance must use the same isolation.
+    const child = spawn(executable, [...isolationArgs(env), '.'], { env, stdio: 'ignore' })
     try {
       const exit = await new Promise<number | null>((resolve, reject) => {
         const timer = setTimeout(() => { child.kill(); reject(new Error('Second instance did not exit')) }, 5_000)

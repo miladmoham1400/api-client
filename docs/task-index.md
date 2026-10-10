@@ -41,4 +41,4 @@ There are 30 tasks: foundation (001â€“006), local project/request features (007â
 
 Allowed statuses: todo, in_progress, blocked, done. Keep task file and table synchronized. Record actual evidence in docs/task-reports/TASK-NNN.md during implementation. The report directory and verified toolchain/release guides are intentionally not populated by this planning pack.
 
-TASK-029 is done now and next task is TASK-030.
+TASK-028 and TASK-029 share TASK-027 as dependency, so Windows packaging can proceed even if Linux-specific validation is blocked. TASK-030 needs both OS tasks complete. Do not create agent workers unless explicitly requested by the user.

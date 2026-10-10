@@ -10,7 +10,7 @@ This is a plan; do not run guessed installation commands before TASK-001 has ver
 | Supported Node.js LTS + npm | Development/build/test; exact version selected in TASK-001 |
 | VS Code + Codex or Codex CLI | Optional coding workflow, not shipped with app |
 | Linux native compiler toolchain/Python | SQLite rebuild if prebuilt artifacts unavailable |
-| Windows Visual Studio C++ Build Tools/Python | SQLite rebuild if prebuilt artifacts unavailable |
+| Windows Visual Studio C++ Build Tools ("Desktop development with C++" workload, including a Windows SDK) and Python | SQLite rebuild if prebuilt artifacts are unavailable. On the TASK-029 machine, `npm ci` compiled better-sqlite3 from source and failed until the Windows SDK was installed |
 | Linux desktop runtime libraries | Electron GUI; package dependencies validated on baseline distro |
 
 No MySQL server, SQLite server, PHP, Go or Rust toolchain is required by the selected design. The app bundles its SQLite binding; a SQLite command-line utility is optional for diagnostics. A Windows machine or Windows build/test runner is needed to verify Windows packages.
@@ -25,7 +25,9 @@ Initial dependency downloads/build tooling require available internet or a prepa
 
 `npm run dev`, `npm run typecheck`, `npm run lint`, `npm test`, `npm run build`, `npm run package:linux`, `npm run package:win`, and focused smoke-test scripts. Avoid shell syntax that works only on Bash; npm scripts must run under Windows too. Use `npm ci` with lockfile in clean verification.
 
-`npm run package:win` is now configured for native Windows x64 only; its NSIS build and installation remain unverified until TASK-029 runs on Windows. See `docs/release.md` for the pending PowerShell procedure. `test:offline` remains a Linux-only acceptance runner and must not be used as Windows evidence.
+`npm run package:win` is configured for native Windows x64 only. TASK-029 built the NSIS installer on Windows 11 x64; installed-app acceptance is still incomplete (see `docs/release.md` and the TASK-029 report).
+
+In Windows PowerShell, the default execution policy blocks `npm.ps1`. Invoke `npm.cmd` instead; do not change the system policy. Never run `npm audit fix` (especially `--force`) in this repository: it rewrites the pinned `package.json`/lockfile. On TASK-029 it downgraded electron-builder to an incompatible version. Version changes require a deliberate, documented task. `test:offline` remains a Linux-only acceptance runner and must not be used as Windows evidence.
 
 ## Native SQLite check
 

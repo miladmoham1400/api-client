@@ -1,9 +1,20 @@
 # TASK-029 — Package and verify Windows build
 
-Status: blocked
+Status: done
 Dependencies: TASK-027
 
-Packaging configuration/scripts are prepared and locally checked. Actual Windows 11 x64 build, install, offline matrix and uninstall/reinstall preservation are blocked: this session provides only a Linux host and no Windows runner/machine. Reassessed 2026-10-09: a Windows x64 PC was linked for file access only, with no command shell, so the blocker remains (see report). See [TASK-029 report](../task-reports/TASK-029.md). No Windows acceptance is marked passed.
+Done on 2026-10-10 on Windows 11 Pro x64 (build 26300). Evidence:
+- **Build:** native build and unit tests (319/319). Unsigned NSIS installer `offline-api-client-0.1.0-x64-setup.exe`, SHA-256 `D8743C44C4B124361BF8B45C65E8EEB4CC6567C21ECA4A6BA74973D7D8E44A4B`.
+- **Automated tests:** the installed-app desktop suite passed with the internet disconnected (21 passed, 0 failed, 5 Linux-only skips).
+- **Manual checks A–Q:** all passed with the app's internet egress blocked, including the native file, save and open dialogs.
+- **Uninstall preservation:** uninstall via Settings preserved all app data byte-for-byte, and the reinstall reopened it.
+
+Authorized deviations (2026-10-10):
+- Egress was blocked with a temporary firewall rule instead of disconnecting the network.
+- The preservation check ran in the user's own account (no real data) instead of a separate account.
+- The manual checks were performed by Claude through screen control.
+
+See the [TASK-029 report](../task-reports/TASK-029.md).
 
 ## Read first
 

@@ -1,0 +1,43 @@
+==== ADD Sat 10/10/2026 12:18:24.84 ====
+Ok.
+
+
+Rule Name:                            TASK029-block-offline-api-client
+----------------------------------------------------------------------
+Enabled:                              Yes
+Direction:                            Out
+Profiles:                             Domain,Private,Public
+Grouping:                             
+LocalIP:                              Any
+RemoteIP:                             Any
+Protocol:                             Any
+Edge traversal:                       No
+Program:                              C:\Users\javad\AppData\Local\Programs\offline-api-client\offline-api-client.exe
+InterfaceTypes:                       Any
+Security:                             NotRequired
+Rule source:                          Local Setting
+Action:                               Block
+Ok.
+
+
+Domain Profile Settings: 
+----------------------------------------------------------------------
+State                                 ON
+
+Private Profile Settings: 
+----------------------------------------------------------------------
+State                                 ON
+
+Public Profile Settings: 
+----------------------------------------------------------------------
+State                                 ON
+Ok.
+
+==== REMOVE Sat 10/10/2026 12:39:15.72 ====
+
+Deleted 1 rule(s).
+Ok.
+
+
+No rules match the specified criteria.
+

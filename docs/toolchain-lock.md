@@ -77,7 +77,7 @@ Installed exact **better-sqlite3 13.0.3**, **@electron/rebuild 4.2.0** and **@ty
 
 `npm ci` installs the Node native dependency. `npm test` / `npm run test:unit` runs `npm run rebuild:node` first. `npm run rebuild:electron` prepares the installed Electron target; `npm run dev`, `npm start` and `npm run test:smoke` invoke that preparation before launching Electron. These scripts run sequentially because both targets use the same node_modules binding. Do not run Node rebuild/unit tests concurrently with Electron rebuild/smoke/dev. Native preparation may require network for uncached binaries/headers; it is development tooling, not installed-app startup code.
 
-Linux x64 native execution was actually verified against Electron 44.5.1 / Node 24.21.0 / module ABI 149: migration, write/reopen and corrupt-database recovery. Windows native rebuilding and both packaged-app targets remain unverified. Later packaging must prepare a separate OS/architecture binding and unpack the native binary appropriately; no installer was added here.
+Linux x64 native execution was actually verified against Electron 44.5.1 / Node 24.21.0 / module ABI 149: migration, write/reopen and corrupt-database recovery. Windows native rebuilding was later exercised in TASK-029 on Windows 11 x64: source compilation for developer Node 22.18.0 (unit suite 319/319) and the builder's rebuild for Electron 44.5.1 during `package:win`. Windows packaged-app acceptance remains incomplete; see the TASK-029 report. Later packaging must prepare a separate OS/architecture binding and unpack the native binary appropriately; no installer was added here.
 
 ## TASK-022 multipart additions (2026-10-05)
 

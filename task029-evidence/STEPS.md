@@ -81,6 +81,10 @@ It should print `True`. If it prints `False`, find the app in the Start menu, ri
 
 ## Part 4: Offline tests (normal account, internet OFF)
 
+> **Rerun after the 2026-10-10 test fix:** you don't need to rebuild or reinstall. First delete the leftover test data from the earlier run by pasting this into PowerShell:
+> `Remove-Item -Recurse -Force "$env:APPDATA\offline-api-client"`
+> That folder only holds made-up test workspaces. Then do steps 7–8 again. The new log replaces `2-offline-tests-log.txt`.
+
 **7. Disconnect from the internet.** Turn off Wi-Fi or unplug the network cable, and turn off any VPN. Claude can't reach your PC while you're offline. That's expected.
 
 **8. Automated tests.** In PowerShell, run these lines one at a time:

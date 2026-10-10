@@ -84,6 +84,8 @@ test('sandboxed preload sends captured native requests, receives immediate compl
     }, { w: replacement.w, base: fixture.url })
     expect(afterReload.ok).toBe(true)
     expect(rendererRemoteRequests).toEqual([])
+    // The reloaded editor reloads the selected workspace first; the close guard refuses to close while it is busy.
+    await expect(page.getByRole('status').filter({ hasText: /^Select or create a request$/ })).toBeVisible()
     await application.close()
     closed = true
     await expect.poll(() => new Promise<number>((resolve, reject) => fixture.server.getConnections((error, count) => error ? reject(error) : resolve(count)))).toBe(0)

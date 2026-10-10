@@ -57,6 +57,8 @@ test('theme survives restart and failed saves without draft loss; keyboard scope
     await page.getByLabel('Request URL',{exact:true}).focus(); await page.keyboard.press('Control+s')
     await expect(page.getByRole('status').filter({hasText:/^Saved$/})).toBeVisible()
     await expect(page.getByLabel('Request URL',{exact:true})).toBeFocused()
+    // The Ctrl+Enter listener is re-registered in a passive effect after the save commits; let that effect flush first.
+    await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>setTimeout(resolve,0))))
     await page.keyboard.press('Control+Enter'); await expect(page.getByLabel('Response body text')).toContainText('bodyLength'); expect(urls).toEqual(['/echo'])
     const response=page.getByRole('region',{name:'Response',exact:true}), before=(await response.boundingBox())!.height
     await page.getByRole('button',{name:'Increase response panel height',exact:true}).focus(); await page.keyboard.press('Enter')
