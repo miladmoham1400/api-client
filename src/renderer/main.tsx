@@ -13,6 +13,7 @@ import { VariableControls } from './features/variables/controls'
 import { ResponseViewer } from './features/response/viewer'
 import { RequestEditor } from './features/requests/editor'
 import type { WorkspaceController } from './features/workspaces/use-workspaces'
+import appIcon from '../../build/icons/64x64.png?url'
 
 type Startup = { status: 'loading' } | { status: 'error' } | { status: 'ready'; data: Bootstrap }
 
@@ -55,7 +56,10 @@ function Desktop({ workspaces, closeGuard }: { workspaces: WorkspaceController; 
   useEffect(() => { closeGuard.current = navigation.close; return () => { closeGuard.current = null } }, [closeGuard, navigation.close])
   return <Flex direction="column" h="100dvh" bg="bg" color="fg">
     <Flex as="header" gap="3" p="3" borderBottomWidth="1px" align="center" flexWrap="wrap">
-      <Heading size="md" mr="2">Offline API Client</Heading>
+      <Flex align="center" gap="2" flexShrink="0" mr="2">
+        <img src={appIcon} alt="" aria-hidden="true" width="32" height="32" draggable={false} />
+        <Heading size="md">Offline API Client</Heading>
+      </Flex>
       <WorkspaceControls controller={workspaces} locked={requests.busy} guard={navigation.guard} placement="top" />
       <VariableControls key={workspaces.snapshot?.selectedWorkspaceId ?? 'none'} workspace={workspaces.snapshot?.selectedWorkspaceId ?? null} />
       <ThemeControl />

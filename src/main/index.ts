@@ -38,6 +38,7 @@ import { MaterializationService } from './services/materialization'
 import { ExecutionService } from './services/execution'
 import { createExecutionHandlers } from './ipc/execution'
 import { EXECUTION_CHANNELS } from '../shared/execution'
+import windowIcon from '../../build/icon.png?asset'
 
 let uploadService: UploadService | null = null
 let ownedWindow: BrowserWindow | null = null
@@ -52,6 +53,7 @@ app.on('will-quit', () => {
   database = null
 })
 app.enableSandbox()
+if (process.platform === 'win32') app.setAppUserModelId('local.offline-api-client')
 const hasLock = app.requestSingleInstanceLock()
 if (!hasLock) app.quit()
 else {
@@ -83,6 +85,7 @@ else {
     const trustedUrl = devUrl ? new URL(devUrl).href : localEntry
     const window = new BrowserWindow({
       width: 1280, height: 720, minWidth: 1000, minHeight: 700,
+      icon: windowIcon,
       webPreferences: {
         preload: join(__dirname, '../preload/index.js'),
         partition: 'offline-api-client',

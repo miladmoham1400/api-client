@@ -28,6 +28,8 @@ Do not mark phase 1 release-ready if either platform required checks are not run
 
 `electron-builder.json` configures unsigned x64 AppImage/deb with ASAR, explicit better-sqlite3 unpacking and builder-managed sequential native rebuild. `npm run package:linux` removes only generated `out/` and `dist/linux/`, builds and packages with `--publish never`. No runtime updater is added. Application identity remains `offline-api-client`, preserving its existing default userData directory. Required package homepage/maintainer fields use reserved `.invalid` internal placeholders; replace them with real project metadata before public distribution. The current package uses the default Electron icon.
 
+After TASK-030, a user-authorized [custom icon](tooling-reports/app-icon.md) was added for source runs and future target-native packages. Previously accepted package hashes still refer to the original default-icon artifacts. New icon packages must be rebuilt, assigned new hashes and independently smoke-tested; the old acceptance record is not a pass for those new bytes.
+
 Clean verification on Ubuntu 24.04 x64:
 
 ```text

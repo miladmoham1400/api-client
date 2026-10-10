@@ -16,6 +16,7 @@
   "nativeRebuilder": "sequential",
   "publish": null,
   "linux": {
+    "icon": "build/icons",
     "target": [
       {
         "target": "AppImage",
