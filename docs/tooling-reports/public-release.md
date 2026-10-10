@@ -1,68 +1,82 @@
-# Public release preparation — 0.1.1
+# Public release — 0.1.1
 
-Date: 2026-10-10. Status: in progress; no upload or new Windows build is yet verified.
+Date: 2026-10-10. **Completed: public unsigned pre-release published**, with all three installers and SHA-256 download asset. Full new-version Windows 11 acceptance remains unverified; pre-release completion is not stable-release readiness.
 
-Latest update: both final native jobs succeeded on commit `cbf33cb644d57cc2c8ddbb48c1a12f5ab7dec5b7`; publication is pending checksum verification/upload. Earlier entries below retain the actual failed attempts.
+- [Public Release v0.1.1](https://github.com/miladmoham1400/api-client/releases/tag/v0.1.1)
+- [Final native build run 38054460266](https://github.com/miladmoham1400/api-client/actions/runs/38054460266)
+- [Successful publication run 38055186643](https://github.com/miladmoham1400/api-client/actions/runs/38055186643)
+- Installer source/build commit: `cbf33cb644d57cc2c8ddbb48c1a12f5ab7dec5b7`; release tag targets that commit. Publisher workflow commit: `925e77791f9e1bbb3b3923a39a0c4819bd012ead`.
 
 ## Scope and changes
 
-User-authorized installer build and GitHub publication, outside the completed TASK-001–030 sequence. Existing task acceptance/history remains unchanged. Initial tree was clean at commit `4b4ebd1` (`finished phase 1`), branch `master`, origin `https://github.com/miladmoham1400/api-client.git`.
+User explicitly requested installer builds and repository publication, outside the completed TASK-001–030 sequence. Initial tree was clean at `4b4ebd1` (`finished phase 1`), branch `master`, origin `https://github.com/miladmoham1400/api-client.git`. Existing task status and 0.1.0 full acceptance remain historical, not new-version passes.
 
-- Bumped package and lockfile to 0.1.1, preserving all pinned runtime/tool versions.
-- Replaced internal placeholder homepage/maintainer with repository URL and existing Git author name/email. License remains `UNLICENSED`.
-- Added manual target-native GitHub Actions builds with installed-app focused smoke checks, checksums and artifact handoff; no automatic release publishing.
-- Ignored local environment/database files in addition to existing generated-output exclusions. A tracked-path check found no `.env`, SQLite/database or credential-named files; this is not a complete history/security audit.
-- Added public release procedure and explicit new-version acceptance limits.
+- Bumped package and lockfile to 0.1.1 without changing pinned dependencies. Packages include the previously committed icon, JSON highlighting and panel layout enhancements.
+- Replaced internal placeholder homepage/maintainer with repository URL and existing Git author name/email. License remains `UNLICENSED`; public visibility is not an open-source license grant.
+- Added manually dispatched native Linux/Windows builds, installation checks, focused packaged smoke tests, checksums and artifact handoff. No automatic push-triggered publication, signing, updater or application cloud dependency.
+- Added a separate manually dispatched publisher that checks successful native-build provenance, package version and all three installer hashes, then publishes a pre-release. Its short-lived job token has contents-write/actions-read; no personal token is written into source.
+- Added a checksum verifier and release notes; updated README, installation/release guides, known limitations and task-index publication note without changing task statuses.
+- Ignored local environment/database files in addition to generated outputs. No tracked `.env`, database or credential-named files were found. A limited scan of 657 unique historical Git blobs found no high-confidence token-pattern matches; this is not a complete secret audit. No credential values were emitted.
+- Corrected upload-test evidence for elevated runners: probe whether fixture permissions actually prevent opening; explicitly skip native denial when they do not. A separate deterministic `EACCES` test verifies redacted `FILE_CHANGED` and the row field. No production file-access logic or permissions were changed.
 
-## Actual checks
+## Actual local checks and failed attempts
 
-Environment: local Ubuntu 24.04 x64, developer Node 22.18.0/npm 11.6.2, Electron 44.5.1, electron-builder 26.15.3. Embedded/native Electron ABI is checked by packaged smoke tests, not inferred from developer Node.
+Local Ubuntu 24.04 x64/X11, developer Node 22.18.0/npm 11.6.2; Electron 44.5.1, builder 26.15.3, better-sqlite3 13.0.3. Unit tests rebuild SQLite for developer Node; native packaging rebuilds it for Electron. Packaged database tests asserted ABI 149 and normal close/reopen.
 
-| Command/check | Actual result |
+| Check | Actual result |
 |---|---|
-| `npm run lint` | Exit 0 |
-| `npm run test:unit` (sandbox) | Exit 1: 255 passed / 69 failed; loopback `listen EPERM` blocked HTTP fixtures |
-| `npm run test:unit` (outside sandbox) | Exit 1: 323 passed / 1 failed; variable repository test exceeded its 5000 ms timeout |
-| `npm run test:unit -- --maxWorkers=1` (outside sandbox) | Exit 0: all 324 tests, 29 files passed, 35.69 s; no test timeout threshold was changed |
-| `npm run package:linux` (sandbox) | Production typecheck/bundling and native rebuild ran; packaging failed downloading from GitHub with `EAI_AGAIN` |
-| `npm run package:linux` (outside sandbox) | Exit 0: AppImage and deb built; production typecheck/bundling and target-native SQLite rebuild succeeded |
-| GitHub authentication | Initial keyring timeouts; after second user login, `gh repo view` succeeded: ADMIN, default branch master, currently PRIVATE |
-| Windows native build / workflow execution | Not run yet; repository authentication blocks pushing/dispatching the workflow |
-| Public Release upload | Not run yet |
+| Initial `npm run lint` | Exit 0 |
+| `npm run test:unit` inside sandbox | Exit 1: 255 passed / 69 failed; loopback `listen EPERM` blocked HTTP fixtures |
+| Same command outside sandbox | Exit 1: 323 passed / 1 failed; variable repository test exceeded its 5000 ms timeout |
+| `npm run test:unit -- --maxWorkers=1` outside sandbox | Exit 0: initial 324 passed, 29 files, 35.69 s; timeout threshold unchanged |
+| `npm run package:linux` inside sandbox | Typecheck/bundling/native rebuild ran; packaging failed downloading from GitHub with `EAI_AGAIN` |
+| Same packaging command outside sandbox | Exit 0: local AppImage/deb built; production typecheck/bundling and Electron native rebuild succeeded |
+| Local packaged-unpacked offline focused specs | Exit 0: all 5 passed, 18.1 s; payload test, not an actual deb installation |
+| Local AppImage extraction-and-run offline focused specs | Exit 0: all 5 passed, 33.9 s |
+| Local AppImage integrated offline story | Exit 0: 1 passed, 19.6 s; only loopback/no IPv4 routes, non-root sandboxed Electron, external probe `ENETUNREACH`; persistence/isolation/failure/transfer exercised; secure storage available locally |
+| Focused upload tests after correction | Exit 0: 15/15 locally |
+| Final full local unit tests | Exit 0: 325/325, 29 files, 36.30 s |
+| Final typecheck/lint/whitespace | Exit 0; the first test edit used an unsupported `it.each` context and failed typecheck, corrected to `it.for`; the verifier initially lacked explicit process/console imports and failed lint, corrected before committing |
+| Checksum verifier synthetic checks | Complete three-file set accepted; tampered file and missing platform rejected |
+| Workflow YAML | Both parsed locally with PyYAML; successful hosted executions supply actual workflow evidence |
+| Local Graphify update | Exit 0: final 1030 nodes / 3198 edges; optional graph output is not test evidence |
 
-## Limits and remaining work
+Local artifact hashes (different bytes from published hosted builds): deb `b83d98644850ec20615ddc7a58fa1db279992aab3e668a5e7b3aaea9db51b81a`, AppImage `104759fc84abd340e7230f3fcf905c28c04d59145b0d2c48c4de35ed904bb3ca`. Metadata inspection confirmed 0.1.1/amd64, real repository homepage and maintainer.
 
-Finish local Linux build, inspect exact payload/hash and run packaged checks; validate workflow syntax, commit/push the prepared release changes, execute Windows build and inspect its actual results before publishing. Never substitute the old 0.1.0 `.exe`. New 0.1.1 Windows 11 full offline/manual/uninstall acceptance remains unverified. The existing navigation deletion-dialog test failure is documented in [panel-layout report](panel-layout.md). No stable-release readiness claim is made.
+Initial GitHub authentication timed out in keyring, including after the first reported login. After the second login, `gh repo view` returned ADMIN, default branch master. Repository visibility was PRIVATE and was changed to PUBLIC as explicitly requested. No password/token was requested in chat. Changes were committed and pushed without rewriting history.
 
-The keyring timeout is an access blocker, not evidence that the repository or password is wrong. User was asked to run `gh auth status` in their terminal and unlock the keyring if necessary; no password/token was requested. Official workflow versions/runner labels are linked in [public release procedure](../public-release.md).
+First [hosted run 38053826114](https://github.com/miladmoham1400/api-client/actions/runs/38053826114), source `2bfecb4bc70e9942e37ed60efe490e0122655e87`: Linux succeeded (324 unit tests; actual deb install and 5 installed-app tests, 32.0 s). Windows stopped before packaging (323 passed / 1 failed) because its unreadable ACL fixture remained readable. No Windows installer was accepted/uploaded by that failed job. The test correction above led to the final successful run.
 
-The login blocker was subsequently resolved, the repository was made public as requested, and both target jobs finished successfully. Remaining historical pending rows above describe the earlier stage, not current OS results.
+## Final native build and installation evidence
 
-## Local package evidence
+Both target jobs used the same lockfile/source commit, clean `npm ci`, pinned developer Node/npm and sequential native rebuild. Zod/Rollup annotation warnings did not stop production builds; no dependency changes were made to silence them.
 
-- Offline network namespace (`scripts/test-offline.sh`) against `dist/linux/linux-unpacked/offline-api-client`: all 5 focused desktop specs passed in 18.1 s (database persistence/corruption, JSON presentation, panel layout, response viewer, IPC security). This verifies the packaged payload, not an actual deb installation.
-- deb metadata: version 0.1.1, amd64, maintainer Milad <milad1400@gmail.com>, real GitHub homepage.
-- Local deb SHA-256: `b83d98644850ec20615ddc7a58fa1db279992aab3e668a5e7b3aaea9db51b81a`.
-- Local AppImage SHA-256: `104759fc84abd340e7230f3fcf905c28c04d59145b0d2c48c4de35ed904bb3ca`.
-- YAML parsed successfully with local PyYAML; `git diff --check` exit 0. Workflow execution remains required; parsing does not validate hosted behavior.
-- Limited high-confidence token pattern scan of 657 unique Git-history blobs found no matches. No actual credential values were emitted. This is not a complete audit.
+| Target | Actual result |
+|---|---|
+| Ubuntu 24.04 hosted x64 | Lint and all 325 unit tests passed; native AppImage/deb built; actual deb installed with OS package manager; 5 focused installed-app specs passed in 13.5 s |
+| Windows Server 2022 Datacenter 10.0.20348 hosted x64 | Lint and 324 unit tests passed; 1 native unreadable-file fixture skipped because read access remained; deterministic denied-open test passed; native NSIS installer built and silently installed; 5 focused installed-app specs passed in 19.1 s |
 
-## Remote build started
+Focused specs: SQLite persistence/corruption, IPC/browser security, JSON presentation/wire bytes, panel toggling/resizing/draft preservation, response states/snapshots. The executable override selected the installed binary, with synthetic temporary userData. Windows rebuild/install/checks were performed on Windows, not cross-generated on Linux. Windows Server evidence is not Windows 11 evidence. Hosted focused tests did not isolate internet egress; local offline checks are separately identified above.
 
-Repository changed to PUBLIC as authorized; verified by `gh repo view`. Release preparation committed/pushed as `2bfecb4bc70e9942e37ed60efe490e0122655e87`. Manual workflow run [38053826114](https://github.com/miladmoham1400/api-client/actions/runs/38053826114) started both native targets on that exact commit. Results are pending.
+## Published assets and verification
 
-Local AppImage extraction-and-run passed the same 5 focused desktop tests with network namespaces blocking egress: 33.9 s. Default FUSE mounting remains unverified. Local Graphify update completed (1024 nodes, 3186 edges); graph output is not test evidence.
+The manual publisher downloaded the exact successful build's artifacts within GitHub, verified all three SHA-256 values, and created pre-release `v0.1.1` at the build commit. Slow local artifact downloads were stopped in favor of this remote transfer; no incomplete file or old 0.1.0 Windows installer was uploaded.
 
-Local AppImage also passed the integrated offline story: 1 passed, 19.6 s. Actual runner proof: only loopback interface, no IPv4 route, non-root sandboxed Electron and external probe `ENETUNREACH`; persistence, isolation, failure recovery and safe transfer exercised. Actual secret storage mode was secure in this local environment. This does not prove Windows offline behavior or Linux installation/uninstall preservation for the new deb.
+| Published asset | Bytes | SHA-256 |
+|---|---|---|
+| `offline-api-client-0.1.1-amd64.deb` | 112840564 | `aa1e90c482a93ca5a89701aff5547563e8a91e5331aefeb19e8eb8ea40784371` |
+| `offline-api-client-0.1.1-x64-setup.exe` | 124680117 | `1d85d043e3faf637c4ae6143a97f3c4b8f86ece6cf72cf12a5cf78436ce71dc9` |
+| `offline-api-client-0.1.1-x86_64.AppImage` | 143961922 | `690039b2a90dc1cf47879569291976e654b42b7b69b47a9cc59d5437e32a1b08` |
+| `SHA256SUMS.txt` | 313 | Downloaded and matched to the three uploaded asset digests |
 
-## First hosted build results and test correction
+Actual final checks: `gh release view` confirmed uploaded asset states, pre-release status and exact target commit. Downloaded `SHA256SUMS.txt` and compared each digest to GitHub's uploaded asset `digest` via release API: all matched. Anonymous `curl --head --location` checks for `.deb`, `.exe` and AppImage each returned HTTP 200. The full large artifacts were not redownloaded locally; within-GitHub checksum verification and uploaded digest comparisons supply the transfer evidence. Installer bytes remain in Release assets, outside the Git source tree.
 
-Run 38053826114: Linux job succeeded (all 324 unit tests; actual deb installation and 5 installed-app focused smoke tests passed in 32.0 s). Windows job stopped before packaging: 323 passed / 1 failed, native unreadable-file fixture remained readable after applying its ACL on the elevated hosted runner. No Windows installer was accepted or uploaded by this failed job.
+## Remaining coverage limits
 
-To preserve meaningful permission evidence without changing application behavior, the upload tests now probe whether the native ACL/mode actually denies opening the fixture and explicitly skip that native check when it does not. A separate deterministic `EACCES` open-failure test verifies the service returns a redacted `FILE_CHANGED` with the correct row field on every platform. This test is not proof of native Windows ACL denial. No production file-access checks or permissions were weakened. The first edit used `it.each` with an unsupported context argument (typecheck failed); corrected to the installed Vitest `it.for` API before committing. Focused upload tests passed locally (15/15); Final local checks: all 325 unit tests passed in 36.30 s; typecheck, lint and diff whitespace checks exited 0.
+- Full Windows 11 offline/manual native chooser/uninstall/reinstall preservation has not been repeated for 0.1.1.
+- New deb uninstall/reinstall preservation and hosted artifact offline story were not rerun. Local offline evidence applies to the separately hashed local builds. Default AppImage FUSE mounting remains unverified.
+- Native Windows ACL denial is unverified on the elevated hosted runner; its skip is not a pass.
+- Existing navigation deletion-dialog test timeout reproduced before the panel enhancement and remains unresolved; full current desktop suite is not claimed green. See [panel layout report](panel-layout.md).
+- Packages are unsigned. No runtime updater, universal OS support, complete security audit, open-source license or stable-release readiness is claimed.
 
-## Final native build evidence
-
-[Run 38054460266](https://github.com/miladmoham1400/api-client/actions/runs/38054460266) succeeded on the same source commit for both platforms. Linux: 325 unit tests passed and 5 installed-deb desktop tests passed (13.5 s). Windows Server 2022: 324 passed, 1 native unreadable-file fixture skipped (runner retained read access), followed by native NSIS build/install and 5 installed-app tests passed (19.1 s). No skipped native ACL check or Windows 11 acceptance is claimed as passed.
-
-Local downloads were progressing slowly (approximately 23 MB Linux / 6 MB Windows at inspection), so a separate manual publication workflow was prepared to transfer the already-tested artifacts within GitHub. It verifies successful build provenance and all three installer checksums before creating a pre-release. Local synthetic verifier checks: complete set accepted, tampered content rejected, missing platform rejected. Publisher YAML parsed successfully; lint and whitespace checks passed. Official download-artifact v8.0.1 was verified against https://github.com/actions/download-artifact/releases/tag/v8.0.1. Publication has not yet run.
+Official workflow versions and runner labels are linked in [public release procedure](../public-release.md); download-artifact v8.0.1 inputs were additionally checked against its [official action definition](https://github.com/actions/download-artifact/blob/v8.0.1/action.yml). User-authorized public distribution is complete with the above limits documented in the Release notes.

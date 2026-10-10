@@ -1,6 +1,12 @@
-# Known limitations — version 0.1.0
+# Known limitations
 
-Recorded 2026-10-10. The [release acceptance record](release-acceptance.md) distinguishes actual passes from untested targets. The packages are unsigned internal builds; nothing has been published automatically.
+Recorded 2026-10-10. The [release acceptance record](release-acceptance.md) distinguishes actual passes from untested targets. The original 0.1.0 packages were unsigned internal builds; 0.1.1 is an unsigned public pre-release. Publication requires explicit manual dispatch.
+
+## Public 0.1.1 pre-release
+
+Version 0.1.1 was published through an explicitly dispatched workflow. Native Ubuntu 24.04 and Windows Server 2022 builds, installation and focused desktop checks passed. Full Windows 11 offline/manual file-dialog and uninstall/reinstall acceptance has not been repeated for the new artifacts. One native Windows unreadable-file fixture was skipped because the elevated runner retained read access; the deterministic denied-open error-handling test passed. Default AppImage FUSE mounting remains unverified.
+
+The navigation deletion-dialog automated test times out after choosing Save while deleting a collection. It reproduced before the panel layout change; the cause has not been resolved. The full current desktop suite is not claimed green. See [panel layout evidence](tooling-reports/panel-layout.md) and [0.1.1 release evidence](tooling-reports/public-release.md). The original 0.1.0 observations below remain historical.
 
 ## Observed issues and evidence limits
 
@@ -9,7 +15,7 @@ Recorded 2026-10-10. The [release acceptance record](release-acceptance.md) dist
 - **AppImage default FUSE launch is not tested.** The Ubuntu host had no `/dev/fuse`; only `APPIMAGE_EXTRACT_AND_RUN=1` was verified. This keeps normal Chromium sandboxing. Use the tested deb or extraction mode; do not disable the sandbox.
 - **Platform coverage is narrow.** Ubuntu 24.04.3 x64/X11 and Windows 11 Pro x64 build 26300 are recorded. Other Linux distributions, Wayland, Windows 10/other Windows builds, ARM and macOS have no independent acceptance evidence. Default AppImage mount mode and downloaded-installer reputation prompts are not passed checks.
 - **Windows chooser checks are manual.** The automated package suite has five Linux-only skips (export, import, multipart, uploads and namespace offline story). Actual manual A–Q with the installed app's egress blocked supplies the Windows file/transfer/offline evidence; skips themselves do not count as passes. Preservation used an authorized synthetic-data-only existing account rather than a separate account.
-- **Internal distribution metadata remains.** Homepage/maintainer fields use reserved `.invalid` placeholders and package metadata declares `UNLICENSED`. The accepted packages recorded below used the Electron default icon; a subsequent user-authorized [custom icon](tooling-reports/app-icon.md) is now configured for source runs and future packages. Those future package bytes have not received new packaged acceptance. No public-distribution license, signing, update service or public download release was established by this task.
+- **Original internal distribution metadata.** The accepted 0.1.0 packages used `.invalid` homepage/maintainer fields and the Electron default icon. Public 0.1.1 packages use the real repository/maintainer metadata and custom icon, with separate focused packaged checks. Metadata still declares `UNLICENSED`; no open-source license, signing or update service was added.
 - **Tooling advisories were reported.** The Windows lockfile install reported eight moderate npm audit advisories and deprecated transitive packages. Their exact affected dependency paths/exploitability are not established by the captured install summary; no claim of zero vulnerabilities is made. Do not run `npm audit fix --force` to clear the count: it previously downgraded the pinned builder and broke packaging. Any dependency changes require compatibility checks and fresh package evidence.
 
 ## Product limits

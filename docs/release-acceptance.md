@@ -1,5 +1,7 @@
 # Release acceptance — 0.1.0
 
+This is the historical full acceptance record for **0.1.0**. The later [public 0.1.1 pre-release](https://github.com/miladmoham1400/api-client/releases/tag/v0.1.1) has new hashes and separate [build/publication evidence](tooling-reports/public-release.md). Its native Linux/Windows builds and focused installed-app checks passed; that does not convert unexecuted Windows 11/offline/manual/uninstall checks into passes in this matrix.
+
 Recorded **2026-10-10** for TASK-030. Required phase-1 acceptance has independent evidence for the installed Ubuntu deb and Windows NSIS packages below. Linux AppImage acceptance applies to extraction-and-run mode only. These are unsigned internal builds, not a published or signed public release. Known issues and untested targets remain in [known limitations](known-limitations.md).
 
 ## Artifacts

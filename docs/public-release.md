@@ -37,4 +37,4 @@ When transferring large artifacts through a developer connection is slow, manual
 
 Verified 2026-10-10: [GitHub runner labels and OS limitations](https://docs.github.com/en/actions/reference/runners/github-hosted-runners), [checkout v7.0.1](https://github.com/actions/checkout/releases/tag/v7.0.1), [setup-node v7.1.0](https://github.com/actions/setup-node/releases/tag/v7.1.0), [upload-artifact v7.0.2](https://github.com/actions/upload-artifact/releases/tag/v7.0.2), and [GitHub Release management](https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository?tool=webui).
 
-Current execution evidence and access blockers: [public release report](tooling-reports/public-release.md).
+Published [v0.1.1 pre-release](https://github.com/miladmoham1400/api-client/releases/tag/v0.1.1). Actual commands, installer hashes, failed attempts and coverage limits: [public release report](tooling-reports/public-release.md).

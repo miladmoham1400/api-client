@@ -2,9 +2,11 @@
 
 This guide describes version **0.1.0**. The verified packages are the Ubuntu 24.04 x64 deb, the Linux AppImage in extraction-and-run mode, and the Windows 11 Pro x64 NSIS installer. See [release acceptance](release-acceptance.md) for exact package hashes, environments and evidence, and [known limitations](known-limitations.md) before installing.
 
+Version **0.1.1** is now available as an unsigned [public pre-release](https://github.com/miladmoham1400/api-client/releases/tag/v0.1.1), with the custom icon, JSON highlighting and resizable panel layouts. The local workflow below still applies. Use `0.1.1` instead of `0.1.0` in the installation filenames below, and compare with the Release's `SHA256SUMS.txt`, not the historical 0.1.0 hashes. Its [separate verification report](tooling-reports/public-release.md) records native builds and focused installed-app tests; full Windows 11 acceptance for these new bytes remains unverified.
+
 ## Install and open
 
-Installed users do not need Node.js, npm, Python or a database server. Obtain the package for your OS from the project owner and compare its SHA-256 with the [artifact table](release-acceptance.md#artifacts). This task has not published downloads or enabled updates.
+Installed users do not need Node.js, npm, Python or a database server. Obtain the package for your OS from the [public Release](https://github.com/miladmoham1400/api-client/releases/tag/v0.1.1) and compare its SHA-256 with its checksum file. The [historical artifact table](release-acceptance.md#artifacts) applies only to 0.1.0. No automatic updates are enabled.
 
 On Ubuntu 24.04, with the desktop dependencies described in [release prerequisites](release.md) already installed, open a terminal in the folder containing the deb:
 

@@ -17,9 +17,9 @@ A network connection to the target is still required to reach remote APIs. Offli
 
 ## How to use
 
-For installed use, follow the [user guide](docs/user-guide.md). Packages are generated locally; no public downloads or automatic updates were established. Read [known limitations](docs/known-limitations.md) before installation.
+Download Linux `.deb`/AppImage and Windows `.exe` from [GitHub Release v0.1.1](https://github.com/miladmoham1400/api-client/releases/tag/v0.1.1). Compare downloads with its `SHA256SUMS.txt`, then follow the [user guide](docs/user-guide.md). This is an unsigned pre-release; read [known limitations](docs/known-limitations.md) before installation. No automatic updates are provided.
 
-Public 0.1.1 installer preparation is tracked in the [public release procedure](docs/public-release.md) and [execution report](docs/tooling-reports/public-release.md). The manual GitHub workflow builds each target natively; pending builds or uploads are not available downloads.
+The [public release procedure](docs/public-release.md) and [execution report](docs/tooling-reports/public-release.md) record native builds, installed-app checks, publication and exact hashes. Both platforms passed focused packaged smoke tests; new Windows 11 full offline/manual/uninstall acceptance remains unverified.
 
 For development, use the pinned Node/npm in [toolchain lock](docs/toolchain-lock.md) and [setup](docs/setup.md), then from the repository root:
 
