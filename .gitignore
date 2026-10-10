@@ -8,3 +8,8 @@ playwright-report/
 graphify-out/
 __pycache__/
 *.pyc
+.env
+.env.*
+*.sqlite
+*.sqlite3
+*.db

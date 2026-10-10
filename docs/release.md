@@ -1,5 +1,7 @@
 # Phase-1 packaging and release
 
+Public distribution was authorized separately on 2026-10-10. See [public release preparation](public-release.md) for the manual native-build workflow and [actual execution evidence](tooling-reports/public-release.md). Existing internal 0.1.0 acceptance remains historical; it does not validate 0.1.1 packages. Packaging commands still use `--publish never`; GitHub Release publication is a separate authorized operation after verification.
+
 ## Targets
 
 Initial x64 baselines: Ubuntu 24.04 LTS and Windows 11. Produce Linux AppImage and deb, Windows NSIS installer. Other Linux distributions and Windows 10 are unverified until independently tested. macOS/ARM are out of scope.

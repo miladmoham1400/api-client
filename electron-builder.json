@@ -37,6 +37,6 @@
     "syncDesktopName": true
   },
   "deb": {
-    "maintainer": "Offline API Client contributors <maintainers@example.invalid>"
+    "maintainer": "Milad <milad1400@gmail.com>"
   }
 }

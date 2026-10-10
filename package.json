@@ -1,6 +1,6 @@
 {
   "name": "offline-api-client",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "Offline desktop HTTP client",
   "main": "out/main/index.js",
@@ -57,10 +57,10 @@
     "vitest": "5.0.3"
   },
   "author": {
-    "name": "Offline API Client contributors",
-    "email": "maintainers@example.invalid"
+    "name": "Milad",
+    "email": "milad1400@gmail.com"
   },
-  "homepage": "https://example.invalid/offline-api-client",
+  "homepage": "https://github.com/miladmoham1400/api-client",
   "license": "UNLICENSED",
   "desktopName": "offline-api-client"
 }

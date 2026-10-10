@@ -19,6 +19,8 @@ A network connection to the target is still required to reach remote APIs. Offli
 
 For installed use, follow the [user guide](docs/user-guide.md). Packages are generated locally; no public downloads or automatic updates were established. Read [known limitations](docs/known-limitations.md) before installation.
 
+Public 0.1.1 installer preparation is tracked in the [public release procedure](docs/public-release.md) and [execution report](docs/tooling-reports/public-release.md). The manual GitHub workflow builds each target natively; pending builds or uploads are not available downloads.
+
 For development, use the pinned Node/npm in [toolchain lock](docs/toolchain-lock.md) and [setup](docs/setup.md), then from the repository root:
 
 ```text

@@ -1,0 +1,83 @@
+name: Native installer builds
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  packages:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            target: linux
+          - os: windows-2022
+            target: win
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: '22.18.0'
+      - name: Install pinned dependencies
+        shell: bash
+        run: |
+          npm install --global npm@11.6.2
+          npm ci
+          npm exec --no -- install-electron
+      - name: Check source
+        shell: bash
+        run: |
+          npm run lint
+          npm run test:unit -- --maxWorkers=1
+      - name: Build native package
+        shell: bash
+        run: npm run package:${{ matrix.target }}
+      - name: Install Linux package and test installed application
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb ./dist/linux/*.deb
+          export API_CLIENT_EXECUTABLE=/opt/offline-api-client/offline-api-client
+          xvfb-run -a npm exec --no -- playwright test tests/database.spec.ts tests/security.spec.ts tests/json-presentation.spec.ts tests/panel-layout.spec.ts tests/response-viewer.spec.ts
+          sha256sum dist/linux/*.deb dist/linux/*.AppImage > dist/linux/SHA256SUMS.txt
+      - name: Install Windows package and test installed application
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $installer = (Get-ChildItem dist/windows/*-setup.exe).FullName
+          $process = Start-Process -FilePath $installer -ArgumentList '/S' -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Installer failed: $($process.ExitCode)" }
+          $env:API_CLIENT_EXECUTABLE = "$env:LOCALAPPDATA\Programs\offline-api-client\offline-api-client.exe"
+          if (!(Test-Path $env:API_CLIENT_EXECUTABLE)) { throw 'Installed executable missing' }
+          npm.cmd exec --no -- playwright test tests/database.spec.ts tests/security.spec.ts tests/json-presentation.spec.ts tests/panel-layout.spec.ts tests/response-viewer.spec.ts
+          if ($LASTEXITCODE -ne 0) { throw 'Packaged smoke tests failed' }
+          $hash = (Get-FileHash $installer -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  $([System.IO.Path]::GetFileName($installer))" | Set-Content dist/windows/SHA256SUMS.txt -Encoding ascii
+      - name: Upload verified installers
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: installers-${{ runner.os }}-${{ github.sha }}
+          if-no-files-found: error
+          retention-days: 14
+          path: |
+            dist/linux/*.deb
+            dist/linux/*.AppImage
+            dist/linux/SHA256SUMS.txt
+            dist/windows/*-setup.exe
+            dist/windows/SHA256SUMS.txt
+      - name: Upload test diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: diagnostics-${{ runner.os }}-${{ github.sha }}
+          if-no-files-found: ignore
+          retention-days: 7
+          path: test-results/
