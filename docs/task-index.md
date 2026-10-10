@@ -35,10 +35,12 @@ There are 30 tasks: foundation (001–006), local project/request features (007�
 | 27 | [TASK-027 — Run integrated offline acceptance and close defects](tasks/TASK-027-offline-acceptance.md) | TASK-026 | done |
 | 28 | [TASK-028 — Package and verify Linux build](tasks/TASK-028-linux-package.md) | TASK-027 | done |
 | 29 | [TASK-029 — Package and verify Windows build](tasks/TASK-029-windows-package.md) | TASK-027 | done |
-| 30 | [TASK-030 — Write user guide and release acceptance record](tasks/TASK-030-release-documentation.md) | TASK-028, TASK-029 | todo |
+| 30 | [TASK-030 — Write user guide and release acceptance record](tasks/TASK-030-release-documentation.md) | TASK-028, TASK-029 | done |
 
 ## Progress protocol
 
 Allowed statuses: todo, in_progress, blocked, done. Keep task file and table synchronized. Record actual evidence in docs/task-reports/TASK-NNN.md during implementation. The report directory and verified toolchain/release guides are intentionally not populated by this planning pack.
 
 TASK-028 and TASK-029 share TASK-027 as dependency, so Windows packaging can proceed even if Linux-specific validation is blocked. TASK-030 needs both OS tasks complete. Do not create agent workers unless explicitly requested by the user.
+
+TASK-030 completed 2026-10-10. See [release acceptance](release-acceptance.md), [user guide](user-guide.md), [known limitations](known-limitations.md) and [TASK-030 report](task-reports/TASK-030.md). All planned tasks are done; recorded coverage limits still apply, and no public release has been published.

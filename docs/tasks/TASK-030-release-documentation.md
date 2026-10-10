@@ -1,7 +1,9 @@
 # TASK-030 — Write user guide and release acceptance record
 
-Status: todo
+Status: done
 Dependencies: TASK-028, TASK-029
+
+Completed 2026-10-10. Added [user guide](../user-guide.md), [known limitations](../known-limitations.md) and [release acceptance](../release-acceptance.md), with independent Linux/Windows package evidence and explicit untested coverage. Five targeted installed-Linux checks passed; local documentation links, artifact/evidence consistency and whitespace checks passed. See [TASK-030 report](../task-reports/TASK-030.md). No publishing or phase-2 work was performed.
 
 ## Read first
 
