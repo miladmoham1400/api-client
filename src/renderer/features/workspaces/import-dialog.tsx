@@ -21,11 +21,12 @@ export function WorkspaceImportDialog({ close, returnFocus }: { close: (name?: s
     <Portal><Dialog.Backdrop /><Dialog.Positioner><Dialog.Content>
       <Dialog.Header><Dialog.Title>Import workspace JSON</Dialog.Title></Dialog.Header>
       <Dialog.Body maxH="60vh" overflowY="auto">
-        <Dialog.Description>Import Offline API Client format v1 as a new workspace. Existing workspaces and unsaved edits are kept. No request will be sent.</Dialog.Description>
+        <Dialog.Description>Import Offline API Client format v1 or v2 as a new workspace. Existing workspaces and unsaved edits are kept. No request will be sent.</Dialog.Description>
         {preview ? <>
           <Text mt="3">Workspace: {preview.name}</Text>
-          <Text>{preview.collections.length} collections; {preview.environments.length} environments; {preview.requests} requests; {preview.variables} variables.</Text>
+          <Text>{preview.collections.length} collections; {preview.folders.length} folders; {preview.environments.length} environments; {preview.requests} requests; {preview.variables} variables.</Text>
           {preview.collections.length > 0 && <Text>Collections: {preview.collections.join(', ')}</Text>}
+          {preview.folders.length > 0 && <Text>Folders: {preview.folders.join(', ')}</Text>}
           {preview.environments.length > 0 && <Text>Environments: {preview.environments.join(', ')}</Text>}
           <Text mt="3">Omissions: {preview.missingVariables} sensitive variable values, {preview.missingCredentials} requests requiring credentials, {preview.missingFiles} files requiring selection.</Text>
           <Text mt="3">Supply omitted values and select local files again. The new workspace starts with environment None and no selected request. Your current workspace stays selected.</Text>

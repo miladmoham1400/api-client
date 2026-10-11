@@ -8,7 +8,7 @@ export function createImportHandlers(getWindow: Parameters<typeof createOwnedHan
   const service = () => { const value = getService(); if (!value) throw new RepositoryError('DATABASE_UNAVAILABLE'); return value }
   const error = (e: unknown): DomainError => {
     const code = e instanceof RepositoryError ? e.code : 'INVALID_IMPORT'
-    return { code, message: code === 'IMPORT_TOO_LARGE' ? 'Import exceeds the 10 MiB limit.' : code === 'UNSUPPORTED_FORMAT_VERSION' ? 'Only Offline API Client workspace format v1 is supported.' : code === 'NOT_FOUND' ? 'Import preview expired. Choose the file again.' : code === 'DATABASE_WRITE_FAILED' || code === 'DATABASE_UNAVAILABLE' ? 'Import could not be saved. No partial workspace was created. Try again.' : 'Invalid workspace import. Check its format, limits, omissions and references.', retryable: code === 'DATABASE_WRITE_FAILED' || code === 'DATABASE_UNAVAILABLE' }
+    return { code, message: code === 'IMPORT_TOO_LARGE' ? 'Import exceeds the 10 MiB limit.' : code === 'UNSUPPORTED_FORMAT_VERSION' ? 'Only Offline API Client workspace formats v1 and v2 are supported.' : code === 'NOT_FOUND' ? 'Import preview expired. Choose the file again.' : code === 'DATABASE_WRITE_FAILED' || code === 'DATABASE_UNAVAILABLE' ? 'Import could not be saved. No partial workspace was created. Try again.' : 'Invalid workspace import. Check its format, limits, omissions and references.', retryable: code === 'DATABASE_WRITE_FAILED' || code === 'DATABASE_UNAVAILABLE' }
   }
   return {
     choose: createOwnedAsyncHandler(getWindow, trustedUrl, importChooseInput, importChooseSchema, async (_, authorized) => service().choose(choose, authorized), error),

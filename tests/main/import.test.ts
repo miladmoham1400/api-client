@@ -73,7 +73,7 @@ it('rolls back all entities/secrets on injected late write failure, keeping exis
 it.each(['unsupported', 'script', 'path', 'secret', 'orphan', 'duplicate', 'keys', 'rows', 'header', 'method', 'limit'])('rejects %s before writes without leaking input', kind => {
   const f = fixture(), dto = structuredClone(f.dto), source = dto.workspace, request = source.requests[0]!
   const bytes = f.db.serialize()
-  const value: unknown = kind === 'unsupported' ? { ...dto, version: 2 } : kind === 'script' ? { ...dto, script: 'synthetic-secret' }
+  const value: unknown = kind === 'unsupported' ? { ...dto, version: 3 } : kind === 'script' ? { ...dto, script: 'synthetic-secret' }
     : kind === 'path' ? { ...dto, workspace: { ...source, requests: [{ ...request, config: { ...request.config, body: { kind: 'multipart', rows: [{ id: randomUUID(), key: 'upload', kind: 'file', enabled: true, path: '/synthetic/private', requiresSelection: true }] } } }] } }
     : kind === 'secret' ? { ...dto, workspace: { ...source, variables: source.variables.map(v => v.isSensitive ? { ...v, value: 'synthetic-secret' } : v) } }
     : kind === 'orphan' ? { ...dto, workspace: { ...source, requests: [{ ...request, collectionId: randomUUID() }] } }

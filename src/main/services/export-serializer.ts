@@ -1,9 +1,11 @@
+import type { Folder } from '../../shared/api-library'
 import type { Collection, Environment, StoredRequest, StoredVariable, Workspace } from '../../shared/entities'
 import { credentialTemplateSchema, type ExportAuth, type ExportBody, type StoredBody, type StoredAuth } from '../../shared/request-config'
-import { workspaceExportSchema, type WorkspaceExport } from '../../shared/transfer'
+import { workspaceExportV2Schema, type WorkspaceExportV2 } from '../../shared/transfer'
 
 export interface ExportSnapshot {
   workspace: Workspace
+  folders?: Folder[]
   collections: Collection[]
   environments: Environment[]
   variables: StoredVariable[]
@@ -36,17 +38,18 @@ function body(source: StoredBody): ExportBody {
   }
 }
 /** Explicit allowlists throughout: stored objects, credentials and state are never dumped. */
-export function serializeWorkspace(snapshot: ExportSnapshot, exportedAt = new Date().toISOString()): WorkspaceExport {
-  return workspaceExportSchema.parse({
-    format: 'offline-api-client-workspace', version: 1, exportedAt,
+export function serializeWorkspace(snapshot: ExportSnapshot, exportedAt = new Date().toISOString()): WorkspaceExportV2 {
+  return workspaceExportV2Schema.parse({
+    format: 'offline-api-client-workspace', version: 2, exportedAt,
     workspace: {
       id: snapshot.workspace.id, name: snapshot.workspace.name,
       collections: snapshot.collections.map(value => ({ id: value.id, name: value.name, sortOrder: value.sortOrder })),
+      folders: (snapshot.folders ?? []).map(value => ({ id: value.id, collectionId: value.collectionId, parentFolderId: value.parentFolderId, name: value.name, sortOrder: value.sortOrder })),
       environments: snapshot.environments.map(value => ({ id: value.id, name: value.name })),
       variables: snapshot.variables.map(value => value.isSensitive
         ? { id: value.id, environmentId: value.environmentId, key: value.key, isSensitive: true, requiresValue: true }
         : { id: value.id, environmentId: value.environmentId, key: value.key, isSensitive: false, value: value.plainValue, requiresValue: false }),
-      requests: snapshot.requests.map(value => ({ id: value.id, collectionId: value.collectionId, name: value.name, config: {
+      requests: snapshot.requests.map(value => ({ id: value.id, collectionId: value.collectionId, folderId: value.folderId, name: value.name, config: {
         configVersion: 1, method: value.config.method, urlTemplate: value.config.urlTemplate,
         queryRows: value.config.queryRows.map(row), headerRows: value.config.headerRows.map(value => /^(authorization|proxy-authorization|cookie)$/i.test(value.key.trim())
           ? { id: value.id, key: value.key, value: '', enabled: false } : row(value)),

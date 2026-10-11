@@ -18,7 +18,7 @@ export function WorkspaceExportDialog({ workspace, close, returnFocus }: { works
     <Portal><Dialog.Backdrop /><Dialog.Positioner><Dialog.Content>
       <Dialog.Header><Dialog.Title>Export workspace JSON</Dialog.Title></Dialog.Header>
       <Dialog.Body>
-        <Dialog.Description>Export saved configuration for “{workspace.name}”. Unsaved request edits are not included and will be kept.</Dialog.Description>
+        <Dialog.Description>Export v2 saved configuration, including folders, for “{workspace.name}”. Unsaved request edits are not included and will be kept. Maximum export size: 10 MiB.</Dialog.Description>
         <Text mt="3">Sensitive variable values, Auth credential literals, Authorization/Proxy-Authorization/Cookie header values, local file paths/selections and responses are excluded. Omitted credentials and files must be supplied again.</Text>
         <Text mt="3">Ordinary URL, query, body, custom header and plain-variable text can still contain user-entered secrets. Review the JSON before sharing.</Text>
         {error && <Text role="alert" mt="3">{error}</Text>}

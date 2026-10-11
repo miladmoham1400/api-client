@@ -1,5 +1,6 @@
 import { LIBRARY_LIMITS, folderSchema, folderDepths, requestDestinationSchema, libraryContainerSchema, libraryRequestMetadataSchema, treeExpansionSchema, workspaceTreeStateSchema } from '../../../shared/api-library'
 import { themeSchema, type ThemePreference } from '../../../shared/theme'
+import { exportFolderDepths } from '../../../shared/transfer'
 import { importWorkspaceDataSchema } from '../../../shared/import'
 import type Database from 'better-sqlite3'
 import { randomUUID } from 'node:crypto'
@@ -165,6 +166,18 @@ export class Repositories {
         this.db.prepare('UPDATE collections SET sort_order=? WHERE workspace_id=? AND id=?').run(c.sortOrder, w.id, created.id)
         collections.set(c.id, created.id)
       }
+      const folders = new Map<string, string>()
+      if ('folders' in source) {
+        const depths = exportFolderDepths(source.folders), now = new Date().toISOString()
+        for (const folder of source.folders) folders.set(folder.id, randomUUID())
+        // The complete bounded graph was validated before the transaction. Insert owned, fresh
+        // references parent-first without re-scanning the entire hierarchy for every folder.
+        const insert = this.db.prepare('INSERT INTO folders VALUES (?,?,?,?,?,?,?,?)')
+        for (const folder of [...source.folders].sort((a, b) => depths.get(a.id)! - depths.get(b.id)!)) {
+          insert.run(folders.get(folder.id)!, w.id, collections.get(folder.collectionId)!,
+            folder.parentFolderId === null ? null : folders.get(folder.parentFolderId)!, folder.name, folder.sortOrder, now, now)
+        }
+      }
       for (const e of source.environments) environments.set(e.id, this.createEnvironment(w.id, e.name).id)
       for (const v of source.variables) this.upsertVariable(w.id, v.environmentId === null ? null : environments.get(v.environmentId)!, v.key,
         v.isSensitive ? { isSensitive: true, plainValue: null, secretId: this.createSecret(w.id, 'session', null).id } : { isSensitive: false, plainValue: v.value, secretId: null })
@@ -181,7 +194,7 @@ export class Repositories {
             : { id: randomUUID(), key: r.key, kind: 'file', enabled: r.enabled, ...(r.fileName === undefined ? {} : { fileName: r.fileName }), ...(r.fileSize === undefined ? {} : { fileSize: r.fileSize }) }) }
             : config.body.kind === 'urlencoded' ? { kind: 'urlencoded', rows: config.body.rows.map(row) } : { ...config.body }
         }
-        this.createRequest(w.id, request.name, request.collectionId === null ? null : collections.get(request.collectionId)!, stored)
+        this.insertRequest(w.id, request.name, request.collectionId === null ? null : collections.get(request.collectionId)!, stored, 'folderId' in request && request.folderId !== null ? folders.get(request.folderId)! : null)
       }
       // createWorkspace supplies None/no request; app selection and existing workspaces stay unchanged.
       return w
@@ -264,6 +277,17 @@ export class Repositories {
     this.validateDestination(w, { collectionId: result.collectionId, folderId: result.folderId })
     return {...result,config}
   }) }
+  /** Main-only transfer read: one ownership/hierarchy scan, then bounded config parsing. */
+  listStoredRequests(w: string) { return this.read(() => {
+    const summaries = this.listRequests(w)
+    const configs = new Map(this.db.prepare('SELECT id,config_version AS configVersion,config_json AS configJson FROM requests WHERE workspace_id=?').all(w)
+      .map(value => { const row = z.strictObject({ id: uuidSchema, configVersion: z.literal(1), configJson: z.string() }).parse(value); return [row.id, row.configJson] as const }))
+    return summaries.map(summary => {
+      const config = storedRequestConfigSchema.parse(JSON.parse(configs.get(summary.id)!))
+      for (const secret of secretIds(config)) this.owned('secrets', w, secret)
+      return { ...summary, config }
+    })
+  }) }
   private validateConfig(w: string, input: StoredRequestConfig, owner?: string) {
     const config=storedRequestConfigSchema.parse(input)
     for (const id of secretIds(config)) { this.owned('secrets',w,id); this.assertSecretAvailable(w,id,owner) }
@@ -271,10 +295,15 @@ export class Repositories {
   }
   createRequest(w: string,name: string,collectionId: string|null, input: StoredRequestConfig, folderId: string|null = null) { return this.write(() => {
     this.validateDestination(w, { collectionId, folderId })
-    const config=this.validateConfig(w,input),id=randomUUID(),now=new Date().toISOString()
-    this.db.prepare('INSERT INTO requests(id,workspace_id,collection_id,name,config_version,config_json,created_at,updated_at,folder_id) VALUES (?,?,?,?,?,?,?,?,?)').run(id,w,collectionId,nameSchema.parse(name),1,JSON.stringify(config),now,now,folderId)
+    const id = this.insertRequest(w, name, collectionId, input, folderId)
     return this.getRequest(w,id)
   }) }
+  /** Caller must validate the destination, either individually or as the full import graph. */
+  private insertRequest(w: string, name: string, collectionId: string|null, input: StoredRequestConfig, folderId: string|null) {
+    const config=this.validateConfig(w,input),id=randomUUID(),now=new Date().toISOString()
+    this.db.prepare('INSERT INTO requests(id,workspace_id,collection_id,name,config_version,config_json,created_at,updated_at,folder_id) VALUES (?,?,?,?,?,?,?,?,?)').run(id,w,collectionId,nameSchema.parse(name),1,JSON.stringify(config),now,now,folderId)
+    return id
+  }
   saveRequest(w: string,id: string,name: string,input: StoredRequestConfig) { return this.write(() => {
     const old=this.getRequest(w,id),config=this.validateConfig(w,input,id)
     this.db.prepare('UPDATE requests SET name=?,config_json=?,updated_at=? WHERE workspace_id=? AND id=?').run(nameSchema.parse(name),JSON.stringify(config),new Date().toISOString(),w,id)

@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest'
-import { mkdtempSync, rmSync, readdirSync, writeFileSync, readFileSync } from 'node:fs'
+import { mkdtempSync, rmSync, readdirSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { randomUUID } from 'node:crypto'
@@ -159,17 +159,15 @@ it('validates owned sender, active workspace, exact inputs, outgoing metadata an
   vi.restoreAllMocks(); expect(f.r.listFolders(f.w)).toEqual([folder])
   f.db.close(); expect(f.handlers.list(f.event,f.w)).toMatchObject({ok:false,error:{code:'DATABASE_UNAVAILABLE'}})
 })
-it('blocks even empty-folder export before chooser; rechecks before writing if a folder appears during chooser; folder-free v1 still works', async () => {
+it('exports empty folders as v2, keeping one snapshot when folders change during the native chooser', async () => {
   const f=fixture(), exportService=new WorkspaceExportService(f.db,[]), target=join(f.directory,'export.json'), choose=vi.fn(async () => target)
   const handler=createExportHandler(() => f.window,f.frame.url,() => exportService,choose)
-  const folder=f.r.createFolder(f.w,f.c,null,'Empty')
-  const files=readdirSync(f.directory), bytes=before(f.db)
-  expect(await handler(f.event,f.w)).toMatchObject({ok:false,error:{code:'FOLDER_EXPORT_UNAVAILABLE',message:expect.stringContaining('not available yet')}})
-  expect(choose).not.toHaveBeenCalled(); expect(before(f.db)).toEqual(bytes); expect(readdirSync(f.directory)).toEqual(files)
-  f.r.deleteFolder(f.w,folder.id); writeFileSync(target,'original')
-  await expect(exportService.export(f.w,async () => { f.r.createFolder(f.w,f.c,null,'During dialog'); return target },() => true)).rejects.toMatchObject({code:'FOLDER_EXPORT_UNAVAILABLE'})
-  expect(readFileSync(target,'utf8')).toBe('original'); expect(readdirSync(f.directory).filter(n => n.endsWith('.tmp'))).toEqual([])
-  f.r.deleteFolder(f.w,f.r.listFolders(f.w)[0]!.id)
-  expect(await exportService.export(f.w,choose,() => true)).toEqual({status:'saved'})
-  expect(JSON.parse(readFileSync(target,'utf8')).version).toBe(1)
+  const folder=f.r.createFolder(f.w,f.c,null,'Empty'), bytes=before(f.db)
+  expect(await handler(f.event,f.w)).toEqual({ok:true,data:{status:'saved'}})
+  expect(choose).toHaveBeenCalledOnce(); expect(before(f.db)).toEqual(bytes)
+  expect(JSON.parse(readFileSync(target,'utf8'))).toMatchObject({version:2,workspace:{folders:[{id:folder.id,name:'Empty'}]}})
+  expect(await exportService.export(f.w,async () => { f.r.createFolder(f.w,f.c,null,'During dialog'); return target },() => true)).toEqual({status:'saved'})
+  expect(JSON.parse(readFileSync(target,'utf8')).workspace.folders).toHaveLength(1)
+  expect(exportService.snapshot(f.w).workspace.folders).toHaveLength(2)
+  expect(readdirSync(f.directory).filter(n => n.endsWith('.tmp'))).toEqual([])
 })

@@ -1,6 +1,6 @@
 # TASK-036 — Preserve nested libraries in safe v2 transfer
 
-Status: todo
+Status: done
 Dependencies: TASK-035, TASK-024, TASK-025
 Priority: highest — approved API-library milestone
 
@@ -37,3 +37,7 @@ No Postman/OpenAPI format, merging imports, raw database backup export or runtim
 ## Completion procedure
 
 Inspect current source/user changes and dependency evidence before edits. Execute only this task. Record actual changes, commands/exit codes, environment, evidence, limitations and blockers in `docs/task-reports/TASK-036.md` when execution begins; planning is not execution evidence. Update task status and index together. Mark done only with all criteria verified; otherwise in_progress/blocked. Never count untested platforms or skipped checks as passed. Stop at this task boundary.
+
+## Completion evidence
+
+See [TASK-036 report](../task-reports/TASK-036.md): 369 unit tests passed with one worker, production build/typecheck/lint passed, and both native Ubuntu export/import dialog tests passed without skips. Large v2 round trip covers 100 collections/1,000 folders/1,000 requests at depth 16 below 10 MiB. Initial sandbox/default-timeout/default-worker failures and actual reruns are retained in the report. Windows dialogs and fresh Linux/Windows packaged acceptance were not run and remain TASK-037.

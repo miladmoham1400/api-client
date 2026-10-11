@@ -12,6 +12,6 @@ export function createExportHandler(getWindow: Parameters<typeof createOwnedHand
     return service.export(workspace, choosePath, authorized)
   }, error => {
     const code = error instanceof RepositoryError || error instanceof ExportFileError ? error.code : error instanceof z.ZodError ? 'VALIDATION' : 'EXPORT_WRITE_FAILED'
-    return { code, message: code === 'FOLDER_EXPORT_UNAVAILABLE' ? 'Folder-aware workspace export is not available yet. Your saved data has not been changed.' : code === 'NOT_FOUND' ? 'Workspace export unavailable.' : code === 'VALIDATION' ? error instanceof ExportFileError ? 'Export unavailable. Choose a JSON file outside application and data folders.' : 'Workspace export unavailable. Check saved configuration and try again.' : 'Workspace could not be exported. Your saved data has not been changed. Try again.', retryable: code === 'EXPORT_WRITE_FAILED' || code === 'DATABASE_UNAVAILABLE' }
+    return { code, message: code === 'NOT_FOUND' ? 'Workspace export unavailable.' : code === 'VALIDATION' ? error instanceof ExportFileError ? 'Export unavailable. Choose a JSON file outside application and data folders.' : 'Workspace export unavailable. Check saved configuration and the 10 MiB export limit, then try again.' : 'Workspace could not be exported. Your saved data has not been changed. Try again.', retryable: code === 'EXPORT_WRITE_FAILED' || code === 'DATABASE_UNAVAILABLE' }
   })
 }

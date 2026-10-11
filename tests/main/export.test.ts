@@ -25,6 +25,8 @@ const config = (): StoredRequestConfig => ({ ...createDefaultRequestConfig(), me
 const text = (key: string, value: string, enabled = true) => ({ id: randomUUID(), key, value, enabled })
 it('allowlists every entity and body; omits synthetic secrets, state, paths and capabilities while preserving order/templates', () => {
   const f = fixture(), c = f.r.createCollection(f.w, 'Collection'), e = f.r.createEnvironment(f.w, 'Local')
+  const folder = f.r.createFolder(f.w, c.id, null, 'Empty')
+  f.r.setTreeState(f.w, { expandedCollectionIds: [c.id], expandedFolderIds: [folder.id] })
   const sensitive = f.r.createSecret(f.w, 'secure', Buffer.from('synthetic-sensitive-ciphertext'))
   const literal = f.r.createSecret(f.w, 'session', null)
   f.r.upsertVariable(f.w, null, 'ordinary', { isSensitive: false, plainValue: 'ordinary-visible', secretId: null })
@@ -33,23 +35,26 @@ it('allowlists every entity and body; omits synthetic secrets, state, paths and 
   const ordinaryHeader = text('X-Plain', 'ordinary-header')
   const headerRows = [text(' Authorization ', 'synthetic-auth-header'), text('pRoXy-AuThOrIzAtIoN', 'synthetic-proxy-header', false), text('Cookie', 'synthetic-cookie-header'), ordinaryHeader]
   const file = { id: randomUUID(), key: 'file', kind: 'file' as const, enabled: false, fileName: 'fixture.txt', fileSize: 12 }
-  const multipart = f.r.createRequest(f.w, 'Multipart', c.id, { ...config(), queryRows, headerRows, body: { kind: 'multipart', rows: [{ ...text('same', '{{ordinary}}'), kind: 'text' }, file] }, auth: { mode: 'basic', username: { kind: 'template', template: ' {{username}} ' }, password: { kind: 'secret', secretId: literal.id } }, timeoutMs: 12345, followRedirects: true })
+  const multipart = f.r.createRequest(f.w, 'Multipart', c.id, { ...config(), queryRows, headerRows, body: { kind: 'multipart', rows: [{ ...text('same', '{{ordinary}}'), kind: 'text' }, file] }, auth: { mode: 'basic', username: { kind: 'template', template: ' {{username}} ' }, password: { kind: 'secret', secretId: literal.id } }, timeoutMs: 12345, followRedirects: true }, folder.id)
   const bodies = [{ kind: 'none' }, { kind: 'json', text: ' { "value": "{{ordinary}}" } ' }, { kind: 'raw', text: 'سلام\n', mediaType: 'text/plain' }, { kind: 'urlencoded', rows: queryRows }] as const
   const requests = [multipart, ...bodies.map((body, index) => f.r.createRequest(f.w, `Body ${index}`, null, { ...config(), body: structuredClone(body) }))]
   f.r.createRequest(f.foreign, 'Foreign must stay out', null, config())
   f.r.setState(f.w, e.id, multipart.id); f.r.selectWorkspace(f.w)
   const dto = f.service.snapshot(f.w), output = JSON.stringify(dto)
   expect(workspaceExportSchema.parse(JSON.parse(output))).toEqual(dto)
-  for (const marker of ['synthetic-sensitive-ciphertext', sensitive.id, literal.id, 'synthetic-auth-header', 'synthetic-proxy-header', 'synthetic-cookie-header', 'activeEnvironmentId', 'selectedRequestId', 'Foreign must stay out', 'createdAt', 'updatedAt']) expect(output).not.toContain(marker)
+  for (const marker of ['synthetic-sensitive-ciphertext', sensitive.id, literal.id, 'synthetic-auth-header', 'synthetic-proxy-header', 'synthetic-cookie-header', 'activeEnvironmentId', 'selectedRequestId', 'expandedFolderIds', 'expandedCollectionIds', 'Foreign must stay out', 'createdAt', 'updatedAt']) expect(output).not.toContain(marker)
+  expect(dto.version).toBe(2)
+  expect(dto.workspace.folders).toEqual([{ id: folder.id, collectionId: c.id, parentFolderId: null, name: 'Empty', sortOrder: 0 }])
+  expect(dto.workspace.requests.find(r => r.id === multipart.id)?.folderId).toBe(folder.id)
   expect(dto.workspace.collections).toEqual([{ id: c.id, name: c.name, sortOrder: c.sortOrder }])
   expect(dto.workspace.environments).toEqual([{ id: e.id, name: e.name }])
   expect(dto.workspace.variables).toEqual(expect.arrayContaining([{ id: expect.any(String), environmentId: null, key: 'ordinary', isSensitive: false, value: 'ordinary-visible', requiresValue: false }, { id: expect.any(String), environmentId: e.id, key: 'token', isSensitive: true, requiresValue: true }]))
   const exported = dto.workspace.requests.find(value => value.id === multipart.id)
   expect(exported?.config).toMatchObject({ queryRows, headerRows: headerRows.map((row, index) => index < 3 ? { ...row, value: '', enabled: false } : row), timeoutMs: 12345, followRedirects: true, auth: { mode: 'basic', usernameTemplate: ' {{username}} ', passwordTemplate: '', requiresCredentials: true }, body: { kind: 'multipart', rows: [{ ...text('unused', ''), id: expect.any(String), key: 'same', value: '{{ordinary}}', kind: 'text', enabled: true }, { ...file, requiresSelection: true }] } })
   for (const request of requests.slice(1)) expect(dto.workspace.requests.find(value => value.id === request.id)?.config.body).toEqual(request.config.body)
-  const source: ExportSnapshot = { workspace: { ...f.r.getWorkspace(f.w), ...{ response: 'synthetic-response' } }, collections: [c], environments: [e], variables: f.r.listVariables(f.w, null), requests: [{ ...multipart, config: { ...multipart.config, body: { kind: 'multipart', rows: [{ ...file, ...{ path: '/synthetic/private/upload', fileId: randomUUID(), secretId: literal.id } }] } } }] }
+  const source: ExportSnapshot = { workspace: { ...f.r.getWorkspace(f.w), ...{ response: 'synthetic-response' } }, collections: [c], folders: [{ ...folder, ...{ privatePath: '/synthetic/private/folder' } }], environments: [e], variables: f.r.listVariables(f.w, null), requests: [{ ...multipart, config: { ...multipart.config, body: { kind: 'multipart', rows: [{ ...file, ...{ path: '/synthetic/private/upload', fileId: randomUUID(), secretId: literal.id } }] } } }] }
   const sanitized = JSON.stringify(serializeWorkspace(source))
-  for (const value of ['/synthetic/private/upload', 'fileId', 'secretId', 'response', 'synthetic-response']) expect(sanitized).not.toContain(value)
+  for (const value of ['/synthetic/private/folder', '/synthetic/private/upload', 'fileId', 'secretId', 'response', 'synthetic-response']) expect(sanitized).not.toContain(value)
 })
 it.each(['synthetic-literal', 'Bearer {{token}}', '{{token}}suffix'])('does not retain mixed/literal Auth text (%s)', value => {
   const f = fixture(), request = f.r.createRequest(f.w, 'Auth', null, config())
@@ -69,11 +74,11 @@ it('uses one SQLite read snapshot even when another connection commits between e
     let committed = false
     const original = Repositories.prototype.listCollections
     vi.spyOn(Repositories.prototype, 'listCollections').mockImplementation(function (this: Repositories, workspace) {
-      if (!committed) { committed = true; r.renameWorkspace(workspace, 'After'); r.createCollection(workspace, 'Concurrent') }
+      if (!committed) { committed = true; r.renameWorkspace(workspace, 'After'); const collection = r.createCollection(workspace, 'Concurrent'); r.createFolder(workspace, collection.id, null, 'Concurrent folder') }
       return original.call(this, workspace)
     })
     const exported = f.service.snapshot(f.w)
-    expect(exported.workspace.name).toBe('Clinic API'); expect(exported.workspace.collections).toEqual([])
+    expect(exported.workspace.name).toBe('Clinic API'); expect(exported.workspace.collections).toEqual([]); expect(exported.workspace.folders).toEqual([])
     expect(f.r.getWorkspace(f.w).name).toBe('After')
     expect(writer.prepare('SELECT name FROM collections').all()).toEqual([{ name: 'Concurrent' }])
   } finally { writer.close() }

@@ -8,6 +8,8 @@ Version 0.1.1 was published through an explicitly dispatched workflow. Native Ub
 
 The published 0.1.1 navigation deletion-dialog test timed out after choosing Save while deleting a collection. TASK-031 reproduced and fixed the Save-triggered sidebar refresh/mutation race in source; see [TASK-031 evidence](task-reports/TASK-031.md). Published installers have not been rebuilt with that fix, and no new full desktop/package acceptance is claimed. See [panel layout evidence](tooling-reports/panel-layout.md) and [0.1.1 release evidence](tooling-reports/public-release.md). The original 0.1.0 observations below remain historical.
 
+The nested-library source milestones TASK-031–036, including strict v2 folder-aware transfer and v1 import, are separate from those published binaries. Fresh packaged Linux/Windows library acceptance remains TASK-037; TASK-036 does not supply Windows chooser or packaged-app evidence. Exports above 10 MiB reject before the save chooser, even if the saved database itself is larger. See [TASK-036 evidence](task-reports/TASK-036.md).
+
 ## Observed issues and evidence limits
 
 - **Windows uninstall required a second attempt.** The first Settings uninstall left the install folder present; the second removed it. The first uninstaller window was not observed, so the cause is unknown. Both attempts preserved all synthetic app data; reinstall/reopen succeeded. See [TASK-029 attempt 6](task-reports/TASK-029.md#windows-attempt-6-manual-checks-and-uninstall-preservation-2026-10-10-12151240).

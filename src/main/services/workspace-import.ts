@@ -10,7 +10,7 @@ export function validateImport(bytes: Uint8Array): WorkspaceExport {
   try { value = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes)) }
   catch { throw new RepositoryError('INVALID_IMPORT') }
   if (value !== null && typeof value === 'object' && ('format' in value || 'version' in value) &&
-    (Reflect.get(value, 'format') !== 'offline-api-client-workspace' || Reflect.get(value, 'version') !== 1)) throw new RepositoryError('UNSUPPORTED_FORMAT_VERSION')
+    (Reflect.get(value, 'format') !== 'offline-api-client-workspace' || ![1, 2].includes(Reflect.get(value, 'version')))) throw new RepositoryError('UNSUPPORTED_FORMAT_VERSION')
   const parsed = workspaceImportSchema.safeParse(value)
   if (!parsed.success) throw new RepositoryError('INVALID_IMPORT')
   return parsed.data
@@ -32,7 +32,7 @@ export class WorkspaceImportService {
       const dto = validateImport(await readImport(path))
       if (!authorized() || generation !== this.generation) throw new RepositoryError('NOT_FOUND')
       const w = dto.workspace, token = randomUUID()
-      const preview: ImportPreview = importPreviewSchema.parse({ token, name: w.name, collections: w.collections.map(c => c.name), environments: w.environments.map(e => e.name), requests: w.requests.length, variables: w.variables.length,
+      const preview: ImportPreview = importPreviewSchema.parse({ token, name: w.name, collections: w.collections.map(c => c.name), folders: dto.version === 2 ? dto.workspace.folders.map(f => f.name) : [], environments: w.environments.map(e => e.name), requests: w.requests.length, variables: w.variables.length,
         missingVariables: w.variables.filter(v => v.isSensitive).length,
         missingCredentials: w.requests.filter(r => r.config.auth.mode !== 'none' && r.config.auth.requiresCredentials).length,
         missingFiles: w.requests.reduce((n, r) => n + (r.config.body.kind === 'multipart' ? r.config.body.rows.filter(v => v.kind === 'file').length : 0), 0) })
