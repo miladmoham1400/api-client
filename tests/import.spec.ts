@@ -5,7 +5,7 @@ import { mkdtempSync, readFileSync, writeFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { expect, test } from '@playwright/test'
-import { workspaceExportV2Schema } from '../src/shared/transfer'
+import { workspaceExportV1Schema, workspaceExportV2Schema } from '../src/shared/transfer'
 import { startFixture } from './fixtures/http'
 import { shutdown } from './fixtures/shutdown'
 const execute = promisify(execFile)
@@ -128,6 +128,21 @@ test('native export/import preview confirms only a new workspace, cancels neutra
     await expect(page.getByRole('group',{name:'Multipart row 1',exact:true})).toContainText('select again')
     await editor.getByRole('tab',{name:'Auth',exact:true}).click()
     await expect(editor).toContainText('re-enter')
+    expect(captures).toEqual([])
+    // Exercise an actual legacy native-open preview, not merely a schema conversion in unit tests.
+    const { folders: legacyFolders, ...legacyWorkspace } = source.workspace
+    expect(legacyFolders).toHaveLength(3)
+    const legacy = workspaceExportV1Schema.parse({ ...source, version: 1, workspace: { ...legacyWorkspace, name: 'Legacy import fixture',
+      requests: legacyWorkspace.requests.map(({ folderId, ...request }) => { expect(folderId).not.toBeNull(); return request }) } })
+    writeFileSync(path,JSON.stringify(legacy))
+    dialog=await choose()
+    await expect(dialog).toContainText('0 folders;')
+    await dialog.getByRole('button',{name:'Import as new workspace',exact:true}).click();await expect(dialog).not.toBeVisible()
+    await expect(page.getByLabel('Workspace',{exact:true})).toHaveValue(imported.id)
+    const legacyId=await page.evaluate(async()=>{const result=await window.offlineApi.workspaces.list();if(!result.ok) throw new Error('Missing workspaces');return result.data.workspaces.find(w=>w.name==='Legacy import fixture (imported)')!.id})
+    await page.getByLabel('Workspace',{exact:true}).selectOption(legacyId)
+    const legacyState=await page.evaluate(async w=>({folders:await window.offlineApi.folders.list(w),requests:await window.offlineApi.requests.list(w)}),legacyId)
+    expect(legacyState).toMatchObject({folders:{ok:true,data:{folders:[]}},requests:{ok:true,data:{editor:null,requests:[expect.objectContaining({folderId:null,collectionId:expect.any(String)})]}}})
     expect(captures).toEqual([])
     writeFileSync(path,bytes)
   } finally { await shutdown(application); await fixture.close(); rmSync(directory,{recursive:true,force:true}) }

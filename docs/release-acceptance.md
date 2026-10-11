@@ -81,3 +81,30 @@ The required phase-1 functional matrix is satisfied for the recorded installed L
 Follow [release build procedures](release.md) and [testing strategy](testing.md) with synthetic data and the target-native toolchain. Never run rebuilds concurrently. Run the Linux isolated suite sequentially with `API_CLIENT_EXECUTABLE` selecting the exact installed package; use extraction mode for AppImage. Windows uses `npm.cmd`, target-native packaging, the installed-executable suite and the manual native-dialog/offline/preservation checks in [Windows procedure](../task029-evidence/STEPS.md). The completed [TASK-029 report](task-reports/TASK-029.md) records deviations from that original procedure, which used a separate account and network disconnection.
 
 Verify installed identity, hashes, egress restriction with loopback working, normal close/reopen and actual uninstall behavior. Record new results separately; do not replace not-run entries with assumed passes. TASK-030's additional Linux guide checks and document validation are in [its report](task-reports/TASK-030.md); they do not rerun the full offline matrix.
+
+## TASK-037 — new nested-library acceptance (unfinished)
+
+This record is separate from the historical 0.1.0 matrix and published 0.1.1 artifacts above. TASK-037 builds local, unsigned, unpublished version-0.1.1 acceptance packages from production source at `bc2380417ae8bb2fd4c3401e2852180f09268478`, with working-tree acceptance-test/document changes. Same version/filename does not mean same bytes. No Windows acceptance is inherited and no release/tag/version was changed.
+
+| Fresh local artifact | Bytes | SHA-256 |
+|---|---|---|
+| `dist/task037-linux/offline-api-client-0.1.1-amd64.deb` | 112870588 | `dc3771d55769606d4da0dfbdd027744bb36d83fe3efbd083a5c421e16c0e833e` |
+| `dist/task037-linux/offline-api-client-0.1.1-x86_64.AppImage` | 143974249 | `cc593562edf9582fb9644318491faf2e3662d638ad2fbd557da1568a69604c1d` |
+| Fresh native Windows NSIS installer | Not built | Not available — no current native Windows runner |
+
+Fresh Ubuntu 24.04.3 x64/X11 build/typecheck/lint and builder-managed Electron SQLite rebuild succeeded. Final unit rerun passed all 369 tests across 37 files; the earlier timeout is retained in the report. Current deb metadata is amd64, version 0.1.1. Existing `dist/linux/` installers and installed 0.1.0 app were preserved. Extracting the new deb payload is not installation. The final complete loopback-only deb-payload desktop suite reported **36 passed, no skips** (5.1 min). Earlier attempts had a retired export-gate assertion and a fixture close during workspace transition; corrected test sequencing and dedicated v2 transfer checks passed against the same hashed payload. See [TASK-037 report](task-reports/TASK-037.md) for final checks and retained failures.
+
+The new large-library deb-payload check passed at depth 16 with 100 collections, 1,000 folders and 1,000 requests plus an isolated second workspace: cold readiness 1505.72 ms (<=2000), selection p95 245.48 ms and search p95 151.36 ms (<=500), after one warm-up and 20 samples each. Live rows were bounded to 50 tree/100 search rows. All pages and first/middle/last exact method/URL/body sends were verified; normal restart retained complete structure/config/expansion and reset search. Full [Linux samples/hardware](task-reports/TASK-037-linux-performance.json) are recorded; this does not attest installed binaries or Windows performance.
+
+| Required new target criterion | Linux | Windows 11 |
+|---|---|---|
+| Native new package build/hash | Passed: deb/AppImage above | Not run |
+| Actual install/removal/reinstall preservation | Not run: sudo authentication unavailable | Not run |
+| Loopback-only startup/edit/send and security/secret/file/response regression | Passed: full deb-payload suite, 36 tests; not installed | Not run |
+| 1,000-request/folder depth-16 browsing/search/wire/restart | Deb payload passed with samples above | Not run |
+| Closed legacy profile upgrade in target package | Passed: 1,005 requests, exact legacy tables/config and normal reopen | Not run |
+| Native v1 import/v2 export/import and recovery | Deb payload native Linux test passed | Not run |
+| AppImage extraction-and-run focused acceptance | Passed: 7 focused offline tests, no skips (1.7 min) | Not run |
+| Default AppImage FUSE startup | Not run: device unavailable | Not applicable |
+
+TASK-037 remains unfinished. Completing it requires actual sudo-authorized Linux install/removal/reinstall with isolated synthetic profiles, and a native current-source Windows build plus installed Windows 11 offline/native-dialog/upgrade/performance/preservation checks. Server CI smoke cannot substitute for Windows 11. No new stable/public release readiness follows from these partial results.

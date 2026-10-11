@@ -57,9 +57,30 @@ Switching requests/workspaces or closing with a dirty draft asks **Save**, **Dis
 
 Select a saved request in the sidebar to reopen it. **Duplicate saved request** creates an independent copy; dirty-draft decisions occur before navigation. **Delete request** requires confirmation and removes its owned credentials. Workspace menu provides rename/delete; deleting a workspace removes all its descendants after confirmation.
 
-You can save many requests even though only one editor is open. After saving a request, choose **Create Request** again, give the new draft its own name/URL and explicitly **Save**. Each saved request appears in the sidebar; click its name whenever you want to edit or send it. Choosing or creating a request does not send it. The sidebar scrolls when the list grows. Nested folders and quick search are planned in TASK-032–036 and are not available yet.
+You can save many requests even though only one editor is open. After saving a request, choose **Create Request** again, give the new draft its own name/URL and explicitly **Save**. Each saved request appears in the sidebar; click its name whenever you want to edit or send it. Choosing or creating a request does not send it. The sidebar scrolls when the list grows. The published 0.1.1 downloads do not include nested folders or quick search. Current source and local TASK-037 acceptance builds implement them; see the next section for those builds only.
 
 Use **Create Collection** for one-level grouping. Each saved request has a collection selector, including **Workspace root**. Collection **Actions** provide rename/delete; deleting a collection moves its requests to root rather than deleting them. Workspace, collection and environment metadata persist when their actions succeed; request editing still requires Save.
+
+## Nested API libraries — current source/local acceptance builds
+
+This section applies to TASK-031–036 source and the unpublished TASK-037 Linux acceptance artifacts, not the public v0.1.1 downloads. Filename/version alone cannot distinguish these builds; compare the exact [TASK-037 artifact hashes and remaining checks](task-reports/TASK-037.md). Full installed Linux/Windows acceptance is pending; these are not a new public release.
+
+Create a collection, then use its ellipsis menu → **New folder** to create `Users`. Use the `Users` menu to add `Admin` and `Auth`. Each collection/folder menu provides **New request**: enter its name, method and URL/body, then explicitly Save. The draft is created at that destination; cancelling/discarding does not add a blank saved request. Save many APIs and select any one when needed; selection never sends it. Example:
+
+```text
+API collection
+└── Users
+    ├── Admin → List admins, Remove admin
+    └── Auth → Login, Logout, Refresh token
+```
+
+Expand/collapse folders to browse; the sidebar shows saved HTTP methods and the editor shows the selected request's path. **Previous/Next nodes** page the tree in groups of 50, including empty folders. **Search requests** matches literal names, methods and collection/folder paths in the current workspace; **Search collection** narrows the results. Use **Previous/Next results** to browse groups of up to 100. Duplicate names remain separate requests. Clear search to restore browsing; expansion is saved per workspace, while search text is session-only.
+
+Use Up/Down to traverse the tree, Right to expand/enter, Left to collapse/go to the parent, Enter to select/toggle, and Home/End to reach logical endpoints across pages. After selecting a request, choose Send explicitly; one editor and one active send remain. Dirty drafts and active sends use the existing Save/Discard/Cancel or Cancel request/Stay decisions.
+
+The ellipsis menu supplies Rename/Move/Delete where applicable. Move a request between workspace root, collection root or folder; Move folder can reparent a whole subtree within the workspace. Folder depth is at most 16. Deleting a folder promotes its direct requests and child folders to its parent, retaining descendant structure and requests. Deleting a collection removes its folders and moves every saved request to workspace root. Confirmations show affected counts. No inherited folder auth, batch send, tabs or drag-and-drop are included.
+
+These builds export workspace JSON v2, including empty/nested folders and request destinations. Import accepts v1 (requests at their original collection/workspace roots, no folders) or v2; preview shows folder names/counts and omissions. Every import creates fresh identities in a new workspace, leaving current selection/drafts intact and sending nothing. Supply omitted credentials and reselect files. Transfer limits are 10 MiB, 100 collections, 1,000 folders, 1,000 requests and depth 16; larger saved databases are not truncated. Older v1-only clients cannot import v2.
 
 ## Params, Headers, Body and Auth
 

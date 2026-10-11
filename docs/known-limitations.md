@@ -10,6 +10,12 @@ The published 0.1.1 navigation deletion-dialog test timed out after choosing Sav
 
 The nested-library source milestones TASK-031–036, including strict v2 folder-aware transfer and v1 import, are separate from those published binaries. Fresh packaged Linux/Windows library acceptance remains TASK-037; TASK-036 does not supply Windows chooser or packaged-app evidence. Exports above 10 MiB reject before the save chooser, even if the saved database itself is larger. See [TASK-036 evidence](task-reports/TASK-036.md).
 
+## Nested-library TASK-037 acceptance — unfinished
+
+Fresh unpublished Linux deb/AppImage acceptance artifacts were built separately in `dist/task037-linux/`; exact hashes and current results are in [TASK-037](task-reports/TASK-037.md) and [new acceptance record](release-acceptance.md#task-037--new-nested-library-acceptance-unfinished). These are different bytes from public 0.1.1 downloads despite retaining version 0.1.1. No new Windows installer or publication was performed.
+
+Actual Linux install/removal/reinstall is not run because sudo requires authentication unavailable to this session; the installed 0.1.0 package is preserved. The current session cannot run Windows 11 acceptance: VBoxManage reports unavailable driver/IPC, and no authorized guest shell/desktop is connected. Remote master differs from this local source, so its existing CI cannot verify these exact bytes. Historical Windows/installer evidence does not clear these blockers. Independent extracted-deb/AppImage checks are recorded separately, including failed attempts and test-fixture corrections.
+
 ## Observed issues and evidence limits
 
 - **Windows uninstall required a second attempt.** The first Settings uninstall left the install folder present; the second removed it. The first uninstaller window was not observed, so the cause is unknown. Both attempts preserved all synthetic app data; reinstall/reopen succeeded. See [TASK-029 attempt 6](task-reports/TASK-029.md#windows-attempt-6-manual-checks-and-uninstall-preservation-2026-10-10-12151240).

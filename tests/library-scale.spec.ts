@@ -24,9 +24,9 @@ test('1000 requests/1000 folders remain bounded, paged, searchable, guarded and 
         workspace.run(w,'Scale fixture',stamp,stamp);workspace.run(other,'Separate fixture',stamp,stamp);state.run(w);state.run(other)
         const collection=db.prepare('INSERT INTO collections VALUES (?,?,?,?,?,?)'),folder=db.prepare('INSERT INTO folders VALUES (?,?,?,?,?,?,?,?)'),request=db.prepare('INSERT INTO requests(id,workspace_id,collection_id,folder_id,name,config_version,config_json,created_at,updated_at) VALUES (?,?,?,?,?,1,?,?,?)')
         for(let i=0;i<100;i++) {const c=uuid();collections.push(c);collection.run(c,w,`Collection ${String(i).padStart(3,'0')}`,i,stamp,stamp)}
-        for(let i=0;i<1000;i++) {const id=uuid();folders.push(id);const position=i%10;folder.run(id,w,collections[Math.floor(i/10)],position===0 ? null : folders[i-1],`Folder ${String(i).padStart(4,'0')}`,0,stamp,stamp)}
+        for(let i=0;i<1000;i++) {const id=uuid();folders.push(id);const position=i%10;folder.run(id,w,collections[i>=10 && i<16 ? 0 : Math.floor(i/10)],(position===0 && i!==10) || i===16 ? null : folders[i-1],`Folder ${String(i).padStart(4,'0')}`,0,stamp,stamp)}
         const config=(index:number)=>({configVersion:1,method:'POST',urlTemplate:`${url}/api/${index}`,queryRows:[],headerRows:[],body:{kind:'json',text:JSON.stringify({index})},auth:{mode:'none'},timeoutMs:30000,followRedirects:false})
-        for(let i=0;i<1000;i++) {const id=uuid();requests.push(id);request.run(id,w,collections[Math.floor(i/10)],folders[i],`API ${String(i).padStart(4,'0')}`,JSON.stringify(config(i)),stamp,stamp)}
+        for(let i=0;i<1000;i++) {const id=uuid();requests.push(id);request.run(id,w,collections[i>=10 && i<16 ? 0 : Math.floor(i/10)],folders[i],`API ${String(i).padStart(4,'0')}`,JSON.stringify(config(i)),stamp,stamp)}
         request.run(uuid(),other,null,null,'Other only',JSON.stringify(config(-1)),stamp,stamp)
         db.prepare('INSERT INTO workspace_tree_state VALUES (?,1,?)').run(w,JSON.stringify({expandedCollectionIds:collections,expandedFolderIds:folders}))
         db.prepare("INSERT INTO app_settings(key,value_json) VALUES ('lastWorkspaceId',?) ON CONFLICT(key) DO UPDATE SET value_json=excluded.value_json").run(JSON.stringify(w))
@@ -88,8 +88,19 @@ test('1000 requests/1000 folders remain bounded, paged, searchable, guarded and 
     await page.getByLabel('Workspace',{exact:true}).selectOption(seeded.other)
     await query('Other');await expect(page.locator('[data-search-id]')).toHaveCount(1);await query('API');await expect(page.getByRole('region',{name:'Request search'})).toContainText('of 0 requests')
     const p95=(samples:number[])=>[...samples].sort((a,b)=>a-b)[Math.ceil(samples.length*0.95)-1]!
-    const metrics={coldMs,selections,searches,selectionP95:p95(selections),searchP95:p95(searches),maxTreeRows:Math.max(...treeCounts),maxSearchRows:100,searchCounts,platform:process.platform,cpu:cpus()[0]?.model,logicalCpus:cpus().length,memoryBytes:totalmem(),dataset:{requests:1000,folders:1000,collections:100,depth:10,otherRequests:1},viewport:{width:1280,height:720}}
-    writeFileSync('/tmp/task035-performance.json',JSON.stringify(metrics,null,2));console.log(JSON.stringify(metrics))
+    const metrics={coldMs,selections,searches,selectionP95:p95(selections),searchP95:p95(searches),maxTreeRows:Math.max(...treeCounts),maxSearchRows:100,searchCounts,platform:process.platform,cpu:cpus()[0]?.model,logicalCpus:cpus().length,memoryBytes:totalmem(),dataset:{requests:1000,folders:1000,collections:100,depth:16,otherRequests:1},viewport:{width:1280,height:720}}
+    writeFileSync(process.env.API_CLIENT_PERFORMANCE_REPORT ?? '/tmp/task035-performance.json',JSON.stringify(metrics,null,2));console.log(JSON.stringify(metrics))
+    // Normal restart must retain the complete library, destinations, expansion and exact selected config.
+    await page.getByLabel('Workspace',{exact:true}).selectOption(seeded.w)
+    await query('API 0001');await select(1)
+    const beforeRestart=await page.evaluate(async w=>({library:await window.offlineApi.library.list(w),request:await window.offlineApi.requests.list(w)}),seeded.w)
+    await app.close();app=await launchDesktop({args:['.'],chromiumSandbox:true,env})
+    const reopened=await app.firstWindow()
+    await expect(reopened.getByLabel('Request name',{exact:true})).toHaveValue('API 0001')
+    await expect(reopened.getByLabel('Search requests',{exact:true})).toHaveValue('')
+    const afterRestart=await reopened.evaluate(async w=>({library:await window.offlineApi.library.list(w),request:await window.offlineApi.requests.list(w)}),seeded.w)
+    expect(afterRestart).toEqual(beforeRestart)
+    expect(received).toEqual([0,500,999].map(index=>({url:`/api/${index}`,method:'POST',body:JSON.stringify({index})})))
     expect(metrics.maxTreeRows).toBeLessThanOrEqual(100);expect(coldMs).toBeLessThanOrEqual(2000);expect(metrics.selectionP95).toBeLessThanOrEqual(500);expect(metrics.searchP95).toBeLessThanOrEqual(500)
   } finally {await shutdown(app);await server.close();rmSync(directory,{recursive:true,force:true})}
 })

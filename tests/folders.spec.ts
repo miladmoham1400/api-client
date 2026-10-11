@@ -40,7 +40,6 @@ test('registered folder bridge preserves nested requests through move, duplicate
       const copy=await api.requests.duplicate(w,q)
       if(!copy.ok||!copy.data.editor) throw new Error('Duplicate failed')
       const copyId=copy.data.editor.id
-      const exportResult=await api.transfer.exportWorkspace(w)
       const renamed=await api.folders.rename(w,folder,'Authentication')
       const promoted=await api.folders.delete(w,parent)
       const other=await api.collections.create(w,'Other')
@@ -48,12 +47,11 @@ test('registered folder bridge preserves nested requests through move, duplicate
       const d=other.data.collections.find(item => item.id!==c)!.id
       const moved=await api.folders.move(w,folder,d,null)
       const editor=await api.requests.get(w,q)
-      return {w,q,copyId,folder,d,exportResult,renamed,promoted,moved,editor}
+      return {w,q,copyId,folder,d,renamed,promoted,moved,editor}
     },endpoint)
-    expect(saved.exportResult).toMatchObject({ok:false,error:{code:'FOLDER_EXPORT_UNAVAILABLE'}})
     expect(saved.renamed.ok).toBe(true); expect(saved.promoted.ok).toBe(true); expect(saved.moved.ok).toBe(true)
     expect(saved.editor).toMatchObject({ok:true,data:{editor:{id:saved.q,folderId:saved.folder,collectionId:saved.d},requests:expect.arrayContaining([expect.objectContaining({id:saved.copyId,folderId:saved.folder,collectionId:saved.d})])}})
-    await shutdown(app)
+    await app.close()
     app=await launchDesktop({args:['.'],chromiumSandbox:true,env})
     const reopened=await app.firstWindow()
     await expect(reopened.getByRole('textbox',{name:'Request name'})).toHaveValue('Login')

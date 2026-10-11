@@ -1,6 +1,6 @@
 # TASK-037 — Verify and document nested-library packaged acceptance
 
-Status: todo
+Status: blocked
 Dependencies: TASK-036
 Priority: highest — approved API-library milestone
 
@@ -37,3 +37,7 @@ No automatic release publication/version/tag change, signing setup, updater, unr
 ## Completion procedure
 
 Inspect current source/user changes and dependency evidence before edits. Execute only this task. Record actual changes, commands/exit codes, environment, evidence, limitations and blockers in `docs/task-reports/TASK-037.md` when execution begins; planning is not execution evidence. Update task status and index together. Mark done only with all criteria verified; otherwise in_progress/blocked. Never count untested platforms or skipped checks as passed. Stop at this task boundary.
+
+## Execution status — 2026-10-12
+
+Independent Linux build/hash and extracted-payload acceptance evidence is recorded in [TASK-037 report](../task-reports/TASK-037.md). Required actual Linux install/manual upgrade/removal/reinstall preservation needs sudo authentication through the OS prompt. Current native Windows build and installed Windows 11 offline/native-dialog/legacy-upgrade/performance/preservation checks need an accessible authorized Windows runner. No required platform result is inherited from previous artifacts. Task remains unfinished; resume this task before declaring the nested-library milestone accepted.
