@@ -2,7 +2,7 @@
 
 Execute one task at a time unless explicitly instructed otherwise. Follow dependencies; numerical order is the default. A task marked blocked does not become done because its code exists. Early UI/feature tasks may show unavailable states for later features, but must not present fake successes. No task is completed by this planning pack.
 
-There are 30 tasks: foundation (001–006), local project/request features (007–015), transport and response (016–019), forms/files and draft handling (020–023), transfer and polish (024–026), acceptance and release (027–030).
+The original phase-1 sequence has 30 tasks: foundation (001–006), local project/request features (007–015), transport and response (016–019), forms/files and draft handling (020–023), transfer and polish (024–026), acceptance and release (027–030).
 
 | Order | Task | Dependencies | Status |
 |---|---|---|---|
@@ -43,4 +43,18 @@ Allowed statuses: todo, in_progress, blocked, done. Keep task file and table syn
 
 TASK-028 and TASK-029 share TASK-027 as dependency, so Windows packaging can proceed even if Linux-specific validation is blocked. TASK-030 needs both OS tasks complete. Do not create agent workers unless explicitly requested by the user.
 
-TASK-030 completed 2026-10-10. See [release acceptance](release-acceptance.md), [user guide](user-guide.md), [known limitations](known-limitations.md) and [TASK-030 report](task-reports/TASK-030.md). All planned tasks are done; recorded coverage limits still apply. A separate user-authorized [public 0.1.1 pre-release](https://github.com/miladmoham1400/api-client/releases/tag/v0.1.1) was subsequently published, with independent [build/publication evidence](tooling-reports/public-release.md). This does not change the historical task statuses or transfer old acceptance to new package bytes.
+TASK-030 completed 2026-10-10. See [release acceptance](release-acceptance.md), [user guide](user-guide.md), [known limitations](known-limitations.md) and [TASK-030 report](task-reports/TASK-030.md). All original phase-1 tasks are done; recorded coverage limits still apply. A separate user-authorized [public 0.1.1 pre-release](https://github.com/miladmoham1400/api-client/releases/tag/v0.1.1) was subsequently published, with independent [build/publication evidence](tooling-reports/public-release.md). This does not change the historical task statuses or transfer old acceptance to new package bytes.
+
+## Next milestone — highest-priority API library
+
+User approved planning on 2026-10-11. [Nested API library specification](api-library.md) is the behavioral contract for this milestone. These are **new, unimplemented** tasks; historical TASK-001–030 statuses stay unchanged. Prioritize this sequence before other deferred features. Planning creates no completed implementation task or new release. Earliest ready task: TASK-031.
+
+| Order | Task | Dependencies | Status |
+|---|---|---|---|
+| 31 | [TASK-031 — Verify and repair multi-request creation and selection](tasks/TASK-031-multi-request-navigation.md) | TASK-009, TASK-023 | todo |
+| 32 | [TASK-032 — Add owned folder schema and preserve legacy data](tasks/TASK-032-folder-schema-migration.md) | TASK-031, TASK-004, TASK-005 | todo |
+| 33 | [TASK-033 — Implement validated folder operations and request destinations](tasks/TASK-033-folder-operations.md) | TASK-032 | todo |
+| 34 | [TASK-034 — Build accessible nested API tree and contextual creation](tasks/TASK-034-api-library-tree.md) | TASK-033 | todo |
+| 35 | [TASK-035 — Add quick request search and verify large-library navigation](tasks/TASK-035-api-library-search-scale.md) | TASK-034 | todo |
+| 36 | [TASK-036 — Preserve nested libraries in safe v2 transfer](tasks/TASK-036-folder-transfer-v2.md) | TASK-035, TASK-024, TASK-025 | todo |
+| 37 | [TASK-037 — Verify and document nested-library packaged acceptance](tasks/TASK-037-api-library-acceptance.md) | TASK-036 | todo |

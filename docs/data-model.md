@@ -47,3 +47,7 @@ Persist active environment selection per workspace. Unknown stale IDs fall back 
 ## Migrations
 
 The first migration creates the complete schema and constraints. Later changes use append-only migrations. Verify migration replay on a clean database, reopening an existing database, rollback on injected failure and cross-workspace FK rejection. Back up the closed database before destructive future migrations; phase 1 does not invent an automated backup service.
+
+## Approved next milestone: folder persistence
+
+The schema above is the implemented phase-1 baseline. TASK-032 adds collection-owned folders, nullable request folder destinations, composite ownership/indexes and versioned expansion state through an append-only migration. IDs/config/secret references and existing selections must survive. Folder/collection moves and deletion preserve requests transactionally under the exact rules in the linked specification. See [API library specification](api-library.md) for the authoritative new behavior, bounds, intermediate export gate and task mapping. These changes are approved but not implemented.

@@ -12,6 +12,10 @@ An offline desktop HTTP client for Linux and Windows, built with Electron, React
 
 Verify downloads with [SHA256SUMS.txt](https://github.com/miladmoham1400/api-client/releases/download/v0.1.1/SHA256SUMS.txt). See [release notes](https://github.com/miladmoham1400/api-client/releases/tag/v0.1.1) and the [installation guide](docs/user-guide.md). These installers are unsigned pre-release builds; Ubuntu 24.04 and Windows Server 2022 passed focused installed-app checks, while full Windows 11 acceptance for this version remains unverified.
 
+## Next priority: nested API library
+
+Approved for planning, **not yet implemented**: organize many saved requests in collection-owned nested folders, browse an accessible tree and quickly search/select any API. One editor and explicit Send remain. See the [specification](docs/api-library.md) and [TASK-031–037](docs/task-index.md#next-milestone--highest-priority-api-library). These features are not included in the current v0.1.1 download.
+
 ## Confirmed decisions
 
 - Desktop app for Linux and Windows.

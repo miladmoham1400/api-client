@@ -58,3 +58,17 @@ Account, cloud sync, team collaboration, billing, OAuth flows, scripts/tests run
 ## Completion rule
 
 All tasks and release acceptance must have actual evidence. If Windows hardware/CI is unavailable, implementation may proceed but Windows validation and the phase-1 release remain incomplete.
+
+## Highest-priority next milestone — nested API library
+
+Approved by the user on 2026-10-11; **not yet implemented**. The phase-1 table/defaults above remain the released baseline. Multiple saved requests already exist; one editor/send is not a one-request storage limit. The next milestone extends collection organization to nested folders and fast navigation, ahead of cURL, history or tabs.
+
+| ID | Approved next requirement |
+|---|---|
+| P16 | Create/rename/move/delete collection-owned nested folders; preserve requests on folder/collection deletion |
+| P17 | Create/save/duplicate/move many requests at workspace root, collection root or in folders; guard selection and explicitly Send the selected request |
+| P18 | Accessible expandable sidebar, method badges, breadcrumbs, persisted expansion and bounded quick search |
+| P19 | Preserve legacy databases and v1 imports; safe hierarchy-aware transfer v2 without credential/file/response leakage |
+| P20 | Verify 1,000-request/1,000-folder navigation/performance and independent packaged Linux/Windows behavior |
+
+[API library specification](api-library.md) defines the exact hierarchy, delete/move semantics, capacity, schema/IPC/transfer changes and acceptance. [TASK-031–037](task-index.md#next-milestone--highest-priority-api-library) execute the approved scope one task at a time. Existing deferred features remain deferred; this does not reopen or silently enlarge historical phase-1 tasks.

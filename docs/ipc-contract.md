@@ -56,3 +56,7 @@ HTTP status 4xx/5xx is a successful transport result. User cancellation of file 
 ## Payload limits
 
 At boundary enforce names, timeout range, max 200 query/header/form rows per group, 100 variable entries per scope, 10,000 characters per row value/variable value/URL template, max 5 MiB raw/JSON text body and limits in request-engine.md/import-export.md. Field-specific validation messages identify the failing row without echoing credential values.
+
+## Approved next milestone: folder and search APIs
+
+The API table above describes the existing release. TASK-033 introduces explicit workspace-owned folder CRUD/move handlers and folder-aware request destinations, without changing partial-save config preservation. TASK-035 adds bounded metadata-only search; caller, destination and workspace ownership are validated in main. No generic IPC or credential-bearing tree/search DTO is permitted. See [API library specification](api-library.md) for the authoritative new behavior, bounds, intermediate export gate and task mapping. These changes are approved but not implemented.

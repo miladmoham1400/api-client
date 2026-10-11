@@ -39,3 +39,7 @@ Generate fresh UUIDs for every entity and remap collection/environment reference
 ## Verification
 
 Round-trip non-secret settings/ordered duplicate rows/templates intact with fresh IDs. Confirm exported synthetic secrets, file paths, raw secret IDs and responses absent. Sensitive omissions remain visibly unresolved until supplied. Invalid import leaves existing data byte-for-byte logically unchanged. Cancel open/save/preview is neutral and does not modify data.
+
+## Approved next milestone: transfer v2
+
+TASK-036 implements the linked v2 folder/request shape and validates hierarchy before preview, while continuing to import v1. Request configuration remains version 1. Retain all existing omissions, limits and atomicity; add a 1,000-folder limit and depth 16. TASK-033 must first prevent v1 export from silently dropping folders; folder-free v1 transfer remains available until v2 is implemented. See [API library specification](api-library.md) for the authoritative new behavior, bounds, intermediate export gate and task mapping. These changes are approved but not implemented.

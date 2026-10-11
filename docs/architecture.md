@@ -47,3 +47,7 @@ One active execution per app. Send acceptance returns ID quickly; completion emi
 ## Draft and file capabilities
 
 Renderer submits only opaque file IDs issued by main after a user file-dialog selection. Main privately maps them to paths and workspace ownership. After restart or import, file entries retain name/metadata but have no valid capability and must be selected again. Paths are never accepted from imported JSON or arbitrary renderer input.
+
+## Approved next milestone: API library boundaries
+
+Extend main-owned repositories/services and validated shared/preload contracts for folder hierarchy and bounded metadata navigation/search. Renderer owns tree presentation and ephemeral search state; persist only explicitly specified expansion IDs through main. Keep request configuration loading on selection, not per node. Transport/materialization/secrets retain their current boundaries. See [API library specification](api-library.md) for the authoritative new behavior, bounds, intermediate export gate and task mapping. These changes are approved but not implemented.
