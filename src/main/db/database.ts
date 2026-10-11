@@ -1,9 +1,10 @@
 import Database from 'better-sqlite3'
 import { z } from 'zod'
+import { apiLibrarySchema } from './migrations/002-api-library'
 import { initialSchema } from './migrations/001-initial'
 
 export interface Migration { readonly version: number; readonly sql: string }
-export const migrations: readonly Migration[] = Object.freeze([{ version: 1, sql: initialSchema }])
+export const migrations: readonly Migration[] = Object.freeze([{ version: 1, sql: initialSchema }, { version: 2, sql: apiLibrarySchema }])
 const ledgerSchema = z.array(z.strictObject({ version: z.number().int().positive(), applied_at: z.iso.datetime() }))
 
 export function migrate(database: Database.Database, plan: readonly Migration[] = migrations): void {

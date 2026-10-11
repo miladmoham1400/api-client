@@ -6,7 +6,7 @@ Recorded 2026-10-10. The [release acceptance record](release-acceptance.md) dist
 
 Version 0.1.1 was published through an explicitly dispatched workflow. Native Ubuntu 24.04 and Windows Server 2022 builds, installation and focused desktop checks passed. Full Windows 11 offline/manual file-dialog and uninstall/reinstall acceptance has not been repeated for the new artifacts. One native Windows unreadable-file fixture was skipped because the elevated runner retained read access; the deterministic denied-open error-handling test passed. Default AppImage FUSE mounting remains unverified.
 
-The navigation deletion-dialog automated test times out after choosing Save while deleting a collection. It reproduced before the panel layout change; the cause has not been resolved. The full current desktop suite is not claimed green. See [panel layout evidence](tooling-reports/panel-layout.md) and [0.1.1 release evidence](tooling-reports/public-release.md). The original 0.1.0 observations below remain historical.
+The published 0.1.1 navigation deletion-dialog test timed out after choosing Save while deleting a collection. TASK-031 reproduced and fixed the Save-triggered sidebar refresh/mutation race in source; see [TASK-031 evidence](task-reports/TASK-031.md). Published installers have not been rebuilt with that fix, and no new full desktop/package acceptance is claimed. See [panel layout evidence](tooling-reports/panel-layout.md) and [0.1.1 release evidence](tooling-reports/public-release.md). The original 0.1.0 observations below remain historical.
 
 ## Observed issues and evidence limits
 

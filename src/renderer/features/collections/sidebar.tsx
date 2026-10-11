@@ -43,8 +43,20 @@ export function CollectionSidebar({ workspaceId, requestController, guard }: { g
       if (current === generation.current) { running.current = false; setBusy(false) }
     }
   }, [workspaceId])
-  const reload = useCallback(() => { if (workspaceId) void apply(() => window.offlineApi.collections.list(workspaceId)) }, [apply, workspaceId])
-  useEffect(() => { reload(); return () => { generation.current++; running.current = false } }, [reload, requestController.revision])
+  // A Save refresh is a background read, not a user mutation. It must not lock out
+  // the guarded delete that follows Save. A newer read/mutation invalidates its reply.
+  const reload = useCallback(async () => {
+    if (!workspaceId || running.current) return
+    const current = ++generation.current
+    try {
+      const result = await window.offlineApi.collections.list(workspaceId)
+      if (current !== generation.current) return
+      if (result.ok && result.data.workspaceId === workspaceId) { setSnapshot(result.data); setError(null) }
+      else setError('Collections could not be loaded. Your current view has been kept. Try again.')
+    } catch { if (current === generation.current) setError('Collection operation unavailable. Try again.') }
+  }, [workspaceId])
+  useEffect(() => { void reload() }, [reload, requestController.revision])
+  useEffect(() => () => { generation.current++; running.current = false }, [])
   function open(next: Editing) { returnId.current = next.kind === 'create' ? null : next.id; setEditing(next); setName(next.kind === 'create' ? '' : next.name); setFieldError(null) }
   async function submit() {
     if (!editing || !workspaceId || busy) return

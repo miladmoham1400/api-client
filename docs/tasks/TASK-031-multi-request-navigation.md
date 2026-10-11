@@ -1,6 +1,6 @@
 # TASK-031 — Verify and repair multi-request creation and selection
 
-Status: todo
+Status: done
 Dependencies: TASK-009, TASK-023
 Priority: highest — approved API-library milestone
 
@@ -36,3 +36,7 @@ No folders, schema migration, search, tabs, bulk/concurrent sending or transfer 
 ## Completion procedure
 
 Inspect current source/user changes and dependency evidence before edits. Execute only this task. Record actual changes, commands/exit codes, environment, evidence, limitations and blockers in `docs/task-reports/TASK-031.md` when execution begins; planning is not execution evidence. Update task status and index together. Mark done only with all criteria verified; otherwise in_progress/blocked. Never count untested platforms or skipped checks as passed. Stop at this task boundary.
+
+## Execution evidence
+
+See [TASK-031 report](../task-reports/TASK-031.md): 20-request creation/normal reopen/selection/exact sends, fixed Save-before-collection-delete race, 325 unit tests and nine loopback-isolated Linux desktop tests passed. Windows and packaged builds were not run; this does not update published 0.1.1 installers or count as TASK-037 platform acceptance.

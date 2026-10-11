@@ -57,6 +57,8 @@ Switching requests/workspaces or closing with a dirty draft asks **Save**, **Dis
 
 Select a saved request in the sidebar to reopen it. **Duplicate saved request** creates an independent copy; dirty-draft decisions occur before navigation. **Delete request** requires confirmation and removes its owned credentials. Workspace menu provides rename/delete; deleting a workspace removes all its descendants after confirmation.
 
+You can save many requests even though only one editor is open. After saving a request, choose **Create Request** again, give the new draft its own name/URL and explicitly **Save**. Each saved request appears in the sidebar; click its name whenever you want to edit or send it. Choosing or creating a request does not send it. The sidebar scrolls when the list grows. Nested folders and quick search are planned in TASK-032–036 and are not available yet.
+
 Use **Create Collection** for one-level grouping. Each saved request has a collection selector, including **Workspace root**. Collection **Actions** provide rename/delete; deleting a collection moves its requests to root rather than deleting them. Workspace, collection and environment metadata persist when their actions succeed; request editing still requires Save.
 
 ## Params, Headers, Body and Auth

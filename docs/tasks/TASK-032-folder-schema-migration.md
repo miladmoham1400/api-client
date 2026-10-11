@@ -1,6 +1,6 @@
 # TASK-032 — Add owned folder schema and preserve legacy data
 
-Status: todo
+Status: done
 Dependencies: TASK-031, TASK-004, TASK-005
 Priority: highest — approved API-library milestone
 
@@ -36,3 +36,7 @@ No folder editing UI, writable folder IPC, search or v2 transfer.
 ## Completion procedure
 
 Inspect current source/user changes and dependency evidence before edits. Execute only this task. Record actual changes, commands/exit codes, environment, evidence, limitations and blockers in `docs/task-reports/TASK-032.md` when execution begins; planning is not execution evidence. Update task status and index together. Mark done only with all criteria verified; otherwise in_progress/blocked. Never count untested platforms or skipped checks as passed. Stop at this task boundary.
+
+## Execution evidence
+
+See [TASK-032 report](../task-reports/TASK-032.md): migration 2 preserves a synthetic 1,005-request legacy database, rollback/ownership/depth/metadata/state checks pass, final 332-unit run passes, and seven affected Linux Electron scenarios have passing evidence (20-request story on focused retry). Earlier timeouts are recorded. No Windows/package acceptance or folder UI/IPC/search/v2 transfer is claimed.

@@ -1,3 +1,4 @@
+import { folderSchema, folderDepths, requestDestinationSchema, libraryContainerSchema, libraryRequestMetadataSchema, treeExpansionSchema, workspaceTreeStateSchema } from '../../../shared/api-library'
 import { themeSchema, type ThemePreference } from '../../../shared/theme'
 import { importWorkspaceDataSchema } from '../../../shared/import'
 import type Database from 'better-sqlite3'
@@ -52,6 +53,50 @@ export class Repositories {
     uuidSchema.parse(id)
     if (!this.db.prepare('SELECT id FROM workspaces WHERE id=?').get(id)) throw new RepositoryError('NOT_FOUND')
   }
+  // Read-only foundation; no folder mutation API or renderer exposure in TASK-032.
+  listFolders(w: string) { return this.read(() => {
+    this.workspace(w)
+    const folders = z.array(folderSchema).parse(this.db.prepare(`SELECT ${scopedIdentity},collection_id AS collectionId,parent_folder_id AS parentFolderId,sort_order AS sortOrder FROM folders WHERE workspace_id=? ORDER BY sort_order,name COLLATE BINARY,id`).all(w))
+    const collections = new Set(this.listCollections(w).map(collection => collection.id))
+    if (folders.some(folder => !collections.has(folder.collectionId))) throw new RepositoryError('DATABASE_UNAVAILABLE')
+    try { folderDepths(w, folders) } catch { throw new RepositoryError('DATABASE_UNAVAILABLE') }
+    return folders
+  }) }
+  getFolder(w: string, id: string) { return this.read(() => {
+    uuidSchema.parse(id)
+    const folder = this.listFolders(w).find(row => row.id === id)
+    if (!folder) throw new RepositoryError('NOT_FOUND')
+    return folder
+  }) }
+  validateDestination(w: string, input: unknown) { return this.read(() => {
+    this.workspace(w)
+    const destination = requestDestinationSchema.parse(input)
+    if (destination.collectionId !== null) this.owned('collections', w, destination.collectionId)
+    if (destination.folderId !== null && this.getFolder(w, destination.folderId).collectionId !== destination.collectionId) throw new RepositoryError('NOT_FOUND')
+    return libraryContainerSchema.parse({ kind: destination.folderId !== null ? 'folder' : destination.collectionId !== null ? 'collection' : 'workspace', ...destination })
+  }) }
+  listLibraryRequests(w: string) { return this.read(() => {
+    this.workspace(w)
+    const folders = new Map(this.listFolders(w).map(folder => [folder.id, folder]))
+    const collections = new Set(this.listCollections(w).map(collection => collection.id))
+    const rows = z.array(z.strictObject({ id: uuidSchema, workspaceId: uuidSchema, name: nameSchema,
+      collectionId: uuidSchema.nullable(), folderId: uuidSchema.nullable(), method: z.string(), createdAt: z.iso.datetime(), updatedAt: z.iso.datetime() }))
+      .parse(this.db.prepare(`SELECT ${scopedIdentity},collection_id AS collectionId,folder_id AS folderId,json_extract(config_json,'$.method') AS method FROM requests WHERE workspace_id=? ORDER BY name COLLATE BINARY,id`).all(w))
+    return rows.map(({ collectionId, folderId, ...row }) => {
+      if ((collectionId !== null && !collections.has(collectionId)) || (folderId !== null && (collectionId === null || folders.get(folderId)?.collectionId !== collectionId))) throw new RepositoryError('DATABASE_UNAVAILABLE')
+      return libraryRequestMetadataSchema.parse({ ...row, destination: { kind: folderId !== null ? 'folder' : collectionId !== null ? 'collection' : 'workspace', collectionId, folderId } })
+    })
+  }) }
+  getTreeState(w: string) { return this.read(() => {
+    this.workspace(w)
+    const row = this.db.prepare('SELECT version,expansion_json AS expansion FROM workspace_tree_state WHERE workspace_id=?').get(w)
+    if (!row) return workspaceTreeStateSchema.parse({ workspaceId: w, version: 1, expandedCollectionIds: [], expandedFolderIds: [] })
+    const stored = z.strictObject({ version: z.literal(1), expansion: z.string() }).parse(row)
+    const state = treeExpansionSchema.parse(JSON.parse(stored.expansion))
+    const collections = new Set(this.listCollections(w).map(collection => collection.id)), folders = new Set(this.listFolders(w).map(folder => folder.id))
+    return workspaceTreeStateSchema.parse({ workspaceId: w, version: stored.version,
+      expandedCollectionIds: state.expandedCollectionIds.filter(id => collections.has(id)), expandedFolderIds: state.expandedFolderIds.filter(id => folders.has(id)) })
+  }) }
   importWorkspace(input: unknown) {
     // Validate the complete graph before any write; nested repository transactions are savepoints.
     const source = importWorkspaceDataSchema.parse(input)
@@ -162,7 +207,7 @@ export class Repositories {
   createRequest(w: string,name: string,collectionId: string|null, input: StoredRequestConfig) { return this.write(() => {
     this.workspace(w); if (collectionId!==null) this.owned('collections',w,collectionId)
     const config=this.validateConfig(w,input),id=randomUUID(),now=new Date().toISOString()
-    this.db.prepare('INSERT INTO requests VALUES (?,?,?,?,?,?,?,?)').run(id,w,collectionId,nameSchema.parse(name),1,JSON.stringify(config),now,now)
+    this.db.prepare('INSERT INTO requests(id,workspace_id,collection_id,name,config_version,config_json,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?)').run(id,w,collectionId,nameSchema.parse(name),1,JSON.stringify(config),now,now)
     return this.getRequest(w,id)
   }) }
   saveRequest(w: string,id: string,name: string,input: StoredRequestConfig) { return this.write(() => {

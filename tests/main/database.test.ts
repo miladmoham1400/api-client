@@ -34,7 +34,7 @@ it('creates the complete schema, enables foreign keys and reopens without replay
   const db = open(location)
   expect(db.pragma('foreign_keys', { simple: true })).toBe(1)
   const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name").all()
-  expect(tables).toEqual(['app_settings','collections','environments','requests','schema_migrations','secrets','variables','workspace_state','workspaces'].map(name => ({ name })))
+  expect(tables).toEqual(['app_settings','collections','environments','folders','requests','schema_migrations','secrets','variables','workspace_state','workspace_tree_state','workspaces'].map(name => ({ name })))
   const id = workspace(db)
   const ledger = db.prepare('SELECT * FROM schema_migrations').all()
   migrate(db)
@@ -49,7 +49,7 @@ it('rolls back an injected migration including DDL, data and ledger without dele
   const db = open(location)
   const id = workspace(db)
   const ledger = db.prepare('SELECT * FROM schema_migrations').all()
-  const failing = [...migrations, { version: 2, sql: 'CREATE TABLE attempted(value TEXT); DELETE FROM workspaces; INSERT INTO missing_table VALUES (1);' }]
+  const failing = [...migrations, { version: migrations.length + 1, sql: 'CREATE TABLE attempted(value TEXT); DELETE FROM workspaces; INSERT INTO missing_table VALUES (1);' }]
   expect(() => migrate(db, failing)).toThrow()
   expect(db.prepare('SELECT id FROM workspaces').all()).toEqual([{ id }])
   expect(db.prepare("SELECT name FROM sqlite_master WHERE name='attempted'").all()).toEqual([])
@@ -65,7 +65,7 @@ it('rolls back an initial failure and rejects unsupported or discontinuous histo
   expect(db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all()).toEqual([])
   expect(() => migrate(db, [{ version: 2, sql: 'SELECT 1;' }])).toThrow()
   migrate(db)
-  db.prepare('INSERT INTO schema_migrations VALUES (?, ?)').run(2, stamp)
+  db.prepare('INSERT INTO schema_migrations VALUES (?, ?)').run(migrations.length + 1, stamp)
   expect(() => migrate(db)).toThrow('Unsupported migration history')
 })
 it('keeps a corrupt existing database byte-for-byte intact', () => {
@@ -82,7 +82,7 @@ it('rejects cross-workspace collection, environment, secret and selection relati
   db.prepare('INSERT INTO collections VALUES (?, ?, ?, ?, ?, ?)').run(collection, a, 'Collection', 0, stamp, stamp)
   db.prepare('INSERT INTO environments VALUES (?, ?, ?, ?, ?)').run(environment, a, 'Env', stamp, stamp)
   db.prepare('INSERT INTO secrets VALUES (?, ?, ?, ?, ?, ?)').run(secret, a, null, 'session', stamp, stamp)
-  const insertRequest = db.prepare('INSERT INTO requests VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+  const insertRequest = db.prepare('INSERT INTO requests(id,workspace_id,collection_id,name,config_version,config_json,created_at,updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
   expect(() => insertRequest.run(randomUUID(), b, collection, 'Request', 1, '{}', stamp, stamp)).toThrow(/FOREIGN KEY/)
   insertRequest.run(request, a, collection, 'Request', 1, '{}', stamp, stamp)
   const insertVariable = db.prepare('INSERT INTO variables VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')

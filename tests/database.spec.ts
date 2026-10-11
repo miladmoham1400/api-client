@@ -26,7 +26,7 @@ test('native SQLite loads in Electron, reopens saved data and reports corrupt st
         return { ledger: db.prepare('SELECT version FROM schema_migrations').all(), abi: process.versions.modules }
       } finally { db.close() }
     }, id)
-    expect(evidence.ledger).toEqual([{ version: 1 }])
+    expect(evidence.ledger).toEqual([{ version: 1 }, { version: 2 }])
     expect(evidence.abi).toBe('149')
     await application.close()
     application = await launchDesktop({ args: ['.'], chromiumSandbox: true, env })

@@ -51,7 +51,7 @@ test('sidebar collection CRUD and grouping preserve temporary saved requests and
           db.prepare('INSERT INTO workspaces VALUES (?,?,?,?)').run(data.b, 'Other workspace', stamp, stamp)
           db.prepare('INSERT INTO workspace_state VALUES (?,NULL,NULL)').run(data.b)
           db.prepare('INSERT INTO collections VALUES (?,?,?,?,?,?)').run(data.foreignCollection, data.b, 'Foreign collection', 0, stamp, stamp)
-          const insert = db.prepare('INSERT INTO requests VALUES (?,?,?,?,?,?,?,?)')
+          const insert = db.prepare('INSERT INTO requests(id,workspace_id,collection_id,name,config_version,config_json,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?)')
           insert.run(data.root, data.a, null, 'Root fixture', 1, JSON.stringify(data.storedConfig), stamp, stamp)
           insert.run(data.grouped, data.a, data.c, 'Grouped fixture', 1, JSON.stringify(data.storedConfig), stamp, stamp)
           insert.run(data.foreignRequest, data.b, data.foreignCollection, 'Foreign fixture', 1, JSON.stringify(data.storedConfig), stamp, stamp)

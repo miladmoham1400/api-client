@@ -50,4 +50,16 @@ The first migration creates the complete schema and constraints. Later changes u
 
 ## Approved next milestone: folder persistence
 
-The schema above is the implemented phase-1 baseline. TASK-032 adds collection-owned folders, nullable request folder destinations, composite ownership/indexes and versioned expansion state through an append-only migration. IDs/config/secret references and existing selections must survive. Folder/collection moves and deletion preserve requests transactionally under the exact rules in the linked specification. See [API library specification](api-library.md) for the authoritative new behavior, bounds, intermediate export gate and task mapping. These changes are approved but not implemented.
+The table above describes schema version 1. TASK-032 adds append-only migration 2 in `src/main/db/migrations/002-api-library.ts`:
+
+| Addition | Implemented foundation |
+|---|---|
+| folders | id, workspace_id, collection_id, parent_folder_id, name, sort_order, created_at, updated_at; composite owned collection/parent references and indexes |
+| requests.folder_id | Nullable; composite `(folder_id,collection_id,workspace_id)` reference and folder-requires-collection CHECK; existing rows remain null |
+| workspace_tree_state | Workspace-owned version 1 plus bounded JSON expansion IDs; separate from selected request/environment state |
+
+Migration 2 rebuilds requests and its inbound workspace_state reference transactionally with foreign keys enabled. It copies existing IDs, JSON bytes, credentials and selections unchanged; migration 1 is not edited. Parent/destination FKs are deferred to the transaction boundary to support later atomic subtree moves. Cycles/depth 16 and corrupt persisted hierarchy are checked by bounded parent walks in repository reads; the SQL self-parent CHECK and composite FKs supplement those checks. No folder count cap truncates existing data.
+
+Separate strict metadata schemas in `src/shared/api-library.ts` distinguish workspace/collection/folder destinations and carry only IDs, names, method and timestamps. Existing phase-1 IPC/request DTOs and transfer v1 remain unchanged in TASK-032. Main-only folder/destination/metadata/tree-state reads are not exposed to the renderer. Expansion is capped at 1,000 collection IDs and 1,000 folder IDs (unique UUIDs); restoring filters out stale or foreign IDs without changing selected request/environment. No draft, search query, response or credential value belongs in this record. Expansion writes/UI are deferred.
+
+Folder CRUD/moves, deletion promotion and the intermediate no-loss export gate remain TASK-033; tree UI/persistence wiring is TASK-034. See [API library specification](api-library.md) and [TASK-032 evidence](task-reports/TASK-032.md). This foundation does not make folders available in the application UI.
