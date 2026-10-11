@@ -16,7 +16,7 @@ Runtime-validate incoming payloads and outgoing shared DTOs. Do not return stack
 | folders | list(workspaceId), create(workspaceId,collectionId,parentFolderIdOrNull,name), rename(workspaceId,id,name), move(workspaceId,id,collectionId,parentFolderIdOrNull), delete(workspaceId,id) |
 | environments | list(workspaceId), create(workspaceId,name), rename(workspaceId,id,name), delete(workspaceId,id), select(workspaceId,idOrNull) |
 | variables | list(workspaceId,environmentIdOrNull), upsert(workspaceId,scope,key,value,isSensitive), delete(workspaceId,id), reveal(workspaceId,id) |
-| requests | newRow(workspaceId), list(workspaceId), get(workspaceId,id), create(workspaceId,input), save(workspaceId,id,input), duplicate(workspaceId,id), delete(workspaceId,id), move(workspaceId,id,collectionIdOrNull,folderIdOrNull?) |
+| requests | search(workspaceId,{query,collectionId?,offset,limit,revision?}), newRow(workspaceId), list(workspaceId), get(workspaceId,id), create(workspaceId,input), save(workspaceId,id,input), duplicate(workspaceId,id), delete(workspaceId,id), move(workspaceId,id,collectionIdOrNull,folderIdOrNull?) |
 | files | chooseUpload(workspaceId) -> opaque file ID + name + size; releaseUpload(workspaceId,fileId) |
 | execution | send(workspaceId,requestIdOrNull,draft,environmentIdOrNull), cancel(executionId), onCompleted(callback) -> unsubscribe |
 | transfer | exportWorkspace(workspaceId) -> {status:'saved'|'cancelled'} using native save dialog; chooseImport() -> cancelled/summary preview; importWorkspace(previewToken) -> {workspaceId,name}; cancelImport(previewToken) -> null |
@@ -61,7 +61,7 @@ At boundary enforce names, timeout range, max 200 query/header/form rows per gro
 
 ## Approved next milestone: folder and search APIs
 
-The API table above describes the current source API; published 0.1.1 installers do not include the new folder calls. TASK-033 implements explicit workspace-owned folder CRUD/move handlers and folder-aware request destinations, without changing partial-save config preservation. TASK-035 adds bounded metadata-only search; caller, destination and workspace ownership are validated in main. No generic IPC or credential-bearing tree/search DTO is permitted. See [API library specification](api-library.md) for the authoritative new behavior, bounds, intermediate export gate and task mapping. Folder and tree operations are implemented in source; search and v2 transfer remain later tasks.
+The API table above describes the current source API; published 0.1.1 installers do not include the new folder calls. TASK-033 implements explicit workspace-owned folder CRUD/move handlers and folder-aware request destinations, without changing partial-save config preservation. TASK-035 adds bounded metadata-only search; caller, destination and workspace ownership are validated in main. No generic IPC or credential-bearing tree/search DTO is permitted. See [API library specification](api-library.md) for the authoritative new behavior, bounds, intermediate export gate and task mapping. Folder/tree operations and bounded search are implemented in source (TASK-033–035); v2 transfer remains TASK-036.
 
 ### TASK-033 destination and folder contracts
 
@@ -72,3 +72,11 @@ Until TASK-036, `transfer.exportWorkspace` returns `FOLDER_EXPORT_UNAVAILABLE` f
 ### TASK-034 metadata and expansion API
 
 `library.list` returns a strict owned `{workspaceId,collections,folders,requests,treeState}` snapshot in one read transaction. Requests carry metadata (ID/name/saved method/destination/timestamps) only; no body, URL, auth/secret value or response is loaded for browsing. Cross-entity duplicate identities, orphan/foreign destinations and expansion IDs reject. `library.setExpansion` accepts only two unique bounded UUID arrays (at most 1,000 each), persists version 1 and returns validated state. Main checks the active workspace and exact owned frame for both calls; foreign/missing IDs reject before any write. Restoration prunes stale IDs. No generic UI-settings runner, drafts, paths, search query or response persistence is added.
+
+## TASK-035 search and continuation
+
+`requests.search` is a fixed frozen bridge method. Main checks the exact owned frame and active workspace. Input is strict: query at most 200 UTF-16 code units, optional owned collection UUID (null/omitted means all collections), safe nonnegative integer offset and limit 1–100. Offset above zero requires a 64-character hexadecimal revision returned by the first page. Unknown/deleted/foreign collection IDs return `NOT_FOUND`; malformed input, out-of-range offset or stale/mismatched revision returns `VALIDATION` without mutation.
+
+The validated reply contains `{workspaceId,query,collectionId,offset,limit,revision,total,nextOffset,rows}`. Rows are request metadata plus a full container path; no config, URL, body, headers, variables, credential or response values. `nextOffset` is null at the end, otherwise the exact following offset. Main sorts by path/name/method/ID using deterministic code-point comparison. Search trims and NFC-normalizes the query and folds Latin case; matching is literal substring against name, method or path separately. Punctuation has no wildcard/regex interpretation.
+
+Revision is a SHA-256 digest of owned library metadata and normalized query/filter/page size. Selection and expansion do not invalidate it; metadata mutation does. It is a consistency token, never authorization. Continuation cannot combine different queries/filters/sizes/revisions. The UI discards obsolete replies, restarts at offset zero after metadata refresh, and offers explicit retry from the first page on failure.

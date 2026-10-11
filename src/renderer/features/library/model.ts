@@ -1,11 +1,7 @@
 import type { LibrarySnapshot } from '../../../shared/library-view'
 import type { RequestDestination, WorkspaceTreeState } from '../../../shared/api-library'
 export type Node = {id:string;kind:'collection'|'folder'|'request';name:string;label:string;method?:string;parent:string|null;level:number;destination:RequestDestination;order:number}
-const compare=(a:string,b:string) => {
-  const left=Array.from(a),right=Array.from(b)
-  for(let i=0;i<Math.min(left.length,right.length);i++) { const difference=left[i]!.codePointAt(0)!-right[i]!.codePointAt(0)!; if(difference) return difference }
-  return left.length-right.length
-}
+import { compareCodePoints as compare } from '../../../shared/library-search'
 export function libraryNodes(snapshot:LibrarySnapshot):Node[] {
   const nodes:Node[]=[
     ...snapshot.collections.map(c => ({id:c.id,kind:'collection' as const,name:c.name,label:c.name,parent:null,level:1,destination:{collectionId:c.id,folderId:null},order:c.sortOrder})),
@@ -13,11 +9,14 @@ export function libraryNodes(snapshot:LibrarySnapshot):Node[] {
     ...snapshot.requests.map(r => ({id:r.id,kind:'request' as const,name:r.name,label:r.name,method:r.method,parent:r.destination.folderId??r.destination.collectionId,level:0,destination:r.destination,order:0}))
   ]
   const byId=new Map(nodes.map(n => [n.id,n]))
+  const siblings=new Map<string,Node[]>()
+  for(const node of nodes) {
+    const key=JSON.stringify([node.parent,node.kind,node.name]),group=siblings.get(key)??[];group.push(node);siblings.set(key,group)
+  }
+  for(const group of siblings.values()) if(group.length>1) group.sort((a,b)=>compare(a.id,b.id)).forEach((node,index)=>{node.label=`${node.name} (${index+1})`})
   for(const node of nodes) {
     let parent=node.parent; node.level=1
     while(parent) { node.level++; parent=byId.get(parent)?.parent??null }
-    const duplicates=nodes.filter(n => n.parent===node.parent && n.kind===node.kind && n.name===node.name).sort((a,b) => compare(a.id,b.id))
-    if(duplicates.length>1) node.label=`${node.name} (${duplicates.findIndex(n => n.id===node.id)+1})`
   }
   return nodes.sort((a,b) => (a.kind==='request' ? 1 : 0)-(b.kind==='request' ? 1 : 0) || a.order-b.order || compare(a.name,b.name) || compare(a.id,b.id))
 }

@@ -1,3 +1,5 @@
+import { searchLibrary } from './library-search'
+import type { SearchInput } from '../../shared/library-search'
 import type { SecretStore } from '../security/secrets'
 import type { AuthDraft } from '../../shared/auth-editor'
 import { credentialTemplateSchema, storedBodySchema, type StoredAuth } from '../../shared/request-config'
@@ -23,6 +25,7 @@ export class RequestService {
     uuidSchema.parse(workspace)
     if (this.r.getSelectedWorkspace() !== workspace) throw new RepositoryError('NOT_FOUND')
   }
+  search(workspace:string,input:SearchInput) { this.active(workspace); return searchLibrary(this.db,workspace,input) }
   newRow(workspace: string) { this.active(workspace); return { id: randomUUID(), key: '', value: '', enabled: true } }
   list(workspace: string) {
     this.active(workspace)

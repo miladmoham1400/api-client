@@ -1,8 +1,10 @@
 # TASK-035 — Add quick request search and verify large-library navigation
 
-Status: todo
+Status: done
 Dependencies: TASK-034
 Priority: highest — approved API-library milestone
+
+Evidence: [TASK-035 report](../task-reports/TASK-035.md) — 348 unit tests, focused regressions, build/typecheck/lint and final 8 Linux Electron checks passed. 1,000-request/1,000-folder baseline: cold 873.771 ms, selection p95 164.713 ms, search p95 100.474 ms; 50 tree rows / 100 result rows maximum. Windows/new packages were not tested; platform acceptance remains TASK-037.
 
 ## Read first
 

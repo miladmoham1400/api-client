@@ -1,3 +1,4 @@
+import { LibrarySearch } from '../library/search'
 import type { GuardTransition } from '../navigation/transition'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Badge, Box, Button, Dialog, Flex, Heading, Input, Menu, NativeSelect, Portal, Text } from '@chakra-ui/react'
@@ -8,6 +9,7 @@ import { nameSchema } from '../../../shared/primitives'
 import { ancestors, descendants, libraryNodes, pathLabel, visibleNodes, type Node } from '../library/model'
 
 type Editing = {kind:'create-collection'} | {kind:'create-folder';destination:RequestDestination} | {kind:'rename'|'move'|'delete';node:Node}
+const TREE_PAGE_SIZE=50
 const root:RequestDestination={collectionId:null,folderId:null}
 export function CollectionSidebar({workspaceId,requestController,guard}:{guard:GuardTransition;workspaceId:string|null;requestController:RequestController}) {
   const [snapshot,setSnapshot]=useState<LibrarySnapshot|null>(null), [expansion,setExpansion]=useState<WorkspaceTreeState|null>(null)
@@ -18,9 +20,20 @@ export function CollectionSidebar({workspaceId,requestController,guard}:{guard:G
   const editRef=useRef(editing); editRef.current=editing
   const rowsRef=useRef(new Map<string,HTMLDivElement>()), triggers=useRef(new Map<string,HTMLButtonElement>())
   const create=useRef<HTMLButtonElement>(null), input=useRef<HTMLInputElement>(null), cancel=useRef<HTMLButtonElement>(null), select=useRef<HTMLSelectElement>(null), returnId=useRef<string|null>(null)
+  const [searching,setSearching]=useState(false),[treePage,setTreePage]=useState(0)
   const [focusId,setFocusId]=useState<string|null>(null)
   const nodes=useMemo(() => snapshot ? libraryNodes(snapshot) : [],[snapshot])
   const visible=useMemo(() => expansion ? visibleNodes(nodes,expansion) : [],[nodes,expansion])
+  const pageStart=Math.min(treePage,Math.max(0,Math.floor((visible.length-1)/TREE_PAGE_SIZE)*TREE_PAGE_SIZE))
+  const rendered=visible.slice(pageStart,pageStart+TREE_PAGE_SIZE)
+  const onSearching=useCallback((value:boolean)=>setSearching(value),[])
+  const pendingReveal=useRef<string|null>(null)
+  useEffect(()=>{pendingReveal.current=requestController.saved?.id??null},[requestController.saved?.id,nodes])
+  useEffect(()=>{
+    const index=visible.findIndex(n=>n.id===pendingReveal.current)
+    if(index>=0) {setTreePage(Math.floor(index/TREE_PAGE_SIZE)*TREE_PAGE_SIZE);pendingReveal.current=null}
+  },[requestController.saved?.id,nodes,visible])
+  useEffect(()=>{ if(focusId) rowsRef.current.get(focusId)?.focus() },[pageStart,focusId])
   const stateRef=useRef(expansion); stateRef.current=expansion
   // Expansion writes serialize to avoid an older reply overwriting a newer gesture.
   const writes=useRef<Promise<void>>(Promise.resolve())
@@ -51,7 +64,7 @@ export function CollectionSidebar({workspaceId,requestController,guard}:{guard:G
       setError(null); return true
     } catch { if(stamp===generation.current) setError('Library operation unavailable. Try again.'); return false }
   },[workspaceId])
-  useEffect(() => { alive.current=true; void reload(); return () => { alive.current=false; generation.current++ } },[reload])
+  useEffect(() => { alive.current=true; return () => { alive.current=false; generation.current++ } },[reload])
   useEffect(() => { void reload() },[reload,requestController.revision])
   useEffect(() => {
     const state=stateRef.current, saved=requestController.saved, row=snapshot?.requests.find(r => r.id===saved?.id)
@@ -69,7 +82,7 @@ export function CollectionSidebar({workspaceId,requestController,guard}:{guard:G
     const key=node.kind==='collection' ? 'expandedCollectionIds' : 'expandedFolderIds', ids=state[key]
     persist({...state,[key]:ids.includes(node.id) ? ids.filter(id => id!==node.id) : [...ids,node.id]})
   }
-  function focus(id:string) { setFocusId(id); rowsRef.current.get(id)?.focus() }
+  function focus(id:string) { setFocusId(id); const index=visible.findIndex(n=>n.id===id);if(index>=0) setTreePage(Math.floor(index/TREE_PAGE_SIZE)*TREE_PAGE_SIZE); rowsRef.current.get(id)?.focus() }
   async function choose(node:Node) {
     if(node.kind!=='request') { toggle(node); return }
     if(node.id!==current.current.saved?.id || !current.current.saved) await guard(() => current.current.open(node.id))
@@ -128,10 +141,12 @@ export function CollectionSidebar({workspaceId,requestController,guard}:{guard:G
     {workspaceId && !snapshot && !error && <Text role="status">Loading library…</Text>}
     {error && <Box role="alert"><Text fontSize="sm">{error}</Text><Button size="sm" disabled={busy} onClick={() => { void reload() }}>Reload library</Button></Box>}
     {snapshot && <>
+      <LibrarySearch workspaceId={workspaceId!} snapshot={snapshot} revision={requestController.revision} locked={locked} onSearching={onSearching} onSelect={async id=>{if(id!==current.current.saved?.id) await guard(()=>current.current.open(id))}}/>
+      {!searching && <>
       <Text fontSize="xs" color="fg.muted">Workspace root · {snapshot.requests.filter(r => r.destination.collectionId===null).length} requests</Text>
-      <Box role="tree" aria-label="API library" aria-busy={busy}>
-        {visible.map((node,index) => <Box key={node.id} role={node.kind==='request' ? 'group' : undefined} aria-label={node.kind==='request' ? `Request: ${node.name}` : undefined}>
-          <Flex data-library-id={node.id} ref={element => { if(element) rowsRef.current.set(node.id,element); else rowsRef.current.delete(node.id) }} role="treeitem" aria-label={`${node.kind==='request' ? node.method+' request' : node.kind}: ${node.label}`} aria-level={node.level} aria-expanded={node.kind==='request' ? undefined : expanded.has(node.id)} aria-selected={node.kind==='request' ? node.id===requestController.saved?.id : undefined} tabIndex={(focusId && visible.some(n => n.id===focusId) ? focusId===node.id : index===0) ? 0 : -1} onFocus={event => { if(event.target===event.currentTarget) setFocusId(node.id) }} pl={`${Math.min(node.level-1,4)*8}px`} gap="1" align="center" borderRadius="sm" bg={node.id===requestController.saved?.id ? 'bg.emphasized' : undefined}
+      <Box flexShrink={0} role="tree" aria-label="API library" aria-busy={busy}>
+        {rendered.map((node,localIndex) => { const index=pageStart+localIndex; return <Box key={node.id} role={node.kind==='request' ? 'group' : undefined} aria-label={node.kind==='request' ? `Request: ${node.name}` : undefined}>
+          <Flex data-library-id={node.id} ref={element => { if(element) rowsRef.current.set(node.id,element); else rowsRef.current.delete(node.id) }} role="treeitem" aria-label={`${node.kind==='request' ? node.method+' request' : node.kind}: ${node.label}`} aria-level={node.level} aria-expanded={node.kind==='request' ? undefined : expanded.has(node.id)} aria-selected={node.kind==='request' ? node.id===requestController.saved?.id : undefined} tabIndex={(focusId && rendered.some(n => n.id===focusId) ? focusId===node.id : index===pageStart) ? 0 : -1} onFocus={event => { if(event.target===event.currentTarget) setFocusId(node.id) }} pl={`${Math.min(node.level-1,4)*8}px`} gap="1" align="center" borderRadius="sm" bg={node.id===requestController.saved?.id ? 'bg.emphasized' : undefined}
             onKeyDown={event => {
               if(event.target!==event.currentTarget) return
               const key=event.key
@@ -157,9 +172,14 @@ export function CollectionSidebar({workspaceId,requestController,guard}:{guard:G
               </Menu.Content></Menu.Positioner></Portal>
             </Menu.Root>
           </Flex>
-        </Box>)}
+        </Box>})}
       </Box>
-      {!visible.length && <Text fontSize="sm" color="fg.muted">No collections or saved requests</Text>}
+      {visible.length>TREE_PAGE_SIZE && <Box aria-label="Tree pages"><Text fontSize="xs">{pageStart+1}–{Math.min(pageStart+TREE_PAGE_SIZE,visible.length)} of {visible.length} visible nodes</Text>
+        <Button size="xs" variant="outline" disabled={pageStart===0} onClick={()=>{setFocusId(null);setTreePage(pageStart-TREE_PAGE_SIZE)}}>Previous nodes</Button>
+        <Button size="xs" variant="outline" disabled={pageStart+TREE_PAGE_SIZE>=visible.length} onClick={()=>{setFocusId(null);setTreePage(pageStart+TREE_PAGE_SIZE)}}>Next nodes</Button>
+      </Box>}
+      </>}
+      {!searching && !visible.length && <Text fontSize="sm" color="fg.muted">No collections or saved requests</Text>}
     </>}
     <Button data-create-request disabled={!snapshot || locked} variant="outline" size="sm" onClick={() => { void newRequest(root) }}>Create Request</Button>
     <Dialog.Root open={editing!==null} onOpenChange={({open}) => { if(!open && !busy) setEditing(null) }} initialFocusEl={() => editing?.kind==='delete' ? cancel.current : editing?.kind==='move' ? select.current : input.current} finalFocusEl={() => returnId.current ? triggers.current.get(returnId.current)??create.current : create.current}>

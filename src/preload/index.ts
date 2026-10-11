@@ -1,3 +1,4 @@
+import { searchResultSchema, type SearchInput } from '../shared/library-search'
 import { THEME_CHANNELS, themeGetInput, themeSetInput, themeResultSchema, type ThemePreference } from '../shared/theme'
 import { IMPORT_CHANNELS, importChooseInput, importTokenInput, importChooseResult, importCreatedResult, importCancelResult } from '../shared/import'
 import { EXPORT_CHANNEL, exportInputSchema, exportResultSchema } from '../shared/export'
@@ -130,6 +131,12 @@ const api: DesktopApi = Object.freeze({
     delete: (workspace: string, id: string) => collectionCall(COLLECTION_CHANNELS.delete, collectionInputs.delete, [workspace, id])
   }),
   requests: Object.freeze({
+    search:async (workspace:string,args:SearchInput) => {
+      const input=requestInputs.search.safeParse([workspace,args])
+      if(!input.success) return {ok:false as const,error:validationError(input.error,true)}
+      try { return searchResultSchema.parse(await ipcRenderer.invoke(REQUEST_CHANNELS.search,...input.data)) }
+      catch { return {ok:false as const,error:{code:'VALIDATION' as const,message:'Search unavailable',retryable:false}} }
+    },
     newRow: async (workspace: string): ReturnType<DesktopApi['requests']['newRow']> => {
       const input = requestInputs.newRow.safeParse([workspace])
       if (!input.success) return { ok: false, error: validationError(input.error, true) }

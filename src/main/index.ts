@@ -203,7 +203,7 @@ else {
     for (const method of ['list', 'create', 'rename', 'delete', 'move'] as const) ipcMain.handle(COLLECTION_CHANNELS[method], collectionHandlers[method])
     const requestService = database ? new RequestService(database, secretStore ?? undefined, secretStore ?? undefined) : null
     const requestHandlers = createRequestHandlers(() => ownedWindow, trustedUrl, () => requestService)
-    for (const method of ['newRow', 'list', 'get', 'create', 'save', 'duplicate', 'delete'] as const) ipcMain.handle(REQUEST_CHANNELS[method], requestHandlers[method])
+    for (const method of ['search', 'newRow', 'list', 'get', 'create', 'save', 'duplicate', 'delete'] as const) ipcMain.handle(REQUEST_CHANNELS[method], requestHandlers[method])
     window.on('closed', () => {
       for (const channel of Object.values(THEME_CHANNELS)) ipcMain.removeHandler(channel)
       importService?.clear()

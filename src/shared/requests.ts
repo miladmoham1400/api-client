@@ -1,3 +1,4 @@
+import { searchInputSchema, type RequestSearchApi } from './library-search'
 import { authDraftSchema, authEditorSchema } from './auth-editor'
 import { z } from 'zod'
 import { requestSummarySchema } from './entities'
@@ -17,15 +18,16 @@ export const requestSnapshotSchema = z.strictObject({ workspaceId: uuidSchema, r
 })
 export const requestResultSchema = resultSchema(requestSnapshotSchema)
 export const requestInputs = {
+  search:z.tuple([uuidSchema,searchInputSchema]),
   newRow: z.tuple([uuidSchema]), list: z.tuple([uuidSchema]), get: z.tuple([uuidSchema, uuidSchema]), create: z.tuple([uuidSchema, requestCreateSchema]),
   save: z.tuple([uuidSchema, uuidSchema, requestDraftSchema]), duplicate: z.tuple([uuidSchema, uuidSchema]), delete: z.tuple([uuidSchema, uuidSchema])
 }
-export const REQUEST_CHANNELS = Object.freeze({ newRow: 'requests:new-row', list: 'requests:list', get: 'requests:get', create: 'requests:create', save: 'requests:save', duplicate: 'requests:duplicate', delete: 'requests:delete' })
+export const REQUEST_CHANNELS = Object.freeze({ search:'requests:search', newRow: 'requests:new-row', list: 'requests:list', get: 'requests:get', create: 'requests:create', save: 'requests:save', duplicate: 'requests:duplicate', delete: 'requests:delete' })
 export type RequestDraft = z.infer<typeof requestDraftSchema>
 export type RequestSnapshot = z.infer<typeof requestSnapshotSchema>
 type Reply = Promise<Result<RequestSnapshot>>
 export const requestRowResultSchema = resultSchema(textRowSchema)
-export interface RequestPersistenceApi {
+export interface RequestPersistenceApi extends RequestSearchApi {
   readonly newRow: (workspace: string) => Promise<Result<z.infer<typeof textRowSchema>>>
   readonly list: (workspace: string) => Reply
   readonly get: (workspace: string, id: string) => Reply

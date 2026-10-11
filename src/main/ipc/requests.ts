@@ -1,3 +1,4 @@
+import { searchPageSchema } from '../../shared/library-search'
 import { z } from 'zod'
 import { createOwnedHandler } from './guard'
 import { RepositoryError } from '../db/repositories'
@@ -15,6 +16,7 @@ export function createRequestHandlers(getWindow: Parameters<typeof createOwnedHa
     return createOwnedHandler(getWindow, trustedUrl, input, requestSnapshotSchema, args => { const service = getService(); if (!service) throw new RepositoryError('DATABASE_UNAVAILABLE'); return operation(service, args) }, operationError)
   }
   return {
+    search:createOwnedHandler(getWindow,trustedUrl,requestInputs.search,searchPageSchema,([w,input])=>{ const service=getService();if(!service) throw new RepositoryError('DATABASE_UNAVAILABLE');return service.search(w,input) },operationError),
     newRow: createOwnedHandler(getWindow, trustedUrl, requestInputs.newRow, textRowSchema, ([workspace]) => { const service = getService(); if (!service) throw new RepositoryError('DATABASE_UNAVAILABLE'); return service.newRow(workspace) }, operationError),
     list: handler(requestInputs.list, (service, [workspace]) => service.list(workspace)),
     get: handler(requestInputs.get, (service, [workspace, id]) => service.get(workspace, id)),

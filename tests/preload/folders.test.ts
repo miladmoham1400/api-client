@@ -13,6 +13,14 @@ it('exposes immutable fixed folder methods, validates both directions and keeps 
   const w=randomUUID(), c=randomUUID(), id=randomUUID(), q=randomUUID(), stamp=new Date().toISOString()
   const folder={id,workspaceId:w,collectionId:c,parentFolderId:null,name:'Auth',sortOrder:0,createdAt:stamp,updatedAt:stamp}
   const snapshot={workspaceId:w,collections:[{id:c,workspaceId:w,name:'Users',sortOrder:0,createdAt:stamp,updatedAt:stamp}],folders:[folder]}
+  expect(await api.requests.search(w,{query:'x'.repeat(201),offset:0,limit:100})).toMatchObject({ok:false,error:{code:'VALIDATION'}})
+  expect(mock.invoke).not.toHaveBeenCalled()
+  mock.invoke.mockResolvedValue({ok:true,data:{workspaceId:w,query:'Auth',collectionId:null,offset:0,limit:100,revision:'a'.repeat(64),total:0,nextOffset:null,rows:[]}})
+  expect(await api.requests.search(w,{query:'Auth',offset:0,limit:100})).toMatchObject({ok:true,data:{total:0}})
+  expect(mock.invoke).toHaveBeenLastCalledWith('requests:search',w,{query:'Auth',offset:0,limit:100})
+  mock.invoke.mockResolvedValue({ok:true,data:{workspaceId:w,query:'Auth',collectionId:null,offset:0,limit:100,revision:'a'.repeat(64),total:1,nextOffset:null,rows:[]}})
+  expect(await api.requests.search(w,{query:'Auth',offset:0,limit:100})).toMatchObject({ok:false,error:{code:'VALIDATION'}})
+  mock.invoke.mockClear()
   expect(Object.isFrozen(api.library)).toBe(true)
   expect(await api.library.setExpansion(w,{expandedCollectionIds:[c,c],expandedFolderIds:[]})).toMatchObject({ok:false,error:{code:'VALIDATION'}})
   expect(mock.invoke).not.toHaveBeenCalled()
