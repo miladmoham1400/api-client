@@ -1,3 +1,5 @@
+import type { LibraryApi } from './library-view'
+import type { FolderApi } from './folders'
 import type { ThemeApi } from './theme'
 import type { ImportApi } from './import'
 import type { ExportApi } from './export'
@@ -29,6 +31,8 @@ export interface DesktopApi {
   readonly environments: EnvironmentApi
   readonly variables: VariableApi
   readonly workspaces: WorkspaceApi
+  readonly library: LibraryApi
+  readonly folders: FolderApi
   readonly collections: CollectionApi
   readonly requests: RequestGroupingApi & RequestPersistenceApi
   readonly execution: ExecutionApi

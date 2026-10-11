@@ -28,7 +28,7 @@ export class RequestService {
     this.active(workspace)
     const selected = this.r.getState(workspace).selectedRequestId
     const request = selected ? this.r.getRequest(workspace, selected) : null
-    const editor = request ? { id: request.id, workspaceId: request.workspaceId, collectionId: request.collectionId, name: request.name, createdAt: request.createdAt, updatedAt: request.updatedAt, method: request.config.method, urlTemplate: request.config.urlTemplate, queryRows: request.config.queryRows, headerRows: request.config.headerRows, timeoutMs: request.config.timeoutMs, followRedirects: request.config.followRedirects, auth: this.authEditor(workspace, request.config.auth), credentialStorage: this.store?.capability() ?? 'session', body: request.config.body } : null
+    const editor = request ? { id: request.id, workspaceId: request.workspaceId, collectionId: request.collectionId, folderId: request.folderId, name: request.name, createdAt: request.createdAt, updatedAt: request.updatedAt, method: request.config.method, urlTemplate: request.config.urlTemplate, queryRows: request.config.queryRows, headerRows: request.config.headerRows, timeoutMs: request.config.timeoutMs, followRedirects: request.config.followRedirects, auth: this.authEditor(workspace, request.config.auth), credentialStorage: this.store?.capability() ?? 'session', body: request.config.body } : null
     return requestSnapshotSchema.parse({ workspaceId: workspace, requests: this.r.listRequests(workspace), editor })
   }
   private authEditor(w: string, auth: StoredAuth) {
@@ -67,7 +67,7 @@ export class RequestService {
     const draft = requestCreateSchema.parse(input)
     return this.authTransaction(draft.auth, () => this.mutate(workspace, () => {
       const config = { ...createDefaultRequestConfig(), method: draft.method, urlTemplate: draft.urlTemplate, ...this.fields(draft), auth: draft.auth ? this.storeAuth(workspace, draft.auth) : { mode: 'none' as const } }
-      const request = this.r.createRequest(workspace, draft.name, draft.collectionId, config)
+      const request = this.r.createRequest(workspace, draft.name, draft.collectionId, config, draft.folderId)
       this.select(workspace, request.id)
     }))
   }

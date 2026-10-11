@@ -1,6 +1,6 @@
 # TASK-033 — Implement validated folder operations and request destinations
 
-Status: todo
+Status: done
 Dependencies: TASK-032
 Priority: highest — approved API-library milestone
 
@@ -37,3 +37,5 @@ No sidebar tree, search UI, drag-and-drop, destructive subtree-delete option, in
 ## Completion procedure
 
 Inspect current source/user changes and dependency evidence before edits. Execute only this task. Record actual changes, commands/exit codes, environment, evidence, limitations and blockers in `docs/task-reports/TASK-033.md` when execution begins; planning is not execution evidence. Update task status and index together. Mark done only with all criteria verified; otherwise in_progress/blocked. Never count untested platforms or skipped checks as passed. Stop at this task boundary.
+
+Completed 2026-10-11. See [TASK-033 evidence](../task-reports/TASK-033.md) for commands, acceptance evidence and platform/packaging limits. Folder tree UI remains TASK-034.

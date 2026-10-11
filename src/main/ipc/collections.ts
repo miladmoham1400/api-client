@@ -22,6 +22,6 @@ export function createCollectionHandlers(getWindow: Parameters<typeof createOwne
     create: handler(collectionInputs.create, (service, [workspace, name]) => service.create(workspace, name)),
     rename: handler(collectionInputs.rename, (service, [workspace, id, name]) => service.rename(workspace, id, name)),
     delete: handler(collectionInputs.delete, (service, [workspace, id]) => service.delete(workspace, id)),
-    move: handler(collectionInputs.move, (service, [workspace, id, collection]) => service.move(workspace, id, collection))
+    move: handler(collectionInputs.move, (service, [workspace, id, collection, folder]) => service.move(workspace, id, collection, folder))
   }
 }

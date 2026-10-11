@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import type { RequestDestination } from '../../../shared/api-library'
 import type { RequestDraft, RequestSnapshot } from '../../../shared/requests'
 import { requestDraftSchema } from '../../../shared/requests'
 import { initialBodyDrafts, switchBody, persistedBody, retainSelections } from './body-state'
@@ -11,7 +12,10 @@ export function useRequests(workspace: string | null) {
   const [loadedWorkspace, setLoadedWorkspace] = useState(workspace)
   const currentWorkspace = loadedWorkspace === workspace
   const [saved, setSaved] = useState<RequestSnapshot['editor']>(null)
+  const latestSaved=useRef(saved); latestSaved.current=saved
   const [draft, setDraft] = useState<RequestDraft | null>(null)
+  const [path,setPath]=useState('Workspace root')
+  const [destination,setDestination] = useState<RequestDestination>({collectionId:null,folderId:null})
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [validation, setValidation] = useState<Record<string, string>>({})
@@ -27,10 +31,12 @@ export function useRequests(workspace: string | null) {
     const copy = copyDraft(value)
     return JSON.stringify({ ...copy, ...(copy.body ? { body: persistedBody(copy.body) } : {}) })
   }
+  const pendingNameFocus=useRef(false)
   const pendingFocus = useRef<Element | null>(null)
   const [focusVersion, setFocusVersion] = useState(0)
   useLayoutEffect(() => {
     if (busy) return
+    if(pendingNameFocus.current) { pendingNameFocus.current=false; document.querySelector<HTMLInputElement>('#request-name')?.focus() }
     const focused = pendingFocus.current
     pendingFocus.current = null
     if (focused instanceof HTMLElement && focused.isConnected && !focused.matches(':disabled') &&
@@ -48,7 +54,7 @@ export function useRequests(workspace: string | null) {
       if (current !== generation.current) return false
       if (result.ok && result.data.workspaceId === workspace) {
         const editor = result.data.editor
-        setSaved(editor); setDraft(previous => editor ? { ...copyDraft(editor), ...(preserveBody ? { body: retainSelections(editor.body ?? undefined, previous?.body) } : {}) } : null)
+        latestSaved.current=editor; setSaved(editor); if(editor) setDestination({collectionId:editor.collectionId,folderId:editor.folderId}); setDraft(previous => editor ? { ...copyDraft(editor), ...(preserveBody ? { body: retainSelections(editor.body ?? undefined, previous?.body) } : {}) } : null)
         if (!preserveBody) { releaseSelections(); bodyCache.current = initialBodyDrafts(editor?.body ?? undefined) }
         if (refresh) setRevision(value => value + 1)
         return true
@@ -60,7 +66,7 @@ export function useRequests(workspace: string | null) {
     finally { if (current === generation.current) { running.current = false; setBusy(false) } }
   }, [workspace, releaseSelections])
   useEffect(() => {
-    setLoadedWorkspace(workspace); setSaved(null); setDraft(null); setError(null); setValidation({}); setBusy(false)
+    setLoadedWorkspace(workspace); setDestination({collectionId:null,folderId:null}); latestSaved.current=null; setSaved(null); setDraft(null); setError(null); setValidation({}); setBusy(false)
     if (workspace) void apply(() => window.offlineApi.requests.list(workspace))
     return () => { generation.current++; running.current = false; releaseSelections() }
   }, [apply, workspace, releaseSelections])
@@ -68,8 +74,8 @@ export function useRequests(workspace: string | null) {
     if (!currentWorkspace || !workspace || !draft) return false
     const parsed = requestDraftSchema.safeParse(draft)
     if (!parsed.success) { setValidation(fieldErrors(draft)); setError('Correct the highlighted fields before saving. Your draft has been kept.'); return false }
-    return apply(() => saved ? window.offlineApi.requests.save(workspace, saved.id, parsed.data) : window.offlineApi.requests.create(workspace, { ...parsed.data, collectionId: null }), true, true)
-  }, [currentWorkspace, workspace, draft, saved, apply])
+    return apply(() => saved ? window.offlineApi.requests.save(workspace, saved.id, parsed.data) : window.offlineApi.requests.create(workspace, { ...parsed.data, ...destination }), true, true)
+  }, [currentWorkspace, workspace, draft, saved, apply, destination])
   useEffect(() => {
     function shortcut(event: KeyboardEvent) {
       if (event.ctrlKey && !event.isComposing && event.key.toLowerCase() === 's') {
@@ -131,11 +137,20 @@ export function useRequests(workspace: string | null) {
     finally { if (current === generation.current) { running.current = false; setBusy(false) } }
   }
   return {
-    chooseFile, changeMultipart,
+    focusName: () => { pendingNameFocus.current=true; setFocusVersion(value => value+1) },
+    path, setPath, destination, chooseFile, changeMultipart,
     ...execution,
     saved: currentWorkspace ? saved : null, draft: currentWorkspace ? draft : null, busy: currentWorkspace ? busy : workspace !== null, dirty, error: currentWorkspace ? error : null, revision, validation, addRow, changeBody: (kind: EditableBody['kind']) => { if (!draft || busy) return; const result = switchBody(bodyCache.current, draft.body, kind); bodyCache.current = result.cache; setDraft({ ...draft, body: result.body }); setValidation({}) }, setDraft: (value: RequestDraft) => { setDraft(value); setValidation({}) }, save,
-    create: () => { if (!workspace || running.current) return false; releaseSelections(); bodyCache.current = initialBodyDrafts(); setSaved(null); setDraft(copyDraft({ name: 'New request', method: 'GET', urlTemplate: '', body: { kind: 'none' }, auth: { mode: 'none' } })); setError(null); setValidation({}); return true },
-    discard: () => { if (!busy) { releaseSelections(); bodyCache.current = initialBodyDrafts(saved?.body ?? undefined); setDraft(saved ? copyDraft(saved) : null); setError(null); setValidation({}) } },
+    create: (target: RequestDestination = {collectionId:null,folderId:null}) => { if (!workspace || running.current) return false; releaseSelections(); setDestination(target); bodyCache.current = initialBodyDrafts(); latestSaved.current=null; setSaved(null); setDraft(copyDraft({ name: 'New request', method: 'GET', urlTemplate: '', body: { kind: 'none' }, auth: { mode: 'none' } })); setError(null); setValidation({}); return true },
+    syncPlacement: (rows: readonly { id:string; destination:RequestDestination }[]) => {
+      const selected=latestSaved.current
+      if(selected) {
+        const row=rows.find(r => r.id===selected.id)
+        if(row) { latestSaved.current={...selected,...row.destination}; setSaved(latestSaved.current); setDestination(row.destination) }
+        else { releaseSelections(); latestSaved.current=null; setSaved(null); setDraft(null); bodyCache.current=initialBodyDrafts() }
+      }
+    },
+    discard: () => { if (!busy) { releaseSelections(); bodyCache.current = initialBodyDrafts(latestSaved.current?.body ?? undefined); setDraft(latestSaved.current ? copyDraft(latestSaved.current) : null); setError(null); setValidation({}) } },
     open: (id: string) => workspace ? apply(() => window.offlineApi.requests.get(workspace, id)) : Promise.resolve(false),
     duplicate: () => workspace && saved ? apply(() => window.offlineApi.requests.duplicate(workspace, saved.id), true) : Promise.resolve(false),
     delete: () => workspace && saved ? apply(() => window.offlineApi.requests.delete(workspace, saved.id), true) : Promise.resolve(false)

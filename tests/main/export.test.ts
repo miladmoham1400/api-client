@@ -66,9 +66,10 @@ it('uses one SQLite read snapshot even when another connection commits between e
   f.db.pragma('journal_mode = WAL')
   const writer = openDatabase(f.path), r = new Repositories(writer)
   try {
+    let committed = false
     const original = Repositories.prototype.listCollections
     vi.spyOn(Repositories.prototype, 'listCollections').mockImplementation(function (this: Repositories, workspace) {
-      r.renameWorkspace(workspace, 'After'); r.createCollection(workspace, 'Concurrent')
+      if (!committed) { committed = true; r.renameWorkspace(workspace, 'After'); r.createCollection(workspace, 'Concurrent') }
       return original.call(this, workspace)
     })
     const exported = f.service.snapshot(f.w)

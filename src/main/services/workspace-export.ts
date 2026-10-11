@@ -14,6 +14,7 @@ export class WorkspaceExportService {
     const r = this.repositories
     // The first SELECT establishes one read snapshot; there are no awaits inside this transaction.
     return this.db.transaction(() => {
+      if (r.listFolders(workspace).length) throw new RepositoryError('FOLDER_EXPORT_UNAVAILABLE')
       const source = r.getWorkspace(workspace), environments = r.listEnvironments(workspace)
       return serializeWorkspace({ workspace: source, collections: r.listCollections(workspace), environments,
         variables: [null, ...environments.map(value => value.id)].flatMap(scope => r.listVariables(workspace, scope)),
@@ -29,6 +30,7 @@ export class WorkspaceExportService {
       if (!authorized()) throw new RepositoryError('NOT_FOUND')
       if (destination === null) return { status: 'cancelled' }
       this.repositories.getWorkspace(workspace)
+      if (this.repositories.listFolders(workspace).length) throw new RepositoryError('FOLDER_EXPORT_UNAVAILABLE')
       await writeExportFile(destination, json, this.protectedRoots, authorized)
       return { status: 'saved' }
     } finally { this.running = false }

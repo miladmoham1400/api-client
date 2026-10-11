@@ -1,4 +1,4 @@
-import { folderSchema, folderDepths, requestDestinationSchema, libraryContainerSchema, libraryRequestMetadataSchema, treeExpansionSchema, workspaceTreeStateSchema } from '../../../shared/api-library'
+import { LIBRARY_LIMITS, folderSchema, folderDepths, requestDestinationSchema, libraryContainerSchema, libraryRequestMetadataSchema, treeExpansionSchema, workspaceTreeStateSchema } from '../../../shared/api-library'
 import { themeSchema, type ThemePreference } from '../../../shared/theme'
 import { importWorkspaceDataSchema } from '../../../shared/import'
 import type Database from 'better-sqlite3'
@@ -53,7 +53,7 @@ export class Repositories {
     uuidSchema.parse(id)
     if (!this.db.prepare('SELECT id FROM workspaces WHERE id=?').get(id)) throw new RepositoryError('NOT_FOUND')
   }
-  // Read-only foundation; no folder mutation API or renderer exposure in TASK-032.
+  // All hierarchy mutations validate the proposed graph before committing.
   listFolders(w: string) { return this.read(() => {
     this.workspace(w)
     const folders = z.array(folderSchema).parse(this.db.prepare(`SELECT ${scopedIdentity},collection_id AS collectionId,parent_folder_id AS parentFolderId,sort_order AS sortOrder FROM folders WHERE workspace_id=? ORDER BY sort_order,name COLLATE BINARY,id`).all(w))
@@ -87,6 +87,56 @@ export class Repositories {
       return libraryRequestMetadataSchema.parse({ ...row, destination: { kind: folderId !== null ? 'folder' : collectionId !== null ? 'collection' : 'workspace', collectionId, folderId } })
     })
   }) }
+  createFolder(w: string, collectionId: string, parentFolderId: string|null, name: string) { return this.write(() => {
+    this.validateDestination(w, { collectionId, folderId: parentFolderId })
+    const folders = this.listFolders(w)
+    if (folders.length >= LIBRARY_LIMITS.foldersPerWorkspace) throw new RepositoryError('VALIDATION')
+    const now = new Date().toISOString()
+    const folder = folderSchema.parse({ id: randomUUID(), workspaceId: w, collectionId, parentFolderId, name,
+      sortOrder: Math.max(-1, ...folders.filter(f => f.collectionId === collectionId && f.parentFolderId === parentFolderId).map(f => f.sortOrder)) + 1,
+      createdAt: now, updatedAt: now })
+    this.validateHierarchy(w, [...folders, folder])
+    this.db.prepare('INSERT INTO folders VALUES (?,?,?,?,?,?,?,?)').run(folder.id,w,collectionId,parentFolderId,folder.name,folder.sortOrder,now,now)
+    return folder
+  }) }
+  private validateHierarchy(w: string, folders: Parameters<typeof folderDepths>[1]) {
+    try { folderDepths(w, folders) } catch { throw new RepositoryError('VALIDATION') }
+  }
+  renameFolder(w: string, id: string, name: string) { return this.write(() => {
+    this.getFolder(w,id)
+    this.db.prepare('UPDATE folders SET name=?,updated_at=? WHERE workspace_id=? AND id=?').run(nameSchema.parse(name),new Date().toISOString(),w,id)
+    return this.getFolder(w,id)
+  }) }
+  moveFolder(w: string, id: string, collectionId: string, parentFolderId: string|null) { return this.write(() => {
+    const source = this.getFolder(w,id)
+    this.validateDestination(w, { collectionId, folderId: parentFolderId })
+    const folders = this.listFolders(w), subtree = new Set([source.id])
+    // Each iteration visits children of the previous frontier; bounded by the validated hierarchy.
+    let frontier = [source.id]
+    while (frontier.length) {
+      const parents = new Set(frontier)
+      frontier = folders.filter(f => f.parentFolderId !== null && parents.has(f.parentFolderId)).map(f => f.id)
+      frontier.forEach(child => subtree.add(child))
+    }
+    if (parentFolderId !== null && subtree.has(parentFolderId)) throw new RepositoryError('VALIDATION')
+    const now = new Date().toISOString()
+    const proposed = folders.map(f => subtree.has(f.id) ? { ...f, collectionId, parentFolderId: f.id === id ? parentFolderId : f.parentFolderId, updatedAt: now } : f)
+    this.validateHierarchy(w, proposed)
+    const update = this.db.prepare('UPDATE folders SET collection_id=?,parent_folder_id=?,updated_at=? WHERE workspace_id=? AND id=?')
+    const requests = this.db.prepare('UPDATE requests SET collection_id=?,updated_at=? WHERE workspace_id=? AND folder_id=?')
+    for (const f of proposed.filter(f => subtree.has(f.id))) {
+      update.run(collectionId,f.parentFolderId,now,w,f.id)
+      requests.run(collectionId,now,w,f.id)
+    }
+    return this.getFolder(w,id)
+  }) }
+  deleteFolder(w: string, id: string) { return this.write(() => {
+    const folder = this.getFolder(w,id), now = new Date().toISOString()
+    this.db.prepare('UPDATE requests SET folder_id=?,updated_at=? WHERE workspace_id=? AND folder_id=?').run(folder.parentFolderId,now,w,id)
+    this.db.prepare('UPDATE folders SET parent_folder_id=?,updated_at=? WHERE workspace_id=? AND parent_folder_id=?').run(folder.parentFolderId,now,w,id)
+    this.db.prepare('DELETE FROM folders WHERE workspace_id=? AND id=?').run(w,id)
+    this.listFolders(w)
+  }) }
   getTreeState(w: string) { return this.read(() => {
     this.workspace(w)
     const row = this.db.prepare('SELECT version,expansion_json AS expansion FROM workspace_tree_state WHERE workspace_id=?').get(w)
@@ -96,6 +146,13 @@ export class Repositories {
     const collections = new Set(this.listCollections(w).map(collection => collection.id)), folders = new Set(this.listFolders(w).map(folder => folder.id))
     return workspaceTreeStateSchema.parse({ workspaceId: w, version: stored.version,
       expandedCollectionIds: state.expandedCollectionIds.filter(id => collections.has(id)), expandedFolderIds: state.expandedFolderIds.filter(id => folders.has(id)) })
+  }) }
+  setTreeState(w: string, input: unknown) { return this.write(() => {
+    this.workspace(w)
+    const expansion = treeExpansionSchema.parse(input), collections = new Set(this.listCollections(w).map(c => c.id)), folders = new Set(this.listFolders(w).map(f => f.id))
+    if (expansion.expandedCollectionIds.some(id => !collections.has(id)) || expansion.expandedFolderIds.some(id => !folders.has(id))) throw new RepositoryError('NOT_FOUND')
+    this.db.prepare('INSERT INTO workspace_tree_state VALUES (?,1,?) ON CONFLICT(workspace_id) DO UPDATE SET version=1,expansion_json=excluded.expansion_json').run(w,JSON.stringify(expansion))
+    return this.getTreeState(w)
   }) }
   importWorkspace(input: unknown) {
     // Validate the complete graph before any write; nested repository transactions are savepoints.
@@ -176,7 +233,7 @@ export class Repositories {
     })
   }
   renameCollection(w: string, id: string, name: string) { return this.write(() => { this.owned('collections',w,id); this.db.prepare('UPDATE collections SET name=?,updated_at=? WHERE workspace_id=? AND id=?').run(nameSchema.parse(name),new Date().toISOString(),w,id); return this.getCollection(w,id) }) }
-  deleteCollection(w: string,id: string) { return this.write(() => { this.owned('collections',w,id); this.db.prepare('UPDATE requests SET collection_id=NULL,updated_at=? WHERE workspace_id=? AND collection_id=?').run(new Date().toISOString(),w,id); this.db.prepare('DELETE FROM collections WHERE workspace_id=? AND id=?').run(w,id) }) }
+  deleteCollection(w: string,id: string) { return this.write(() => { this.owned('collections',w,id); this.db.prepare('UPDATE requests SET collection_id=NULL,folder_id=NULL,updated_at=? WHERE workspace_id=? AND collection_id=?').run(new Date().toISOString(),w,id); this.db.prepare('DELETE FROM folders WHERE workspace_id=? AND collection_id=?').run(w,id); this.db.prepare('DELETE FROM collections WHERE workspace_id=? AND id=?').run(w,id) }) }
   listEnvironments(w: string) { return this.read(() => { this.workspace(w); return z.array(environmentSchema).parse(this.db.prepare(`SELECT ${scopedIdentity} FROM environments WHERE workspace_id=? ORDER BY created_at,id`).all(w)) }) }
   getEnvironment(w: string,id: string) { return this.read(() => { this.owned('environments',w,id); return environmentSchema.parse(this.db.prepare(`SELECT ${scopedIdentity} FROM environments WHERE workspace_id=? AND id=?`).get(w,id)) }) }
   createEnvironment(w: string,name: string) { return this.write(() => { this.workspace(w); const id=randomUUID(),now=new Date().toISOString(); this.db.prepare('INSERT INTO environments VALUES (?,?,?,?,?)').run(id,w,nameSchema.parse(name),now,now); return this.getEnvironment(w,id) }) }
@@ -189,14 +246,22 @@ export class Repositories {
     for (const variable of variables) if (variable.secretId) this.removeOrphanSecret(w,variable.secretId)
     this.db.prepare('DELETE FROM environments WHERE workspace_id=? AND id=?').run(w,id)
   }) }
-  listRequests(w: string) { return this.read(() => { this.workspace(w); return z.array(requestSummarySchema).parse(this.db.prepare(`SELECT ${scopedIdentity},collection_id AS collectionId FROM requests WHERE workspace_id=? ORDER BY created_at,id`).all(w)) }) }
+  listRequests(w: string) { return this.read(() => {
+    this.workspace(w)
+    const folders = new Map(this.listFolders(w).map(f => [f.id, f.collectionId]))
+    const collections = new Set(this.listCollections(w).map(c => c.id))
+    const rows = z.array(requestSummarySchema).parse(this.db.prepare(`SELECT ${scopedIdentity},collection_id AS collectionId,folder_id AS folderId FROM requests WHERE workspace_id=? ORDER BY created_at,id`).all(w))
+    if (rows.some(r => (r.collectionId !== null && !collections.has(r.collectionId)) || (r.folderId !== null && folders.get(r.folderId) !== r.collectionId))) throw new RepositoryError('DATABASE_UNAVAILABLE')
+    return rows
+  }) }
   getRequest(w: string,id: string) { return this.read(() => {
     this.owned('requests',w,id)
-    const row=z.strictObject({ ...requestSummarySchema.shape, configJson:z.string(),configVersion:z.literal(1) }).parse(this.db.prepare(`SELECT ${scopedIdentity},collection_id AS collectionId,config_json AS configJson,config_version AS configVersion FROM requests WHERE workspace_id=? AND id=?`).get(w,id))
+    const row=z.strictObject({ ...requestSummarySchema.shape, configJson:z.string(),configVersion:z.literal(1) }).parse(this.db.prepare(`SELECT ${scopedIdentity},collection_id AS collectionId,folder_id AS folderId,config_json AS configJson,config_version AS configVersion FROM requests WHERE workspace_id=? AND id=?`).get(w,id))
     const {configJson,...summary}=row
-    const result={id:summary.id,name:summary.name,workspaceId:summary.workspaceId,collectionId:summary.collectionId,createdAt:summary.createdAt,updatedAt:summary.updatedAt}
+    const result={id:summary.id,name:summary.name,workspaceId:summary.workspaceId,collectionId:summary.collectionId,folderId:summary.folderId,createdAt:summary.createdAt,updatedAt:summary.updatedAt}
     const config=storedRequestConfigSchema.parse(JSON.parse(configJson))
     for (const secret of secretIds(config)) this.owned('secrets',w,secret)
+    this.validateDestination(w, { collectionId: result.collectionId, folderId: result.folderId })
     return {...result,config}
   }) }
   private validateConfig(w: string, input: StoredRequestConfig, owner?: string) {
@@ -204,10 +269,10 @@ export class Repositories {
     for (const id of secretIds(config)) { this.owned('secrets',w,id); this.assertSecretAvailable(w,id,owner) }
     return config
   }
-  createRequest(w: string,name: string,collectionId: string|null, input: StoredRequestConfig) { return this.write(() => {
-    this.workspace(w); if (collectionId!==null) this.owned('collections',w,collectionId)
+  createRequest(w: string,name: string,collectionId: string|null, input: StoredRequestConfig, folderId: string|null = null) { return this.write(() => {
+    this.validateDestination(w, { collectionId, folderId })
     const config=this.validateConfig(w,input),id=randomUUID(),now=new Date().toISOString()
-    this.db.prepare('INSERT INTO requests(id,workspace_id,collection_id,name,config_version,config_json,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?)').run(id,w,collectionId,nameSchema.parse(name),1,JSON.stringify(config),now,now)
+    this.db.prepare('INSERT INTO requests(id,workspace_id,collection_id,name,config_version,config_json,created_at,updated_at,folder_id) VALUES (?,?,?,?,?,?,?,?,?)').run(id,w,collectionId,nameSchema.parse(name),1,JSON.stringify(config),now,now,folderId)
     return this.getRequest(w,id)
   }) }
   saveRequest(w: string,id: string,name: string,input: StoredRequestConfig) { return this.write(() => {
@@ -216,7 +281,7 @@ export class Repositories {
     for (const secret of secretIds(old.config)) this.removeOrphanSecret(w,secret)
     return this.getRequest(w,id)
   }) }
-  moveRequest(w: string,id: string,collectionId: string|null) { return this.write(() => { this.owned('requests',w,id); if(collectionId!==null)this.owned('collections',w,collectionId); this.db.prepare('UPDATE requests SET collection_id=?,updated_at=? WHERE workspace_id=? AND id=?').run(collectionId,new Date().toISOString(),w,id); return this.getRequest(w,id) }) }
+  moveRequest(w: string,id: string,collectionId: string|null,folderId: string|null = null) { return this.write(() => { this.owned('requests',w,id); this.validateDestination(w,{collectionId,folderId}); this.db.prepare('UPDATE requests SET collection_id=?,folder_id=?,updated_at=? WHERE workspace_id=? AND id=?').run(collectionId,folderId,new Date().toISOString(),w,id); return this.getRequest(w,id) }) }
   deleteRequest(w: string,id: string) { return this.write(() => {
     const old=this.getRequest(w,id)
     this.db.prepare('UPDATE workspace_state SET selected_request_id=NULL WHERE workspace_id=? AND selected_request_id=?').run(w,id)
@@ -236,7 +301,7 @@ export class Repositories {
     const auth=original.config.auth
     const config:StoredRequestConfig={...original.config,auth:auth.mode==='none'?auth:auth.mode==='bearer'?{mode:'bearer',token:clone(auth.token)}:{mode:'basic',username:clone(auth.username),password:clone(auth.password)}}
     const name=Array.from(original.name).slice(0,LIMITS.nameCharacters-7).join('')+' (copy)'
-    return {request:this.createRequest(w,name,original.collectionId,config),secretCopies:copies}
+    return {request:this.createRequest(w,name,original.collectionId,config,original.folderId),secretCopies:copies}
   }) }
   getState(w:string) { return this.read(() => {
     this.workspace(w)

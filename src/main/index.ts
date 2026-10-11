@@ -23,6 +23,12 @@ import type { Bootstrap } from '../shared/desktop-api'
 import { createOwnedHandler } from './ipc/guard'
 import { createWorkspaceHandlers } from './ipc/workspaces'
 import { WorkspaceService } from './services/workspaces'
+import { LibraryService } from './services/library-view'
+import { createLibraryHandlers } from './ipc/library-view'
+import { LIBRARY_CHANNELS } from '../shared/library-view'
+import { FolderService } from './services/folders'
+import { createFolderHandlers } from './ipc/folders'
+import { FOLDER_CHANNELS } from '../shared/folders'
 import { CollectionService } from './services/collections'
 import { createCollectionHandlers } from './ipc/collections'
 import { COLLECTION_CHANNELS } from '../shared/collections'
@@ -186,6 +192,12 @@ else {
     for (const method of ['list', 'create', 'rename', 'delete', 'select'] as const) {
       ipcMain.handle(WORKSPACE_CHANNELS[method], workspaceHandlers[method])
     }
+    const libraryService = database ? new LibraryService(database) : null
+    const libraryHandlers = createLibraryHandlers(() => ownedWindow,trustedUrl,() => libraryService)
+    for(const method of ['list','setExpansion'] as const) ipcMain.handle(LIBRARY_CHANNELS[method],libraryHandlers[method])
+    const folderService = database ? new FolderService(database) : null
+    const folderHandlers = createFolderHandlers(() => ownedWindow, trustedUrl, () => folderService)
+    for (const method of ['list', 'create', 'rename', 'move', 'delete'] as const) ipcMain.handle(FOLDER_CHANNELS[method], folderHandlers[method])
     const collectionService = database ? new CollectionService(database) : null
     const collectionHandlers = createCollectionHandlers(() => ownedWindow, trustedUrl, () => collectionService)
     for (const method of ['list', 'create', 'rename', 'delete', 'move'] as const) ipcMain.handle(COLLECTION_CHANNELS[method], collectionHandlers[method])
@@ -208,6 +220,8 @@ else {
       for (const channel of [...Object.values(ENVIRONMENT_CHANNELS), ...Object.values(VARIABLE_CHANNELS)]) ipcMain.removeHandler(channel)
       ipcMain.removeHandler(IPC_CHANNELS.getBootstrap)
       for (const channel of Object.values(REQUEST_CHANNELS)) ipcMain.removeHandler(channel)
+      for (const channel of Object.values(LIBRARY_CHANNELS)) ipcMain.removeHandler(channel)
+      for (const channel of Object.values(FOLDER_CHANNELS)) ipcMain.removeHandler(channel)
       for (const channel of Object.values(COLLECTION_CHANNELS)) ipcMain.removeHandler(channel)
       for (const channel of Object.values(WORKSPACE_CHANNELS)) ipcMain.removeHandler(channel)
     })

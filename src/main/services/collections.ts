@@ -34,8 +34,8 @@ export class CollectionService {
     id = uuidSchema.parse(id)
     return this.mutate(workspaceId, () => { this.repositories.deleteCollection(workspaceId, id) })
   }
-  move(workspaceId: string, id: string, collectionId: string | null) {
+  move(workspaceId: string, id: string, collectionId: string | null, folderId: string | null = null) {
     id = uuidSchema.parse(id); collectionId = uuidSchema.nullable().parse(collectionId)
-    return this.mutate(workspaceId, () => { this.repositories.moveRequest(workspaceId, id, collectionId) })
+    return this.mutate(workspaceId, () => { this.repositories.moveRequest(workspaceId, id, collectionId, folderId) })
   }
 }

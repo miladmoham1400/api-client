@@ -10,6 +10,8 @@ import { IPC_CHANNELS, bootstrapResultSchema, type DesktopApi } from '../shared/
 
 import { WORKSPACE_CHANNELS, workspaceInputs, workspaceResultSchema } from '../shared/workspaces'
 import { z } from 'zod'
+import { LIBRARY_CHANNELS, libraryInputs, libraryResultSchema, treeStateResultSchema } from '../shared/library-view'
+import { FOLDER_CHANNELS, folderInputs, folderResultSchema } from '../shared/folders'
 import { COLLECTION_CHANNELS, collectionInputs, groupingResultSchema } from '../shared/collections'
 import { REQUEST_CHANNELS, requestInputs, requestResultSchema, requestRowResultSchema, type RequestDraft } from '../shared/requests'
 import { validationError } from '../shared/results'
@@ -31,6 +33,13 @@ async function collectionCall<I extends z.ZodType<unknown[]>>(channel: (typeof C
   const input = schema.safeParse(args)
   if (!input.success) return { ok: false, error: validationError(input.error, true) }
   try { return groupingResultSchema.parse(await ipcRenderer.invoke(channel, ...input.data)) }
+  catch { return { ok: false, error: { code: 'VALIDATION', message: 'Operation unavailable', retryable: false } } }
+}
+
+async function folderCall<I extends z.ZodType<unknown[]>>(channel: (typeof FOLDER_CHANNELS)[keyof typeof FOLDER_CHANNELS], schema: I, args: unknown[]): ReturnType<DesktopApi['folders']['list']> {
+  const input = schema.safeParse(args)
+  if (!input.success) return { ok: false, error: validationError(input.error, true) }
+  try { return folderResultSchema.parse(await ipcRenderer.invoke(channel, ...input.data)) }
   catch { return { ok: false, error: { code: 'VALIDATION', message: 'Operation unavailable', retryable: false } } }
 }
 
@@ -93,6 +102,27 @@ const api: DesktopApi = Object.freeze({
     delete: (w: string, id: string) => variableCall(VC.delete, VI.delete, variableResultSchema, [w, id]),
     reveal: (w: string, id: string) => variableCall(VC.reveal, VI.reveal, revealResultSchema, [w, id])
   }),
+  library: Object.freeze({
+    list: async (w:string) => {
+      const input=libraryInputs.list.safeParse([w])
+      if(!input.success) return {ok:false as const,error:validationError(input.error,true)}
+      try { return libraryResultSchema.parse(await ipcRenderer.invoke(LIBRARY_CHANNELS.list,...input.data)) }
+      catch { return {ok:false as const,error:{code:'VALIDATION' as const,message:'Library unavailable',retryable:false}} }
+    },
+    setExpansion: async (w:string,expansion:z.infer<typeof libraryInputs.setExpansion>[1]) => {
+      const input=libraryInputs.setExpansion.safeParse([w,expansion])
+      if(!input.success) return {ok:false as const,error:validationError(input.error,true)}
+      try { return treeStateResultSchema.parse(await ipcRenderer.invoke(LIBRARY_CHANNELS.setExpansion,...input.data)) }
+      catch { return {ok:false as const,error:{code:'VALIDATION' as const,message:'Expansion unavailable',retryable:false}} }
+    }
+  }),
+  folders: Object.freeze({
+    list: (w: string) => folderCall(FOLDER_CHANNELS.list, folderInputs.list, [w]),
+    create: (w: string, c: string, p: string|null, n: string) => folderCall(FOLDER_CHANNELS.create, folderInputs.create, [w,c,p,n]),
+    rename: (w: string, id: string, n: string) => folderCall(FOLDER_CHANNELS.rename, folderInputs.rename, [w,id,n]),
+    move: (w: string, id: string, c: string, p: string|null) => folderCall(FOLDER_CHANNELS.move, folderInputs.move, [w,id,c,p]),
+    delete: (w: string, id: string) => folderCall(FOLDER_CHANNELS.delete, folderInputs.delete, [w,id])
+  }),
   collections: Object.freeze({
     list: (workspace: string) => collectionCall(COLLECTION_CHANNELS.list, collectionInputs.list, [workspace]),
     create: (workspace: string, name: string) => collectionCall(COLLECTION_CHANNELS.create, collectionInputs.create, [workspace, name]),
@@ -108,11 +138,11 @@ const api: DesktopApi = Object.freeze({
     },
     list: (workspace: string) => requestCall(REQUEST_CHANNELS.list, requestInputs.list, [workspace]),
     get: (workspace: string, id: string) => requestCall(REQUEST_CHANNELS.get, requestInputs.get, [workspace, id]),
-    create: (workspace: string, input: z.infer<typeof requestInputs.create>[1]) => requestCall(REQUEST_CHANNELS.create, requestInputs.create, [workspace, input]),
+    create: (workspace: string, input: z.input<typeof requestInputs.create>[1]) => requestCall(REQUEST_CHANNELS.create, requestInputs.create, [workspace, input]),
     save: (workspace: string, id: string, input: RequestDraft) => requestCall(REQUEST_CHANNELS.save, requestInputs.save, [workspace, id, input]),
     duplicate: (workspace: string, id: string) => requestCall(REQUEST_CHANNELS.duplicate, requestInputs.duplicate, [workspace, id]),
     delete: (workspace: string, id: string) => requestCall(REQUEST_CHANNELS.delete, requestInputs.delete, [workspace, id]),
-    move: (workspace: string, id: string, collection: string | null) => collectionCall(COLLECTION_CHANNELS.move, collectionInputs.move, [workspace, id, collection]) }),
+    move: (workspace: string, id: string, collection: string | null, folder: string | null = null) => collectionCall(COLLECTION_CHANNELS.move, collectionInputs.move, [workspace, id, collection, folder]) }),
   workspaces: Object.freeze({
     list: () => workspaceCall(WORKSPACE_CHANNELS.list, workspaceInputs.list, []),
     create: (name: string) => workspaceCall(WORKSPACE_CHANNELS.create, workspaceInputs.create, [name]),

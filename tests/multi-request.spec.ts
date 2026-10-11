@@ -57,11 +57,16 @@ test('twenty explicitly saved requests remain independently selectable, grouped 
       await expect(page.getByRole('group', { name: `Request: ${name}`, exact: true })).toBeVisible()
       if (index % 3 !== 0) {
         const destination = ids[index % 3 - 1]!
-        await page.getByLabel(`Collection for ${name}`, { exact: true }).selectOption(destination)
-        await expect(page.getByLabel(`Collection for ${name}`, { exact: true })).toHaveValue(destination)
+        await page.getByRole('button',{name:`Actions for request: ${name}`,exact:true}).click()
+        await page.getByRole('menuitem',{name:'Move request',exact:true}).click()
+        const move=page.getByRole('dialog',{name:'Move request',exact:true})
+        await move.getByLabel('Destination').selectOption(destination)
+        await move.getByRole('button',{name:'Move',exact:true}).click()
+        await expect(move).not.toBeVisible()
         await expect(page.getByRole('button', { name: 'Create Request', exact: true })).toBeEnabled()
       }
     }
+    for(const collection of groups.data.collections) { const row=page.locator(`[data-library-id="${collection.id}"]`); if(await row.getAttribute('aria-expanded')==='false') await row.getByRole('button').first().click() }
     const before = await page.evaluate(w => window.offlineApi.requests.list(w), workspace)
     if (!before.ok) throw new Error('Missing requests')
     expect(before.data.requests).toHaveLength(20)

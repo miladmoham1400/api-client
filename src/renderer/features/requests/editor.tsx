@@ -33,6 +33,7 @@ export function RequestEditor({ controller: c, guard }: { controller: RequestCon
       <Button ref={remove} size="sm" variant="outline" disabled={!c.saved || c.busy} onClick={() => { deletionVersion.current++; setDeleting(true) }}>Delete request</Button>
     </Flex>
     {c.error && <Text role="alert" mb="3">{c.error}</Text>}
+    {c.draft && <Text aria-label="Request location" fontSize="sm" color="fg.muted" mb="2" overflowWrap="anywhere">{c.path}</Text>}
     {c.draft && <Box mb="3"><label htmlFor="request-name">Request name</label><Input id="request-name" value={c.draft.name} aria-invalid={!!c.validation.name} aria-describedby={c.validation.name ? "request-name-error" : undefined} disabled={c.busy} onChange={event => { if (c.draft) c.setDraft({ ...c.draft, name: event.target.value }) }} />{c.validation.name && <Text id="request-name-error" role="alert" color="red.fg">name: {c.validation.name}</Text>}</Box>}
     <Flex gap="2" mb="3" flexWrap="wrap">
       <NativeSelect.Root width="110px" flexShrink="0" disabled={!c.draft || c.busy}><NativeSelect.Field aria-label="HTTP method" value={c.draft?.method ?? ''} onChange={event => { if (c.draft) c.setDraft({ ...c.draft, method: httpMethodSchema.parse(event.target.value) }) }}>

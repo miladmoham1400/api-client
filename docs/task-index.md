@@ -47,14 +47,14 @@ TASK-030 completed 2026-10-10. See [release acceptance](release-acceptance.md), 
 
 ## Next milestone — highest-priority API library
 
-User approved planning on 2026-10-11. [Nested API library specification](api-library.md) is the behavioral contract for this milestone. These are **new milestone tasks**, with implementation status recorded below; historical TASK-001–030 statuses stay unchanged. Prioritize this sequence before other deferred features. Planning creates no completed implementation task or new release. TASK-031 is complete with [Linux source-app evidence](task-reports/TASK-031.md); no new packaged/Windows acceptance is claimed. TASK-032 migration/read foundation is complete with [Linux evidence and recorded timeout limits](task-reports/TASK-032.md); folder UI/operations are not available yet. Earliest ready task: TASK-033.
+User approved planning on 2026-10-11. [Nested API library specification](api-library.md) is the behavioral contract for this milestone. These are **new milestone tasks**, with implementation status recorded below; historical TASK-001–030 statuses stay unchanged. Prioritize this sequence before other deferred features. Planning creates no completed implementation task or new release. TASK-031 is complete with [Linux source-app evidence](task-reports/TASK-031.md); no new packaged/Windows acceptance is claimed. TASK-032 migration/read foundation is complete with [Linux evidence and recorded timeout limits](task-reports/TASK-032.md); TASK-033 folder operations and request destinations are complete with [transaction/IPC/Linux Electron evidence](task-reports/TASK-033.md). TASK-034 nested tree, contextual actions and expansion persistence are complete with [unit/build/Linux Electron evidence](task-reports/TASK-034.md). Search/large-library navigation and v2 transfer remain unfinished; no new packaged/Windows acceptance is claimed. Earliest ready task: TASK-035.
 
 | Order | Task | Dependencies | Status |
 |---|---|---|---|
 | 31 | [TASK-031 — Verify and repair multi-request creation and selection](tasks/TASK-031-multi-request-navigation.md) | TASK-009, TASK-023 | done |
 | 32 | [TASK-032 — Add owned folder schema and preserve legacy data](tasks/TASK-032-folder-schema-migration.md) | TASK-031, TASK-004, TASK-005 | done |
-| 33 | [TASK-033 — Implement validated folder operations and request destinations](tasks/TASK-033-folder-operations.md) | TASK-032 | todo |
-| 34 | [TASK-034 — Build accessible nested API tree and contextual creation](tasks/TASK-034-api-library-tree.md) | TASK-033 | todo |
+| 33 | [TASK-033 — Implement validated folder operations and request destinations](tasks/TASK-033-folder-operations.md) | TASK-032 | done |
+| 34 | [TASK-034 — Build accessible nested API tree and contextual creation](tasks/TASK-034-api-library-tree.md) | TASK-033 | done |
 | 35 | [TASK-035 — Add quick request search and verify large-library navigation](tasks/TASK-035-api-library-search-scale.md) | TASK-034 | todo |
 | 36 | [TASK-036 — Preserve nested libraries in safe v2 transfer](tasks/TASK-036-folder-transfer-v2.md) | TASK-035, TASK-024, TASK-025 | todo |
 | 37 | [TASK-037 — Verify and document nested-library packaged acceptance](tasks/TASK-037-api-library-acceptance.md) | TASK-036 | todo |

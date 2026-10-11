@@ -12,9 +12,11 @@ Runtime-validate incoming payloads and outgoing shared DTOs. Do not return stack
 | app | getBootstrap(), getTheme(), setTheme(light/dark/system), onCloseRequested(callback), requestCloseDecision(token,decision) |
 | workspaces | list(), create(name), rename(id,name), delete(id), select(id) |
 | collections | list(workspaceId), create(workspaceId,name), rename(workspaceId,id,name), delete(workspaceId,id) |
+| library | list(workspaceId), setExpansion(workspaceId,{expandedCollectionIds,expandedFolderIds}) |
+| folders | list(workspaceId), create(workspaceId,collectionId,parentFolderIdOrNull,name), rename(workspaceId,id,name), move(workspaceId,id,collectionId,parentFolderIdOrNull), delete(workspaceId,id) |
 | environments | list(workspaceId), create(workspaceId,name), rename(workspaceId,id,name), delete(workspaceId,id), select(workspaceId,idOrNull) |
 | variables | list(workspaceId,environmentIdOrNull), upsert(workspaceId,scope,key,value,isSensitive), delete(workspaceId,id), reveal(workspaceId,id) |
-| requests | newRow(workspaceId), list(workspaceId), get(workspaceId,id), create(workspaceId,input), save(workspaceId,id,input), duplicate(workspaceId,id), delete(workspaceId,id), move(workspaceId,id,collectionIdOrNull) |
+| requests | newRow(workspaceId), list(workspaceId), get(workspaceId,id), create(workspaceId,input), save(workspaceId,id,input), duplicate(workspaceId,id), delete(workspaceId,id), move(workspaceId,id,collectionIdOrNull,folderIdOrNull?) |
 | files | chooseUpload(workspaceId) -> opaque file ID + name + size; releaseUpload(workspaceId,fileId) |
 | execution | send(workspaceId,requestIdOrNull,draft,environmentIdOrNull), cancel(executionId), onCompleted(callback) -> unsubscribe |
 | transfer | exportWorkspace(workspaceId) -> {status:'saved'|'cancelled'} using native save dialog; chooseImport() -> cancelled/summary preview; importWorkspace(previewToken) -> {workspaceId,name}; cancelImport(previewToken) -> null |
@@ -49,7 +51,7 @@ Normal window close and app quit are intercepted in main after startup subscript
 
 ## Domain errors
 
-EXPORT_WRITE_FAILED, VALIDATION, NOT_FOUND, OWNERSHIP, DATABASE_UNAVAILABLE, DATABASE_WRITE_FAILED, VARIABLE_MISSING, SECRET_UNAVAILABLE, FILE_REQUIRED, FILE_CHANGED, FILE_TOO_LARGE, REQUEST_BUSY, INVALID_URL, INVALID_HEADER, AUTH_CONFLICT, CONTENT_TYPE_CONFLICT, UNSUPPORTED_SCHEME, TIMEOUT, CANCELLED, DNS_FAILURE, CONNECTION_REFUSED, TLS_FAILURE, NETWORK_FAILURE, RESPONSE_TOO_LARGE, DECOMPRESSION_FAILURE, REDIRECT_LIMIT, REDIRECT_DOWNGRADE, INVALID_IMPORT, UNSUPPORTED_FORMAT_VERSION, IMPORT_TOO_LARGE.
+FOLDER_EXPORT_UNAVAILABLE, EXPORT_WRITE_FAILED, VALIDATION, NOT_FOUND, OWNERSHIP, DATABASE_UNAVAILABLE, DATABASE_WRITE_FAILED, VARIABLE_MISSING, SECRET_UNAVAILABLE, FILE_REQUIRED, FILE_CHANGED, FILE_TOO_LARGE, REQUEST_BUSY, INVALID_URL, INVALID_HEADER, AUTH_CONFLICT, CONTENT_TYPE_CONFLICT, UNSUPPORTED_SCHEME, TIMEOUT, CANCELLED, DNS_FAILURE, CONNECTION_REFUSED, TLS_FAILURE, NETWORK_FAILURE, RESPONSE_TOO_LARGE, DECOMPRESSION_FAILURE, REDIRECT_LIMIT, REDIRECT_DOWNGRADE, INVALID_IMPORT, UNSUPPORTED_FORMAT_VERSION, IMPORT_TOO_LARGE.
 
 HTTP status 4xx/5xx is a successful transport result. User cancellation of file open/save dialogs is an ordinary cancelled operation, not a red failure toast. Repository mutation errors leave UI data intact. Missing/unauthorized IDs share sanitized not-found behavior where appropriate.
 
@@ -59,4 +61,14 @@ At boundary enforce names, timeout range, max 200 query/header/form rows per gro
 
 ## Approved next milestone: folder and search APIs
 
-The API table above describes the existing release. TASK-033 introduces explicit workspace-owned folder CRUD/move handlers and folder-aware request destinations, without changing partial-save config preservation. TASK-035 adds bounded metadata-only search; caller, destination and workspace ownership are validated in main. No generic IPC or credential-bearing tree/search DTO is permitted. See [API library specification](api-library.md) for the authoritative new behavior, bounds, intermediate export gate and task mapping. These changes are approved but not implemented.
+The API table above describes the current source API; published 0.1.1 installers do not include the new folder calls. TASK-033 implements explicit workspace-owned folder CRUD/move handlers and folder-aware request destinations, without changing partial-save config preservation. TASK-035 adds bounded metadata-only search; caller, destination and workspace ownership are validated in main. No generic IPC or credential-bearing tree/search DTO is permitted. See [API library specification](api-library.md) for the authoritative new behavior, bounds, intermediate export gate and task mapping. Folder and tree operations are implemented in source; search and v2 transfer remain later tasks.
+
+### TASK-033 destination and folder contracts
+
+Request summaries/editors include nullable `folderId`. Create accepts an optional `folderId` (omitted means null); Move accepts an optional fourth folder argument (omitted means null). A non-null folder requires a matching owned collection. Save accepts configuration fields only and preserves placement; Duplicate retains placement while copying secret records independently. Folder calls return `{workspaceId,collections,folders}` with validated owned metadata and hierarchy, never request configurations or credentials. Reads and mutations require the active workspace and exact owned main frame. Folder creation is capped at 1,000; reads/edit/removal do not truncate larger legacy libraries. All hierarchy mutations are transactional and enforce depth 16/cycle checks.
+
+Until TASK-036, `transfer.exportWorkspace` returns `FOLDER_EXPORT_UNAVAILABLE` for a workspace containing any folders, even empty ones, before opening the save dialog. It rechecks after the dialog before starting a write. Folder-free workspace transfer remains v1. No tree UI/search/persistence-write API is introduced by TASK-033.
+
+### TASK-034 metadata and expansion API
+
+`library.list` returns a strict owned `{workspaceId,collections,folders,requests,treeState}` snapshot in one read transaction. Requests carry metadata (ID/name/saved method/destination/timestamps) only; no body, URL, auth/secret value or response is loaded for browsing. Cross-entity duplicate identities, orphan/foreign destinations and expansion IDs reject. `library.setExpansion` accepts only two unique bounded UUID arrays (at most 1,000 each), persists version 1 and returns validated state. Main checks the active workspace and exact owned frame for both calls; foreign/missing IDs reject before any write. Restoration prunes stale IDs. No generic UI-settings runner, drafts, paths, search query or response persistence is added.

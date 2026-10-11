@@ -6,7 +6,7 @@ import { join } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { migrate, migrations, openDatabase } from '../../src/main/db/database'
 import { Repositories } from '../../src/main/db/repositories'
-import { createDefaultRequestConfig } from '../../src/shared/request-config'
+import { createDefaultRequestConfig, type StoredRequestConfig } from '../../src/shared/request-config'
 
 const resources: { db: Database.Database; directory: string }[] = []
 afterEach(() => { for (const { db, directory } of resources.splice(0)) { if (db.open) db.close(); rmSync(directory, { recursive: true, force: true }) } })
@@ -19,6 +19,12 @@ function fixture(legacy = false) {
   return { db, directory, path, r, a, b, c, other, foreign }
 }
 const stamp = '2026-10-11T00:00:00.000Z'
+// Seed the original on-disk contract directly: current repositories require migration 2.
+function legacyRequest(db: Database.Database, w: string, name: string, collectionId: string|null, config: StoredRequestConfig) {
+  const id = randomUUID()
+  db.prepare('INSERT INTO requests VALUES (?,?,?,?,?,?,?,?)').run(id,w,collectionId,name,1,JSON.stringify(config),stamp,stamp)
+  return { id,workspaceId:w,name,collectionId,folderId:null,createdAt:stamp,updatedAt:stamp,config }
+}
 function folder(db: Database.Database, w: string, c: string, parent: string | null = null, id = randomUUID()) {
   db.prepare('INSERT INTO folders VALUES (?,?,?,?,?,?,?,?)').run(id, w, c, parent, 'Folder', 0, stamp, stamp)
   return id
@@ -29,10 +35,10 @@ function snapshot(db: Database.Database) {
 it('migrates a closed legacy copy without truncating 1005 requests, configs, credentials or selections; reopens idempotently', () => {
   const f = fixture(true), environment = f.r.createEnvironment(f.a, 'Local').id
   const secret = f.r.createSecret(f.a, 'secure', Buffer.from('synthetic ciphertext'))
-  const configured = f.r.createRequest(f.a, 'Configured', f.c, { ...createDefaultRequestConfig(), method: 'POST',
+  const configured = legacyRequest(f.db, f.a, 'Configured', f.c, { ...createDefaultRequestConfig(), method: 'POST',
     body: { kind: 'json', text: '{"synthetic":true}' }, auth: { mode: 'bearer', token: { kind: 'secret', secretId: secret.id } } })
   const session = f.r.createSecret(f.a, 'session', null)
-  f.r.upsertVariable(f.a, environment, 'synthetic_token', { isSensitive: true, plainValue: null, secretId: session.id })
+  f.db.prepare('INSERT INTO variables VALUES (?,?,?,?,?,?,?,?,?)').run(randomUUID(),f.a,environment,'synthetic_token',1,null,session.id,stamp,stamp)
   f.r.setState(f.a, environment, configured.id); f.r.selectWorkspace(f.a); f.r.setTheme('dark')
   const insert = f.db.prepare('INSERT INTO requests VALUES (?,?,?,?,?,?,?,?)')
   f.db.transaction(() => { for (let i = 0; i < 1004; i++) insert.run(randomUUID(), f.a, i % 2 ? f.c : null, `API ${i}`, 1, JSON.stringify(createDefaultRequestConfig()), stamp, stamp) })()
@@ -58,7 +64,7 @@ it('migrates a closed legacy copy without truncating 1005 requests, configs, cre
   try { expect(new Repositories(reopened).getRequest(f.a, configured.id)).toEqual(configured); expect(snapshot(old)).toEqual(before) } finally { reopened.close(); old.close() }
 })
 it('rolls back failure after the table rebuild and leaves the old database available for recovery/retry', () => {
-  const f = fixture(true), request = f.r.createRequest(f.a, 'Selected', f.c, { ...createDefaultRequestConfig(), auth: { mode: 'none' } })
+  const f = fixture(true), request = legacyRequest(f.db, f.a, 'Selected', f.c, { ...createDefaultRequestConfig(), auth: { mode: 'none' } })
   f.r.setState(f.a, null, request.id)
   const before = snapshot(f.db)
   const failure = [migrations[0]!, { version: 2, sql: migrations[1]!.sql + '\nINSERT INTO missing_table VALUES (1);' }]

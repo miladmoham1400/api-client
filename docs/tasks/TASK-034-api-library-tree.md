@@ -1,8 +1,10 @@
 # TASK-034 — Build accessible nested API tree and contextual creation
 
-Status: todo
+Status: done
 Dependencies: TASK-033
 Priority: highest — approved API-library milestone
+
+Evidence: [TASK-034 report](../task-reports/TASK-034.md) — 346 unit tests and 11 Linux source-built Electron checks passed; build/typecheck/lint passed. Windows and newly packaged applications were not tested; packaged/platform acceptance remains TASK-037.
 
 ## Read first
 

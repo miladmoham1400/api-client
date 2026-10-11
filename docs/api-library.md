@@ -1,6 +1,6 @@
 # API library: nested folders and quick request selection
 
-Status: approved specification; full nested-library feature not implemented. TASK-031 verifies existing multi-request navigation and TASK-032 implements the migration/read foundation; folder operations/UI/search/transfer remain later tasks. User authorized this as the highest-priority next milestone on 2026-10-11. TASK-031–037 implement it sequentially. Existing 0.1.1 downloads and TASK-001–030 acceptance do not contain or verify these changes.
+Status: approved specification; full nested-library feature not implemented. TASK-031 verifies existing multi-request navigation and TASK-032 implements the migration/read foundation; TASK-033 implements validated folder operations and the export gate. TASK-034 adds the nested tree UI, contextual actions and expansion persistence. Search and v2 transfer remain later tasks. User authorized this as the highest-priority next milestone on 2026-10-11. TASK-031–037 implement it sequentially. Existing 0.1.1 downloads and TASK-001–030 acceptance do not contain or verify these changes.
 
 ## Outcome and boundaries
 
