@@ -1,0 +1,5 @@
+# TASK-037 packaging steps after the unit run (run from the repository root)
+npm.cmd run package:win
+dir dist\windows
+certutil -hashfile dist\windows\offline-api-client-0.1.1-x64-setup.exe SHA256
+git status --porcelain

@@ -1,0 +1,28 @@
+﻿==== start 2026-10-12T19:33:09.7924575+03:30 in G:\api-client ====
+
+>>> whoami /groups | findstr /i "S-1-16-12288" [19:33:09.813]
+Mandatory Label\High Mandatory Level                          Label            S-1-16-12288                                                                                                 
+[exit code 0] [19:33:09.946]
+
+>>> npm.cmd run rebuild:node [19:33:09.973]
+
+> offline-api-client@0.1.1 rebuild:node
+> npm rebuild better-sqlite3
+
+rebuilt dependencies successfully
+[exit code 0] [19:33:11.046]
+
+>>> npm.cmd exec --no -- vitest run tests/main/export.test.ts --maxWorkers=1 [19:33:11.080]
+
+[1m[30m[46m RUN [49m[39m[22m [36mv5.0.3 [39m[90mG:/api-client[39m
+
+ [32m✓[39m tests/main/export.test.ts [2m([22m[2m11 tests[22m[2m)[22m[33m 631[2mms[22m[39m
+   [33m[2m✓[22m[39m cancelled save and export leave database bytes/selection unchanged; snapshot precedes native dialog[33m 358[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m11 passed[39m[22m[90m (11)[39m
+[2m   Start at [22m 19:33:12
+[2m   Duration [22m 1.23s[2m (tests 56%, import 30%, transform 14%)[22m
+
+[exit code 0] [19:33:13.313]
+==== FINISHED OK 2026-10-12T19:33:13.3303104+03:30 ====

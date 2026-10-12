@@ -1,6 +1,9 @@
 # TASK-037 — Nested-library packaged acceptance
 
-Status: blocked — required actual Linux installer/preservation and Windows 11 checks unavailable.
+Status: blocked — waiting only on the Linux run of the fixed source (rebuild, payload/AppImage suites, sudo install and removal/reinstall preservation).
+- Windows 11: the guarded-dialog and Ctrl+S defects found on 2026-10-12 are fixed; the rebuilt installer passed every Windows check (see "Defect fixes and Windows re-acceptance").
+- Linux: the earlier deb/AppImage were built from the unfixed source, so they are superseded and need a rebuild; actual install/preservation was never run (sudo).
+
 Execution dates: 2026-10-11–12 (Asia/Tehran).
 
 ## Selection, scope and provenance
@@ -50,10 +53,112 @@ Final deb-payload samples: cold readiness **1505.72 ms** (target <=2000), select
 
 The first attempt also passed the scale case: cold 1308.46 ms, selection p95 247.08 ms, search p95 151.52 ms. These samples are a separate run, not averaged into the final values. Viewports 1280×720 and 1000×700 had no document horizontal overflow; inspected the final 1000×700 synthetic screenshot with independently scrolling tree/editor/response. This attests this Linux payload/environment, not Windows or installed launch timings.
 
+## Windows 11 current-source execution — 2026-10-12
+
+Executed on the user's Windows 11 Pro x64 PC (`Microsoft Windows [Version 10.0.26300.9550]`, Intel i7-14700HX, 28 logical CPUs, 68,413,153,280 bytes RAM). Claude drove it through the linked desktop session, and the user approved two UAC prompts. Checkout `G:\api-client` at `cfed400` (`blocked Task-037`). This commit has the same `src/`, `package.json`, lockfile and builder configuration as Linux source `bc23804`. Only acceptance tests and documents differ. `git status` before the build showed the user's existing ` M package-lock.json` change, which was preserved, and the new evidence folder. Node v22.18.0 and npm 11.6.2 were used. Raw logs, helper scripts and the v2 export are in `task037-evidence/` in that checkout. They are local evidence, not release assets.
+
+User-authorized deviations:
+- The existing 0.1.0 profile contains test data only and was used for the installed upgrade.
+- Egress was blocked by a temporary outbound Windows Firewall rule. The rule `TASK037-block-offline-api-client` applied only to the installed app executable, on all profiles (added 10:27:03, removed 10:58:20; `f-firewall-log.txt`). This is not network-namespace isolation. The echo server ran on loopback.
+- Preservation ran in the current account, the same deviation as TASK-029, not a separate account.
+- Claude performed the manual UI checks with computer use, not a human tester.
+
+| Fresh local artifact | Bytes | SHA-256 |
+|---|---|---|
+| `dist/windows/offline-api-client-0.1.1-x64-setup.exe` (NSIS one-click, per-user, unsigned) | 124690228 | `aea429986e134284e0449ebbc99fbf08f0e7ed558bbbdf30f526b39e9b9025ae` |
+
+Commands and results (log file in parentheses):
+
+1. **Build checks** (`w1-build-log.txt`): `npm.cmd ci` exited 0 (589 packages). `install-electron`, `typecheck` and `lint` each exited 0. `npm.cmd run test:unit -- --maxWorkers=1` exited 1: **368 passed / 1 failed** across 37 files. The failing case is `tests/main/export.test.ts:110`, where `symlinkSync` hit `EPERM: operation not permitted`. Creating symlinks on Windows needs Developer Mode or elevation, and this host has neither. That is a host-privilege limit; system settings were not changed. The symlink-alias export rejection is therefore **not verified on Windows**. The Linux full unit suite passed 369/369.
+2. **Packaging** (`w1b-package-log.txt`): `npm.cmd run package:win` exited 0. electron-builder 26.15.3 rebuilt better-sqlite3 natively for Electron 44.5.1 x64; code signing was skipped (unsigned). `certutil` produced the hash above.
+3. **Installed upgrade** (`w-preservation-log.txt`, sections 1–3): The baseline had installed exe 0.1.0.0 and SQLite `970A8E58…1534` (143,360 bytes). Installing the new 0.1.1 bytes over 0.1.0 left every data file unchanged before first open. On the first open with egress blocked:
+   - Test A, Test B and Test A (imported) were all present.
+   - Phase-1 requests Env check and Hello GET appeared under Workspace root, with no invented folders.
+   - The Local environment, Light theme, `base_url` and stored sensitive token (shown as "Securely stored", value not displayed) were intact.
+   - Hello GET returned 200 from loopback, and `http://1.1.1.1/` returned `NETWORK_FAILURE`.
+   - After normal close, SQLite was `24769B1E…CA3C` (180,224 bytes; migration applied).
+4. **Installed desktop suite** (`w3-desktop-suite-log.txt`): `API_CLIENT_EXECUTABLE=%LOCALAPPDATA%\Programs\offline-api-client\offline-api-client.exe`, `playwright test`, egress blocked. Exited 1: **29 passed, 2 failed, 5 skipped** (2.6 min).
+   - The skips are the Linux-only export, import, multipart, uploads and namespace offline-story specs. They are covered manually below, not counted as passes.
+   - Passed included `library-scale`, `library-search`, `library-upgrade` (1,005-request closed legacy fixture), `library-tree` contextual creation, `folders`, `collections`, `database`, `security`, `requests` and `navigation:30`.
+   - Failed: `library-tree.spec.ts:105` (the Rename folder dialog stays visible after the dirty-guard Save) and `navigation.spec.ts:133` (the Delete collection dialog stays visible after the dirty-guard Save).
+5. **Windows performance** (installed app; samples, CPU and dataset in [TASK-037-windows-performance.json](TASK-037-windows-performance.json)): depth 16, 100 collections, 1,000 folders and 1,000 requests, viewport 1280×720.
+   - Cold readiness **911.42 ms** (target ≤2000).
+   - Selection p95 **98.92 ms** and search p95 **67.40 ms** (targets ≤500).
+   - Maximum 50 tree and 100 search rows.
+6. **Guard rerun** (`w4-guard-rerun-log.txt`): `--repeat-each=2` on both specs exited 1, 7 passed / 3 failed. `library-tree:105` failed in both repeats (3/3 overall). `navigation:133` passed once and failed once, so it is intermittent.
+7. **Guard diagnosis** (`w5-diagnose-log.txt`, probe `rename-guard.diag.spec.ts`, exited 0, 3 repeats): The probe repeats the `library-tree:105` steps and samples state for about 3 s after the dirty-guard Save. Every sample showed the following:
+   - The database folder name was already `Renamed`.
+   - The dirty request was saved as `Dirty name`.
+   - The Rename dialog stayed open, with no alert and an enabled Save name button.
+
+   The operation succeeds, but the dialog never closes and no error is shown. This matches `CollectionSidebar.submit()` getting `false` from `guard(...)`. The probable cause is `mutate()`'s final `reload()` being superseded by the revision-triggered `reload()`; a stale `generation` stamp returns `false` without an error. That cause is inferred from the code and not instrumented. It is a **product defect in milestone scope**: the guarded rename/delete dialog stays open after success. It was not fixed here, because fixing it changes runtime bytes and invalidates both platform packages. *(Fixed later the same day; see "Defect fixes and Windows re-acceptance".)*
+8. **Manual installed-app checks** (egress blocked, loopback echo server 127.0.0.1:8787/8788):
+   - **Nested library:** Created collection **Win Lib**, folder **Outer** and nested folder **Inner**. Created **Deep Echo** (GET `{{base_url}}/hello?depth=2`) in Inner; the path showed `Workspace root / Win Lib / Outer / Inner` and the send returned 200 OK. Created **Upload Mid** in Outer as a POST multipart request.
+   - **Native file chooser:** The "Select upload file" chooser opened, and a typed path selected `upload-sample.txt (5 bytes)`. Save then send returned 200 with filename `upload-sample.txt` and body `hello`.
+   - **Search:** `deep` found 1 result with path `Workspace root / Win Lib / Outer / Inner` and selected it without sending.
+   - **TLS:** An unsaved request to `https://127.0.0.1:8788/hello` gave `TLS_FAILURE` (self-signed); the draft was discarded.
+   - **v2 export:** The native "Export workspace JSON" save chooser opened with the default `workspace.json` and filter `Workspace JSON (*.json)`. A first typed path was appended to the default name and Windows rejected it as an invalid file name, which was an input slip. The retry saved `w6-export-testA-v2.json` (4,898 bytes, format 2). It contains 1 collection, 2 nested folders and 4 requests with correct collection/folder IDs. The sensitive `token` has no value (`requiresValue: true`), and the file row keeps only the name and size (`requiresSelection: true`), with no path.
+   - **v2 import:** The native open chooser previewed 1 collection, 2 folders, 1 environment, 4 requests and 3 variables. Omissions were listed: 1 sensitive value and 2 files requiring selection. The import created a new **Test A (imported)** with environment None and no selection, and the Win Lib/Outer/Inner tree was restored.
+   - **v1 import:** Through the native chooser, `task029-evidence/6-export-testA.json` previewed 0 collections, 0 folders and 2 requests. It imported as a new workspace with both requests at Workspace root and no folders.
+   - **Isolation and reopen:** Test B showed no collections or requests. After normal close and reopen, the app restored Test A, Local, Light, the expanded tree and the selected Deep Echo.
+9. **Uninstall/reinstall preservation** (`w-preservation-log.txt`, sections 4–7):
+   - **Before uninstall:** 37 data files were recorded, with SQLite `A2E90026…35FE` (188,416 bytes).
+   - **First uninstall attempt:** Settings → Installed apps → Uninstall started `Un_A.exe`. Its "Are you sure you want to uninstall offline-api-client?" confirmation opened behind Settings, as a taskbar entry. The record taken in that state (10:53:59) still shows the app installed and is retained as premature.
+   - **Second record:** After clicking OK, the record at 10:55:06 shows the install folder absent and all 37 data files byte-identical. This explains the TASK-029 "second attempt" observation. No data-deletion option was offered.
+   - **Reinstall:** Running the same hashed installer reinstalled exe 0.1.1.0. Reopening showed the nested tree, Local environment, Light theme and selection. Deep Echo sent 200, and `http://1.1.1.1/` again returned `NETWORK_FAILURE`. The draft was discarded.
+   - **After reinstall/reopen:** SQLite was unchanged (`A2E90026…35FE`). Only Chromium shader/LevelDB log caches changed.
+10. **Manual-session incidents:**
+    - During the upgrade check a mis-click saved Hello GET's URL as `http://1.1.1.1/`. It was restored to `http://127.0.0.1:8787/hello` and saved; synthetic data only.
+    - **Ctrl+S did not save while the Windows input language was Persian.** `requests/controller.ts:81` tests `event.key.toLowerCase()==='s'`, and that layout produces a different `key`. Automated `requests.spec` passes because Playwright sends `s`. This is a keyboard-layout-dependent product defect, recorded and not fixed. A layout-independent `event.code==='KeyS'` check would need new bytes and reruns. *(Fixed later the same day.)*
+
+## Defect fixes and Windows re-acceptance — 2026-10-12 (19:20–19:53)
+
+The user asked to finish the task, so the two in-scope defects found above were fixed in the working tree (not committed). The diff is 4 files, +33/−7 (`task037-fix.patch` attached in chat, equivalent to `git diff` against `cfed400`):
+
+- **`src/renderer/features/collections/sidebar.tsx`**: a library mutation now keeps `running` set and runs its follow-up reload as the owner (`reload(true)`). A revision-triggered reload can no longer start while the mutation finishes and invalidate the mutation's `generation` stamp. Previously the mutation then returned `false` with no error and the Rename/Delete dialog stayed open. The diagnostic probe confirmed that symptom (operation saved, dialog open, no alert).
+- **`src/renderer/features/requests/controller.ts`**: Ctrl+S also matches the physical `KeyS` code when the layout produces a non-Latin character. Latin layouts still use `event.key`, so Dvorak/AZERTY behavior is unchanged.
+- **`tests/requests.spec.ts`**: regression step dispatching Ctrl with `key: 'س'`, `code: 'KeyS'` and asserting the request saves.
+- **`tests/linux-preservation.check.ts`**: the seed phase also creates collection → folder → nested folder → request (before the selected root request). The verify phase asserts their IDs, names, parents and destination after actual removal/reinstall. This makes the Linux preservation check cover nested state as required.
+
+No other runtime file, dependency, lockfile, version or security setting changed.
+
+Container (Linux, Node 22.22.0, npm 11.6.2, as root) checks of the fixed tree: `npm ci` with local Node headers, `tsc --noEmit` 0, `eslint .` 0, `vitest run --maxWorkers=1` **368 passed, 1 skipped**. The skip is `uploads.test.ts`, whose permission-denial case cannot be verified as root. Electron tests could not run there because Electron headers/prebuilds are blocked by the network allowlist. Graphify (`setup-graphify.py`, then `graphify.py update`) refreshed to 1,184 nodes / 3,861 edges / 54 communities.
+
+Windows 11 (same PC and toolchain; logs in `task037-evidence/`):
+
+| Fixed-build artifact | Bytes | SHA-256 |
+|---|---|---|
+| `dist/windows/offline-api-client-0.1.1-x64-setup.exe` | 124690192 | `67a839a2d15e742b3821ecbb88eb4e1cde5d39880de58c126014ed0914a0a569` |
+
+Installed `offline-api-client.exe` SHA-256 `2411ebbf68e3907bc74e517ed638c835b92695749c2b1fbdfb68449306fd66d2`, version 0.1.1.0. The earlier `aea42998…` installer is superseded and is not a candidate.
+
+1. **Rebuild** (`r1-build-log.txt`):
+   - `npm.cmd ci`, `install-electron`, `typecheck` and `lint` all exited 0.
+   - `test:unit` exited 1: 368 passed / 1 failed, again only the `export.test.ts:110` symlink `EPERM`.
+   - `package:win` exited 0: native better-sqlite3 rebuild for Electron 44.5.1 x64, NSIS one-click per-user, unsigned.
+2. **Elevated unit rerun** (`r2-elevated-unit-log.txt`): after the user approved UAC, it ran at High Mandatory Level (S-1-16-12288). `vitest run tests/main/export.test.ts` exited 0 with **11/11 passed**, including symlink alias/target rejection. Together with step 1, all 369 unit tests passed on Windows. No system setting (Developer Mode) was changed.
+3. **Install over the previous build** (`w-preservation-log.txt`, `fix-before-install` → `fix-after-install`): all 37 data files were byte-identical.
+4. **Installed suite, app egress blocked** by firewall rule `TASK037-block-offline-api-client` (added 19:36:58, removed 19:53:14; `f-firewall-log.txt`), `r4-desktop-suite-log.txt`:
+   - `playwright test` exited 0: **31 passed, 0 failed, 5 skipped**. The skips are the Linux-only export, import, multipart, uploads and offline-story specs, covered manually earlier on Windows.
+   - Then `library-tree`, `navigation` and `requests` specs with `--repeat-each=5` exited 0: **30/30 passed**. That makes `library-tree:105` and `navigation:133` 6/6 each, and the Ctrl+S spec 6/6.
+5. **Performance** (installed fixed build, [TASK-037-windows-performance.json](TASK-037-windows-performance.json)): cold **733.24 ms**, selection p95 **99.16 ms**, search p95 **67.22 ms**, ≤50 tree and ≤100 search rows.
+6. **Manual checks, fixed build, egress blocked:**
+   - Unsaved request name, then Rename folder `Inner` → `Inner Renamed`, Save name, then Save in the unsaved-changes prompt: the dialog **closed**. The tree and path showed `Inner Renamed`, and the request was saved.
+   - Switched the Windows keyboard to **Persian**; the S key typed `س`, confirming the layout. Ctrl+S then saved the edited request name (status Saved). The layout was then switched back to English.
+   - Deep Echo returned 200 from loopback.
+7. **Uninstall/reinstall preservation**:
+   - The record before uninstall (SQLite `39A68C10…14D4`, 188,416 bytes) matched the after-uninstall record byte-for-byte for all 37 files, with the install folder gone. This time the NSIS confirmation appeared in front of Settings.
+   - Reinstalling the same hashed installer and reopening restored Test A, Local, Light and the nested `Win Lib/Outer/Inner Renamed/Deep Echo` selection.
+   - The record after reinstall shows SQLite unchanged; only Chromium shader/LevelDB-log caches differ.
+
+Windows 11 acceptance for the fixed bytes is therefore complete. The deviations remain as recorded above: firewall egress block instead of a disconnected network, the user's account with test data only, and checks performed by Claude.
+
 ## Exact remaining blockers and resumption
 
+- *Resolved 2026-10-12:* the Windows guarded-dialog failures, the Ctrl+S layout defect and the Windows unit symlink case are fixed or verified; see the section above.
+- **Linux deb/AppImage must be rebuilt from the fixed source and re-accepted.** The `dc3771d5…`/`cc593562…` artifacts and their suite results predate the fix and are superseded. Resume on the Ubuntu machine with `bash task037-linux-acceptance.sh /path/to/api-client /path/to/task037-fix.patch`, run as the regular user (the script is attached in chat). It applies the patch, runs install/type/lint/unit/Graphify, builds into `dist/task037-linux-fix/` with hashes, runs the full payload suite plus 5× guard/Ctrl+S repeats and the AppImage focused suite, then does the sudo steps below.
 - **Linux actual install, manual upgrade, uninstall/reinstall preservation are not run.** Elevated `sudo -n true` returned `sudo: a password is required`. Existing installed package is 0.1.0 (`dpkg-query`), untouched; extracted payload checks cannot count as installer acceptance. Resume with OS-prompt authentication, install the exact hashed deb, run installed executable offline with synthetic profiles, then actual removal/reinstall and hash/logical-state preservation using the sequential procedure in [release.md](../release.md). Include new nested structure in reopened-state evidence. Never provide a sudo password in chat or command arguments.
-- **Current native Windows build, installed Windows 11/offline/performance/legacy-upgrade/native-dialog/preservation acceptance are not run.** No authorized guest shell/desktop is connected. VBoxManage in this session reported unavailable `/dev/vboxdrv` and `NS_ERROR_SOCKET_FAIL`/COM server startup failure; this is an access observation, not diagnosis of the user's VM. GitHub remote master was `e1a073946d7bf494a4ab7d2f669e9f6721f7f8cb`, different from this checkout. Its existing workflow cannot attest this source; no dispatch was made. Resume on an accessible Windows 11 x64 runner using the current checkout, pinned native toolchain/SQLite rebuild, exact installer hashes and installed/manual checks from [release.md](../release.md) and [testing.md](../testing.md). Server CI smoke alone cannot substitute for Windows 11/native dialogs.
+- *Superseded 2026-10-12:* the earlier "no Windows runner" blocker was resolved by the Windows 11 execution above. Windows Server CI smoke was not used and is not a substitute.
 - **Default AppImage FUSE mounting not run:** no `/dev/fuse`. Extraction-and-run evidence is recorded separately. Other distributions/Wayland/platforms and downloaded Windows reputation prompts remain untested.
 
 TASK-037 must remain unfinished while required platform/installer criteria are missing. No subsequent task was started and no public release readiness is claimed.

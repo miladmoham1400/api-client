@@ -48,8 +48,9 @@ export function CollectionSidebar({workspaceId,requestController,guard}:{guard:G
       } catch { if(alive.current) setError('Expansion could not be saved. Reload library to retry.') }
     })
   },[workspaceId])
-  const reload=useCallback(async () => {
-    if(!workspaceId || running.current) return false
+  // A library mutation owns the reload that follows it, so a revision-triggered reload cannot supersede its result.
+  const reload=useCallback(async (owned=false) => {
+    if(!workspaceId || (running.current && !owned)) return false
     const stamp=++generation.current
     try {
       const result=await window.offlineApi.library.list(workspaceId)
@@ -101,8 +102,7 @@ export function CollectionSidebar({workspaceId,requestController,guard}:{guard:G
       const result=await operation()
       if(!alive.current) return false
       if(!result.ok) { setError('Library changes could not be loaded or saved. Your current view has been kept. Try again.'); return false }
-      running.current=false
-      return await reload()
+      return await reload(true)
     } catch { if(alive.current) setError('Library operation unavailable. Try again.'); return false }
     finally { running.current=false; if(alive.current) setBusy(false) }
   }

@@ -78,7 +78,9 @@ export function useRequests(workspace: string | null) {
   }, [currentWorkspace, workspace, draft, saved, apply, destination])
   useEffect(() => {
     function shortcut(event: KeyboardEvent) {
-      if (event.ctrlKey && !event.isComposing && event.key.toLowerCase() === 's') {
+      // Non-Latin layouts report another character for the S key, so fall back to its physical code.
+      const isS = event.key.toLowerCase() === 's' || (event.code === 'KeyS' && !/^[a-z]$/i.test(event.key))
+      if (event.ctrlKey && !event.isComposing && isS) {
         event.preventDefault()
         if (document.querySelector('[role="dialog"][data-state="open"]')) return
         const focused = document.activeElement

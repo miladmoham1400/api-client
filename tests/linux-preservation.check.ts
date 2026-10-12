@@ -6,7 +6,7 @@ import { z } from 'zod'
 import { launchDesktop } from './fixtures/desktop'
 import { shutdown } from './fixtures/shutdown'
 
-const manifestSchema = z.strictObject({ workspace: z.uuid(), environment: z.uuid(), request: z.uuid(), sha256: z.string().regex(/^[a-f0-9]{64}$/) })
+const manifestSchema = z.strictObject({ workspace: z.uuid(), environment: z.uuid(), request: z.uuid(), collection: z.uuid(), folder: z.uuid(), inner: z.uuid(), nested: z.uuid(), sha256: z.string().regex(/^[a-f0-9]{64}$/) })
 const hash = (file: string) => createHash('sha256').update(readFileSync(file)).digest('hex')
 
 test('installed Linux app preserves the same synthetic configuration across actual package removal/reinstall', async () => {
@@ -36,10 +36,21 @@ test('installed Linux app preserves the same synthetic configuration across actu
         const environment = env.data.environments[0].id
         const variable = await api.variables.upsert(workspace, environment, 'base_url', 'http://127.0.0.1:1', false)
         const selected = await api.environments.select(workspace, environment)
+        // Nested library (collection > folder > folder > request) is created before the selected root request.
+        const made = await api.collections.create(workspace, 'Preserved collection')
+        if (!made.ok || !made.data.collections[0]) throw new Error('Collection setup failed')
+        const collection = made.data.collections[0].id, outer = await api.folders.create(workspace, collection, null, 'Preserved folder')
+        if (!outer.ok || !outer.data.folders[0]) throw new Error('Folder setup failed')
+        const folder = outer.data.folders[0].id, innerMade = await api.folders.create(workspace, collection, folder, 'Preserved inner')
+        const inner = innerMade.ok ? innerMade.data.folders.find(f => f.parentFolderId === folder)?.id : undefined
+        if (!inner) throw new Error('Nested folder setup failed')
+        const nestedMade = await api.requests.create(workspace, { name: 'Preserved nested request', method: 'POST', urlTemplate: '{{base_url}}/nested', collectionId: collection, folderId: inner })
+        if (!nestedMade.ok || !nestedMade.data.editor) throw new Error('Nested request setup failed')
+        const nested = nestedMade.data.editor.id
         const saved = await api.requests.create(workspace, { name: 'Preserved saved request', collectionId: null, method: 'GET', urlTemplate: '{{base_url}}/echo' })
         const theme = await api.app.setTheme('dark')
         if (!variable.ok || !selected.ok || !saved.ok || !saved.data.editor || !theme.ok) throw new Error('Saved configuration setup failed')
-        return { workspace, environment, request: saved.data.editor.id }
+        return { workspace, environment, request: saved.data.editor.id, collection, folder, inner, nested }
       })
       await application.close(); normallyClosed = true
       writeFileSync(manifestFile, JSON.stringify({ ...ids, sha256: hash(databaseFile) }))
@@ -52,6 +63,11 @@ test('installed Linux app preserves the same synthetic configuration across actu
       await expect(page.getByLabel('Theme', { exact: true })).toHaveValue('dark')
       const state = await page.evaluate(async ({ workspace, environment, request }) => ({ request: await window.offlineApi.requests.get(workspace, request), variables: await window.offlineApi.variables.list(workspace, environment) }), previous)
       expect(state).toMatchObject({ request: { ok: true, data: { editor: { id: previous.request } } }, variables: { ok: true, data: { items: [{ key: 'base_url', value: 'http://127.0.0.1:1' }] } } })
+      const library = await page.evaluate(workspace => window.offlineApi.library.list(workspace), previous.workspace)
+      if (!library.ok) throw new Error('Library unavailable after reinstall')
+      expect(library.data.collections.map(c => [c.id, c.name])).toEqual([[previous.collection, 'Preserved collection']])
+      expect(library.data.folders.map(f => [f.id, f.name, f.parentFolderId]).sort()).toEqual([[previous.folder, 'Preserved folder', null], [previous.inner, 'Preserved inner', previous.folder]].sort())
+      expect(library.data.requests.find(r => r.id === previous.nested)).toMatchObject({ name: 'Preserved nested request', destination: { collectionId: previous.collection, folderId: previous.inner } })
       await application.close(); normallyClosed = true
     }
   } finally { if (!normallyClosed) await shutdown(application) }

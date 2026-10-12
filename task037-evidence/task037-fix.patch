@@ -1,0 +1,108 @@
+diff --git a/src/renderer/features/collections/sidebar.tsx b/src/renderer/features/collections/sidebar.tsx
+index e2c0f73..9fc837e 100644
+--- a/src/renderer/features/collections/sidebar.tsx
++++ b/src/renderer/features/collections/sidebar.tsx
+@@ -48,8 +48,9 @@ export function CollectionSidebar({workspaceId,requestController,guard}:{guard:G
+       } catch { if(alive.current) setError('Expansion could not be saved. Reload library to retry.') }
+     })
+   },[workspaceId])
+-  const reload=useCallback(async () => {
+-    if(!workspaceId || running.current) return false
++  // A library mutation owns the reload that follows it, so a revision-triggered reload cannot supersede its result.
++  const reload=useCallback(async (owned=false) => {
++    if(!workspaceId || (running.current && !owned)) return false
+     const stamp=++generation.current
+     try {
+       const result=await window.offlineApi.library.list(workspaceId)
+@@ -101,8 +102,7 @@ export function CollectionSidebar({workspaceId,requestController,guard}:{guard:G
+       const result=await operation()
+       if(!alive.current) return false
+       if(!result.ok) { setError('Library changes could not be loaded or saved. Your current view has been kept. Try again.'); return false }
+-      running.current=false
+-      return await reload()
++      return await reload(true)
+     } catch { if(alive.current) setError('Library operation unavailable. Try again.'); return false }
+     finally { running.current=false; if(alive.current) setBusy(false) }
+   }
+diff --git a/src/renderer/features/requests/controller.ts b/src/renderer/features/requests/controller.ts
+index 4b33611..6b3ecbd 100644
+--- a/src/renderer/features/requests/controller.ts
++++ b/src/renderer/features/requests/controller.ts
+@@ -78,7 +78,9 @@ export function useRequests(workspace: string | null) {
+   }, [currentWorkspace, workspace, draft, saved, apply, destination])
+   useEffect(() => {
+     function shortcut(event: KeyboardEvent) {
+-      if (event.ctrlKey && !event.isComposing && event.key.toLowerCase() === 's') {
++      // Non-Latin layouts report another character for the S key, so fall back to its physical code.
++      const isS = event.key.toLowerCase() === 's' || (event.code === 'KeyS' && !/^[a-z]$/i.test(event.key))
++      if (event.ctrlKey && !event.isComposing && isS) {
+         event.preventDefault()
+         if (document.querySelector('[role="dialog"][data-state="open"]')) return
+         const focused = document.activeElement
+diff --git a/tests/linux-preservation.check.ts b/tests/linux-preservation.check.ts
+index 582fcd4..4a9cfcb 100644
+--- a/tests/linux-preservation.check.ts
++++ b/tests/linux-preservation.check.ts
+@@ -6,7 +6,7 @@ import { z } from 'zod'
+ import { launchDesktop } from './fixtures/desktop'
+ import { shutdown } from './fixtures/shutdown'
+ 
+-const manifestSchema = z.strictObject({ workspace: z.uuid(), environment: z.uuid(), request: z.uuid(), sha256: z.string().regex(/^[a-f0-9]{64}$/) })
++const manifestSchema = z.strictObject({ workspace: z.uuid(), environment: z.uuid(), request: z.uuid(), collection: z.uuid(), folder: z.uuid(), inner: z.uuid(), nested: z.uuid(), sha256: z.string().regex(/^[a-f0-9]{64}$/) })
+ const hash = (file: string) => createHash('sha256').update(readFileSync(file)).digest('hex')
+ 
+ test('installed Linux app preserves the same synthetic configuration across actual package removal/reinstall', async () => {
+@@ -36,10 +36,21 @@ test('installed Linux app preserves the same synthetic configuration across actu
+         const environment = env.data.environments[0].id
+         const variable = await api.variables.upsert(workspace, environment, 'base_url', 'http://127.0.0.1:1', false)
+         const selected = await api.environments.select(workspace, environment)
++        // Nested library (collection > folder > folder > request) is created before the selected root request.
++        const made = await api.collections.create(workspace, 'Preserved collection')
++        if (!made.ok || !made.data.collections[0]) throw new Error('Collection setup failed')
++        const collection = made.data.collections[0].id, outer = await api.folders.create(workspace, collection, null, 'Preserved folder')
++        if (!outer.ok || !outer.data.folders[0]) throw new Error('Folder setup failed')
++        const folder = outer.data.folders[0].id, innerMade = await api.folders.create(workspace, collection, folder, 'Preserved inner')
++        const inner = innerMade.ok ? innerMade.data.folders.find(f => f.parentFolderId === folder)?.id : undefined
++        if (!inner) throw new Error('Nested folder setup failed')
++        const nestedMade = await api.requests.create(workspace, { name: 'Preserved nested request', method: 'POST', urlTemplate: '{{base_url}}/nested', collectionId: collection, folderId: inner })
++        if (!nestedMade.ok || !nestedMade.data.editor) throw new Error('Nested request setup failed')
++        const nested = nestedMade.data.editor.id
+         const saved = await api.requests.create(workspace, { name: 'Preserved saved request', collectionId: null, method: 'GET', urlTemplate: '{{base_url}}/echo' })
+         const theme = await api.app.setTheme('dark')
+         if (!variable.ok || !selected.ok || !saved.ok || !saved.data.editor || !theme.ok) throw new Error('Saved configuration setup failed')
+-        return { workspace, environment, request: saved.data.editor.id }
++        return { workspace, environment, request: saved.data.editor.id, collection, folder, inner, nested }
+       })
+       await application.close(); normallyClosed = true
+       writeFileSync(manifestFile, JSON.stringify({ ...ids, sha256: hash(databaseFile) }))
+@@ -52,6 +63,11 @@ test('installed Linux app preserves the same synthetic configuration across actu
+       await expect(page.getByLabel('Theme', { exact: true })).toHaveValue('dark')
+       const state = await page.evaluate(async ({ workspace, environment, request }) => ({ request: await window.offlineApi.requests.get(workspace, request), variables: await window.offlineApi.variables.list(workspace, environment) }), previous)
+       expect(state).toMatchObject({ request: { ok: true, data: { editor: { id: previous.request } } }, variables: { ok: true, data: { items: [{ key: 'base_url', value: 'http://127.0.0.1:1' }] } } })
++      const library = await page.evaluate(workspace => window.offlineApi.library.list(workspace), previous.workspace)
++      if (!library.ok) throw new Error('Library unavailable after reinstall')
++      expect(library.data.collections.map(c => [c.id, c.name])).toEqual([[previous.collection, 'Preserved collection']])
++      expect(library.data.folders.map(f => [f.id, f.name, f.parentFolderId]).sort()).toEqual([[previous.folder, 'Preserved folder', null], [previous.inner, 'Preserved inner', previous.folder]].sort())
++      expect(library.data.requests.find(r => r.id === previous.nested)).toMatchObject({ name: 'Preserved nested request', destination: { collectionId: previous.collection, folderId: previous.inner } })
+       await application.close(); normallyClosed = true
+     }
+   } finally { if (!normallyClosed) await shutdown(application) }
+diff --git a/tests/requests.spec.ts b/tests/requests.spec.ts
+index d4721af..865e826 100644
+--- a/tests/requests.spec.ts
++++ b/tests/requests.spec.ts
+@@ -51,6 +51,14 @@ test('explicit Save/Ctrl+S persists independent drafts; failed save, duplicate a
+     })
+     await page.keyboard.press('Control+s')
+     await expect(page.getByRole('status').filter({ hasText: /^Saved$/ })).toBeVisible()
++    // A non-Latin layout (Persian here) reports another character for the physical S key; Ctrl+S must still save.
++    await page.getByLabel('Request name', { exact: true }).fill('Echo layout')
++    await page.evaluate(() => window.dispatchEvent(new KeyboardEvent('keydown', { key: '\u0633', code: 'KeyS', ctrlKey: true, bubbles: true, cancelable: true })))
++    await expect(page.getByRole('status').filter({ hasText: /^Saved$/ })).toBeVisible()
++    expect(await page.evaluate(workspace => window.offlineApi.requests.list(workspace), id)).toMatchObject({ ok: true, data: { editor: { name: 'Echo layout' } } })
++    await page.getByLabel('Request name', { exact: true }).fill('Echo')
++    await page.getByRole('button', { name: 'Save', exact: true }).click()
++    await expect(page.getByRole('status').filter({ hasText: /^Saved$/ })).toBeVisible()
+     await page.getByLabel('Request name', { exact: true }).fill('Not saved')
+     await page.getByRole('button', { name: 'Discard edits', exact: true }).click()
+     await expect(page.getByLabel('Request name', { exact: true })).toHaveValue('Echo')

@@ -1,0 +1,4 @@
+# TASK-037 elevated rerun of the unit file whose symlink case needs the create-symlink privilege (run elevated)
+whoami /groups | findstr /i "S-1-16-12288"
+npm.cmd run rebuild:node
+npm.cmd exec --no -- vitest run tests/main/export.test.ts --maxWorkers=1

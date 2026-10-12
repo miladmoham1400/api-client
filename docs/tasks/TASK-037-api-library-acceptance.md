@@ -41,3 +41,13 @@ Inspect current source/user changes and dependency evidence before edits. Execut
 ## Execution status — 2026-10-12
 
 Independent Linux build/hash and extracted-payload acceptance evidence is recorded in [TASK-037 report](../task-reports/TASK-037.md). Required actual Linux install/manual upgrade/removal/reinstall preservation needs sudo authentication through the OS prompt. Current native Windows build and installed Windows 11 offline/native-dialog/legacy-upgrade/performance/preservation checks need an accessible authorized Windows runner. No required platform result is inherited from previous artifacts. Task remains unfinished; resume this task before declaring the nested-library milestone accepted.
+
+Update, 2026-10-12: current-source Windows 11 build and installed acceptance were executed. The installer hash, upgrade, offline suite, performance, native dialogs, v1/v2 transfer and uninstall/reinstall preservation are recorded in the [report](../task-reports/TASK-037.md). The task stays **blocked** for these reasons:
+- **Windows guarded-dialog defect:** in-scope product defect. After a successful dirty-guard Save, the rename/delete dialog does not close (`library-tree:105` and `navigation:133` fail). A source fix needs approval and then rebuilds and re-acceptance of both platforms.
+- **Windows unit result:** the unit suite is 368/369 because the symlink test needs Developer Mode or elevation.
+- **Ctrl+S on non-Latin layouts:** recorded defect, decision pending.
+- **Linux:** actual install, removal and reinstall still need sudo authentication.
+
+Update, 2026-10-12 evening: both defects are fixed in the working tree, and the Windows installer was rebuilt (`67a839a2…a0a569`). It passed everything on Windows 11: unit 369/369 (symlink case elevated), installed suite 31 passed / 5 Linux-only skipped / 0 failed, 5× repeats of the guard and Ctrl+S specs, manual Persian Ctrl+S and guarded rename, and uninstall/reinstall preservation. Details are in the [report](../task-reports/TASK-037.md#defect-fixes-and-windows-re-acceptance--2026-10-12-19201953).
+
+The task stays **blocked** only on Linux. The deb/AppImage must be rebuilt from the fixed source and re-run, including the actual sudo install and removal/reinstall preservation, on the user's Ubuntu machine with the provided script.

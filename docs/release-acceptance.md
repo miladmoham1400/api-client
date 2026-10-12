@@ -88,23 +88,26 @@ This record is separate from the historical 0.1.0 matrix and published 0.1.1 art
 
 | Fresh local artifact | Bytes | SHA-256 |
 |---|---|---|
-| `dist/task037-linux/offline-api-client-0.1.1-amd64.deb` | 112870588 | `dc3771d55769606d4da0dfbdd027744bb36d83fe3efbd083a5c421e16c0e833e` |
-| `dist/task037-linux/offline-api-client-0.1.1-x86_64.AppImage` | 143974249 | `cc593562edf9582fb9644318491faf2e3662d638ad2fbd557da1568a69604c1d` |
-| Fresh native Windows NSIS installer | Not built | Not available — no current native Windows runner |
+| `dist/windows/offline-api-client-0.1.1-x64-setup.exe` — **current candidate**, `cfed400` plus the guarded-dialog/Ctrl+S fix | 124690192 | `67a839a2d15e742b3821ecbb88eb4e1cde5d39880de58c126014ed0914a0a569` |
+| Linux deb/AppImage from the fixed source | Not yet built | Pending the user's Ubuntu run (`dist/task037-linux-fix/`) |
+| *Superseded (unfixed source):* `dist/task037-linux/offline-api-client-0.1.1-amd64.deb` | 112870588 | `dc3771d55769606d4da0dfbdd027744bb36d83fe3efbd083a5c421e16c0e833e` |
+| *Superseded (unfixed source):* `dist/task037-linux/offline-api-client-0.1.1-x86_64.AppImage` | 143974249 | `cc593562edf9582fb9644318491faf2e3662d638ad2fbd557da1568a69604c1d` |
+| *Superseded (unfixed source):* first Windows 11 build | 124690228 | `aea429986e134284e0449ebbc99fbf08f0e7ed558bbbdf30f526b39e9b9025ae` |
 
-Fresh Ubuntu 24.04.3 x64/X11 build/typecheck/lint and builder-managed Electron SQLite rebuild succeeded. Final unit rerun passed all 369 tests across 37 files; the earlier timeout is retained in the report. Current deb metadata is amd64, version 0.1.1. Existing `dist/linux/` installers and installed 0.1.0 app were preserved. Extracting the new deb payload is not installation. The final complete loopback-only deb-payload desktop suite reported **36 passed, no skips** (5.1 min). Earlier attempts had a retired export-gate assertion and a fixture close during workspace transition; corrected test sequencing and dedicated v2 transfer checks passed against the same hashed payload. See [TASK-037 report](task-reports/TASK-037.md) for final checks and retained failures.
+The Linux paragraphs below describe the superseded unfixed-source artifacts. They remain useful history but must be re-run on the fixed source. Fresh Ubuntu 24.04.3 x64/X11 build/typecheck/lint and builder-managed Electron SQLite rebuild succeeded. Final unit rerun passed all 369 tests across 37 files; the earlier timeout is retained in the report. Current deb metadata is amd64, version 0.1.1. Existing `dist/linux/` installers and installed 0.1.0 app were preserved. Extracting the new deb payload is not installation. The final complete loopback-only deb-payload desktop suite reported **36 passed, no skips** (5.1 min). Earlier attempts had a retired export-gate assertion and a fixture close during workspace transition; corrected test sequencing and dedicated v2 transfer checks passed against the same hashed payload. See [TASK-037 report](task-reports/TASK-037.md) for final checks and retained failures.
 
 The new large-library deb-payload check passed at depth 16 with 100 collections, 1,000 folders and 1,000 requests plus an isolated second workspace: cold readiness 1505.72 ms (<=2000), selection p95 245.48 ms and search p95 151.36 ms (<=500), after one warm-up and 20 samples each. Live rows were bounded to 50 tree/100 search rows. All pages and first/middle/last exact method/URL/body sends were verified; normal restart retained complete structure/config/expansion and reset search. Full [Linux samples/hardware](task-reports/TASK-037-linux-performance.json) are recorded; this does not attest installed binaries or Windows performance.
 
-| Required new target criterion | Linux | Windows 11 |
+| Required new target criterion | Linux (fixed source) | Windows 11 (fixed build `67a839a2…`) |
 |---|---|---|
-| Native new package build/hash | Passed: deb/AppImage above | Not run |
-| Actual install/removal/reinstall preservation | Not run: sudo authentication unavailable | Not run |
-| Loopback-only startup/edit/send and security/secret/file/response regression | Passed: full deb-payload suite, 36 tests; not installed | Not run |
-| 1,000-request/folder depth-16 browsing/search/wire/restart | Deb payload passed with samples above | Not run |
-| Closed legacy profile upgrade in target package | Passed: 1,005 requests, exact legacy tables/config and normal reopen | Not run |
-| Native v1 import/v2 export/import and recovery | Deb payload native Linux test passed | Not run |
-| AppImage extraction-and-run focused acceptance | Passed: 7 focused offline tests, no skips (1.7 min) | Not run |
-| Default AppImage FUSE startup | Not run: device unavailable | Not applicable |
+| Native new package build/hash | Pending rebuild (earlier unfixed build passed) | Passed: installer above; unit 368/369 non-elevated, plus the remaining symlink file 11/11 elevated, so all 369 covered |
+| Actual install/removal/reinstall preservation | Not run: needs sudo on the user's Ubuntu machine | Passed: installed over the previous build, uninstall kept all 37 data files byte-identical, reinstall/reopen restored nested state (current account, authorized deviation) |
+| Loopback-only startup/edit/send and security/secret/file/response regression | Pending (earlier unfixed payload: 36 passed) | Passed: installed, app egress firewall-blocked, 31 passed / 0 failed / 5 Linux-only skipped; guard and Ctrl+S specs 5× repeat 30/30 |
+| Guarded rename/delete after dirty Save; Ctrl+S on non-Latin layout | Pending | Passed: automated (6/6 each) and manual (guarded rename closes; Persian-layout Ctrl+S saves) |
+| 1,000-request/folder depth-16 browsing/search/wire/restart | Pending (earlier: cold 1505.72 ms, p95 245.48/151.36 ms) | Passed: cold 733.24 ms, selection p95 99.16 ms, search p95 67.22 ms |
+| Closed legacy profile upgrade in target package | Pending (earlier fixture passed) | Passed: fixture test, plus the real 0.1.0 test profile upgraded in place without loss (first build; storage code unchanged by the fix) |
+| Native v1 import/v2 export/import and recovery | Pending (earlier native Linux test passed) | Passed manually on the first build (transfer code unchanged by the fix) |
+| AppImage extraction-and-run focused acceptance | Pending (earlier: 7 passed) | Not applicable |
+| Default AppImage FUSE startup | Script tries it if `/dev/fuse` exists | Not applicable |
 
-TASK-037 remains unfinished. Completing it requires actual sudo-authorized Linux install/removal/reinstall with isolated synthetic profiles, and a native current-source Windows build plus installed Windows 11 offline/native-dialog/upgrade/performance/preservation checks. Server CI smoke cannot substitute for Windows 11. No new stable/public release readiness follows from these partial results.
+TASK-037 remains unfinished only for Linux. The fixed source must be built into a deb/AppImage, hashed and run through the payload and AppImage suites, then put through actual sudo-authorized install, removal and reinstall with isolated synthetic profiles. `task037-linux-acceptance.sh` performs all of it. Windows Server CI smoke was not used and cannot substitute for Windows 11. Details are in the [TASK-037 report](task-reports/TASK-037.md#defect-fixes-and-windows-re-acceptance--2026-10-12-19201953). No new stable/public release readiness follows from these partial results.

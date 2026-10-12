@@ -1,0 +1,86 @@
+==== ADD Mon 10/12/2026 10:27:03.30 ====
+Ok.
+
+
+Rule Name:                            TASK037-block-offline-api-client
+----------------------------------------------------------------------
+Enabled:                              Yes
+Direction:                            Out
+Profiles:                             Domain,Private,Public
+Grouping:                             
+LocalIP:                              Any
+RemoteIP:                             Any
+Protocol:                             Any
+Edge traversal:                       No
+Program:                              C:\Users\javad\AppData\Local\Programs\offline-api-client\offline-api-client.exe
+InterfaceTypes:                       Any
+Security:                             NotRequired
+Rule source:                          Local Setting
+Action:                               Block
+Ok.
+
+
+Domain Profile Settings: 
+----------------------------------------------------------------------
+State                                 ON
+
+Private Profile Settings: 
+----------------------------------------------------------------------
+State                                 ON
+
+Public Profile Settings: 
+----------------------------------------------------------------------
+State                                 ON
+Ok.
+
+==== REMOVE Mon 10/12/2026 10:58:20.56 ====
+
+Deleted 1 rule(s).
+Ok.
+
+
+No rules match the specified criteria.
+
+==== ADD Mon 10/12/2026 19:36:58.43 ====
+Ok.
+
+
+Rule Name:                            TASK037-block-offline-api-client
+----------------------------------------------------------------------
+Enabled:                              Yes
+Direction:                            Out
+Profiles:                             Domain,Private,Public
+Grouping:                             
+LocalIP:                              Any
+RemoteIP:                             Any
+Protocol:                             Any
+Edge traversal:                       No
+Program:                              C:\Users\javad\AppData\Local\Programs\offline-api-client\offline-api-client.exe
+InterfaceTypes:                       Any
+Security:                             NotRequired
+Rule source:                          Local Setting
+Action:                               Block
+Ok.
+
+
+Domain Profile Settings: 
+----------------------------------------------------------------------
+State                                 ON
+
+Private Profile Settings: 
+----------------------------------------------------------------------
+State                                 ON
+
+Public Profile Settings: 
+----------------------------------------------------------------------
+State                                 ON
+Ok.
+
+==== REMOVE Mon 10/12/2026 19:53:14.43 ====
+
+Deleted 1 rule(s).
+Ok.
+
+
+No rules match the specified criteria.
+

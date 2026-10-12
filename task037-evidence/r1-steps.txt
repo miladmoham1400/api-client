@@ -1,0 +1,16 @@
+# TASK-037 rebuild with the guarded-dialog and Ctrl+S fixes (one command per line; repository root)
+ver
+git rev-parse HEAD
+git status --porcelain
+git diff --stat
+node --version
+npm.cmd --version
+npm.cmd ci
+npm.cmd exec --no -- install-electron
+npm.cmd run typecheck
+npm.cmd run lint
+npm.cmd run test:unit -- --maxWorkers=1
+npm.cmd run package:win
+dir dist\windows
+certutil -hashfile dist\windows\offline-api-client-0.1.1-x64-setup.exe SHA256
+git status --porcelain

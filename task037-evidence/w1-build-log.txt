@@ -1,0 +1,198 @@
+==== TASK-037 Windows build start Mon 10/12/2026 10:07:32.66 ====
+
+Microsoft Windows [Version 10.0.26300.9550]
+
+>>> git rev-parse HEAD [10:07:32.69]
+cfed4004c0ee3bc7125816e63ddec542b211fa18
+[exit code 0]
+
+>>> git status --porcelain [10:07:32.81]
+ M package-lock.json
+?? task037-evidence/
+[exit code 0]
+
+>>> node --version [10:07:32.95]
+v22.18.0
+[exit code 0]
+
+>>> npm.cmd --version [10:07:33.03]
+The system cannot find the batch label specified - step
+The process cannot access the file because it is being used by another process.
+Build stopped with a failure; see w1-build-log.txt. This window closes in 30 seconds.
+==== start 2026-10-12T10:15:30.0691604+03:30 in G:\api-client ====
+
+>>> ver [10:15:30.088]
+
+Microsoft Windows [Version 10.0.26300.9550]
+[exit code 0] [10:15:30.151]
+
+>>> git rev-parse HEAD [10:15:30.176]
+cfed4004c0ee3bc7125816e63ddec542b211fa18
+[exit code 0] [10:15:30.318]
+
+>>> git status --porcelain [10:15:30.333]
+ M package-lock.json
+?? task037-evidence/
+[exit code 0] [10:15:30.451]
+
+>>> node --version [10:15:30.477]
+v22.18.0
+[exit code 0] [10:15:30.566]
+
+>>> npm.cmd --version [10:15:30.583]
+11.6.2
+[exit code 0] [10:15:30.899]
+
+>>> npm.cmd ci [10:15:30.917]
+npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+npm warn deprecated rimraf@2.6.3: Rimraf versions prior to v4 are no longer supported
+npm warn deprecated glob@7.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated boolean@3.2.0: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
+
+added 589 packages, and audited 590 packages in 17s
+
+89 packages are looking for funding
+  run `npm fund` for details
+
+8 moderate severity vulnerabilities
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+[exit code 0] [10:15:48.200]
+
+>>> npm.cmd exec --no -- install-electron [10:15:48.233]
+[exit code 0] [10:15:51.448]
+
+>>> npm.cmd run typecheck [10:15:51.467]
+
+> offline-api-client@0.1.1 typecheck
+> tsc --noEmit
+
+[exit code 0] [10:16:20.749]
+
+>>> npm.cmd run lint [10:16:20.766]
+
+> offline-api-client@0.1.1 lint
+> eslint .
+
+[exit code 0] [10:16:35.133]
+
+>>> npm.cmd run test:unit -- --maxWorkers=1 [10:16:35.149]
+
+> offline-api-client@0.1.1 test:unit
+> npm run rebuild:node && vitest run --maxWorkers=1
+
+
+> offline-api-client@0.1.1 rebuild:node
+> npm rebuild better-sqlite3
+
+rebuilt dependencies successfully
+
+[1m[30m[46m RUN [49m[39m[22m [36mv5.0.3 [39m[90mG:/api-client[39m
+
+ [32m✓[39m tests/shared/contracts.test.ts [2m([22m[2m76 tests[22m[2m)[22m[32m 61[2mms[22m[39m
+ [32m✓[39m tests/main/secrets.test.ts [2m([22m[2m15 tests[22m[2m)[22m[33m 462[2mms[22m[39m
+ [32m✓[39m tests/main/multipart.test.ts [2m([22m[2m13 tests[22m[2m)[22m[33m 814[2mms[22m[39m
+[90mstdout[2m | tests/main/transfer-v2.test.ts[2m > [22m[2mround-trips 100 collections/1000 folders/1000 requests at depth 16 below 10 MiB without losing destinations
+[22m[39mTASK-036 large round trip: input=569222 bytes export=868711 bytes import=83 ms snapshot=71 ms
+
+ [32m✓[39m tests/main/transfer-v2.test.ts [2m([22m[2m21 tests[22m[2m)[22m[33m 38443[2mms[22m[39m
+   [33m[2m✓[22m[39m rejects cycle before preview or any writes[33m 329[2mms[22m[39m
+   [33m[2m✓[22m[39m rejects self before preview or any writes[33m 321[2mms[22m[39m
+   [33m[2m✓[22m[39m rejects missing-parent before preview or any writes[33m 305[2mms[22m[39m
+   [33m[2m✓[22m[39m rejects foreign-parent before preview or any writes[33m 309[2mms[22m[39m
+   [33m[2m✓[22m[39m rejects foreign-collection before preview or any writes[33m 306[2mms[22m[39m
+   [33m[2m✓[22m[39m rejects missing-folder before preview or any writes[33m 319[2mms[22m[39m
+   [33m[2m✓[22m[39m rejects foreign-request before preview or any writes[33m 308[2mms[22m[39m
+   [33m[2m✓[22m[39m rejects collision before preview or any writes[33m 307[2mms[22m[39m
+   [33m[2m✓[22m[39m rejects folders before preview or any writes[33m 305[2mms[22m[39m
+   [33m[2m✓[22m[39m rejects requests before preview or any writes[33m 382[2mms[22m[39m
+   [33m[2m✓[22m[39m rejects collections before preview or any writes[33m 313[2mms[22m[39m
+   [33m[2m✓[22m[39m shows only folder names/counts; validates snapshot before preview and keeps cancelled/expired tokens neutral[33m 569[2mms[22m[39m
+   [33m[2m✓[22m[39m rolls back fresh hierarchy and every entity after injected requests write failure[33m 306[2mms[22m[39m
+   [33m[2m✓[22m[39m rejects oversized export before save dialog, preserving saved bytes, and rejects oversized import[33m 32511[2mms[22m[39m
+ [32m✓[39m tests/main/folders.test.ts [2m([22m[2m9 tests[22m[2m)[22m[33m 7282[2mms[22m[39m
+   [33m[2m✓[22m[39m creates, lists, renames and reopens nested duplicate-name folders through depth 16; rejects depth 17 atomically[33m 397[2mms[22m[39m
+   [33m[2m✓[22m[39m rejects cycles, descendant depth overflow and all foreign/inconsistent destinations without changing any data[33m 3852[2mms[22m[39m
+   [33m[2m✓[22m[39m rolls back descendant move, promotion and collection removal if any write fails; sanitizes trigger errors[33m 865[2mms[22m[39m
+   [33m[2m✓[22m[39m caps creation at 1000 folders without truncating existing larger libraries; rename/move/delete remain available[33m 1371[2mms[22m[39m
+   [33m[2m✓[22m[39m validates owned sender, active workspace, exact inputs, outgoing metadata and unavailable database[33m 310[2mms[22m[39m
+   [33m[2m✓[22m[39m exports empty folders as v2, keeping one snapshot when folders change during the native chooser[33m 318[2mms[22m[39m
+ [31m❯[39m tests/main/export.test.ts [2m([22m[2m11 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[33m 592[2mms[22m[39m
+   [32m✓[39m allowlists every entity and body; omits synthetic secrets, state, paths and capabilities while preserving order/templates[32m 88[2mms[22m[39m
+   [32m✓[39m does not retain mixed/literal Auth text (synthetic-literal)[32m 15[2mms[22m[39m
+   [32m✓[39m does not retain mixed/literal Auth text (Bearer {{token}})[32m 14[2mms[22m[39m
+   [32m✓[39m does not retain mixed/literal Auth text ({{token}}suffix)[32m 14[2mms[22m[39m
+   [32m✓[39m retains bearer placeholder-only auth without requiring omitted credentials[32m 14[2mms[22m[39m
+   [32m✓[39m uses one SQLite read snapshot even when another connection commits between entity reads[32m 42[2mms[22m[39m
+   [33m[2m✓[22m[39m cancelled save and export leave database bytes/selection unchanged; snapshot precedes native dialog[33m 318[2mms[22m[39m
+   [32m✓[39m atomic replacement writes UTF-8, removes temporary files and preserves destination on failed rename or lost owner[32m 41[2mms[22m[39m
+[31m   [31m×[31m rejects app/data folders, symlink aliases/targets, existing SQLite content and non-JSON destinations[39m[32m 15[2mms[22m[39m
+   [32m✓[39m validates owned sender/input before snapshot/dialog and prevents writes after renderer replacement[32m 14[2mms[22m[39m
+   [32m✓[39m does not write a snapshot if the workspace is deleted while choosing; serializes concurrent exports[32m 15[2mms[22m[39m
+ [32m✓[39m tests/main/redirects.test.ts [2m([22m[2m24 tests[22m[2m)[22m[32m 189[2mms[22m[39m
+ [32m✓[39m tests/main/requests.test.ts [2m([22m[2m11 tests[22m[2m)[22m[33m 363[2mms[22m[39m
+ [32m✓[39m tests/main/execution.test.ts [2m([22m[2m15 tests[22m[2m)[22m[33m 602[2mms[22m[39m
+ [32m✓[39m tests/main/import.test.ts [2m([22m[2m18 tests[22m[2m)[22m[33m 4272[2mms[22m[39m
+   [33m[2m✓[22m[39m rolls back all entities/secrets on injected late write failure, keeping existing database bytes[33m 318[2mms[22m[39m
+   [33m[2m✓[22m[39m rejects path before writes without leaking input[33m 343[2mms[22m[39m
+   [33m[2m✓[22m[39m rejects duplicate before writes without leaking input[33m 310[2mms[22m[39m
+   [33m[2m✓[22m[39m rejects keys before writes without leaking input[33m 305[2mms[22m[39m
+   [33m[2m✓[22m[39m rejects rows before writes without leaking input[33m 310[2mms[22m[39m
+   [33m[2m✓[22m[39m preview is names/counts only, binds to validated content, cancel/reload consumes tokens without changes[33m 343[2mms[22m[39m
+ [32m✓[39m tests/main/uploads.test.ts [2m([22m[2m15 tests[22m[2m)[22m[33m 347[2mms[22m[39m
+ [32m✓[39m tests/main/repositories.test.ts [2m([22m[2m13 tests[22m[2m)[22m[33m 722[2mms[22m[39m
+   [33m[2m✓[22m[39m upserts variables by case-sensitive scope, bounds entries and removes orphan secrets on conversion[33m 392[2mms[22m[39m
+ [32m✓[39m tests/main/api-library.test.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 345[2mms[22m[39m
+ [32m✓[39m tests/main/deadline.test.ts [2m([22m[2m8 tests[22m[2m)[22m[33m 1102[2mms[22m[39m
+ [32m✓[39m tests/shared/variables.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m tests/main/transport.test.ts [2m([22m[2m25 tests[22m[2m)[22m[32m 209[2mms[22m[39m
+ [32m✓[39m tests/main/workspaces.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 153[2mms[22m[39m
+ [32m✓[39m tests/main/collections.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 199[2mms[22m[39m
+ [32m✓[39m tests/main/variable-management.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 228[2mms[22m[39m
+ [32m✓[39m tests/main/materialize.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+ [32m✓[39m tests/main/database.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 128[2mms[22m[39m
+ [32m✓[39m tests/main/urlencoded.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 45[2mms[22m[39m
+ [32m✓[39m tests/main/library-search.test.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 740[2mms[22m[39m
+   [33m[2m✓[22m[39m searches literal NFC Latin-folded metadata/path only, retaining duplicates and stable complete pages[33m 702[2mms[22m[39m
+ [32m✓[39m tests/preload/folders.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 191[2mms[22m[39m
+ [32m✓[39m tests/shared/body-editor.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m tests/main/library-view.test.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 425[2mms[22m[39m
+   [33m[2m✓[22m[39m rejects foreign sender/workspace/expansion IDs, duplicates and unbounded input without writing; rolls back failed persistence[33m 355[2mms[22m[39m
+ [32m✓[39m tests/preload/execution.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m tests/shared/request-fields.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m tests/shared/json-tokens.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 27[2mms[22m[39m
+ [32m✓[39m tests/shared/navigation.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/shared/library-tree.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m tests/main/ipc-guard.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/main/theme.test.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 350[2mms[22m[39m
+ [32m✓[39m tests/shared/api-library.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m tests/preload/files.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/shared/response-format.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m tests/preload/listeners.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 5[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m tests/main/export.test.ts[2m > [22mrejects app/data folders, symlink aliases/targets, existing SQLite content and non-JSON destinations
+[31m[1mError[22m: EPERM: operation not permitted, symlink 'C:\Users\javad\AppData\Local\Temp\api-client-export-BFNSmS\appdata' -> 'C:\Users\javad\AppData\Local\Temp\api-client-export-BFNSmS\alias'[39m
+[36m [2m❯[22m tests/main/export.test.ts:[2m110:29[22m[39m
+
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m36 passed[39m[22m[90m (37)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m368 passed[39m[22m[90m (369)[39m
+[2m   Start at [22m 10:16:39
+[2m   Duration [22m 68.24s[2m (tests 91%, import 8%, transform 1%)[22m
+
+[2m    Isolate [22m [33m37 workers spawned[39m[2m · ~105ms startup each (spawn + environment, per file)[22m
+[2m            [22m [2mat least ~3.78s faster with [22m[33misolate: false[39m[2m — reuses workers across files instead of one per file[22m
+
+[exit code 1] [10:17:47.384]
+==== FINISHED WITH FAILURE 2026-10-12T10:17:47.4006361+03:30 ====

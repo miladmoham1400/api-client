@@ -12,9 +12,16 @@ The nested-library source milestones TASK-031–036, including strict v2 folder-
 
 ## Nested-library TASK-037 acceptance — unfinished
 
-Fresh unpublished Linux deb/AppImage acceptance artifacts were built separately in `dist/task037-linux/`; exact hashes and current results are in [TASK-037](task-reports/TASK-037.md) and [new acceptance record](release-acceptance.md#task-037--new-nested-library-acceptance-unfinished). These are different bytes from public 0.1.1 downloads despite retaining version 0.1.1. No new Windows installer or publication was performed.
+The current Windows candidate is a fresh unsigned NSIS installer built natively on Windows 11 from the fixed source and fully accepted on 2026-10-12. Its hash and results are in [TASK-037](task-reports/TASK-037.md) and the [new acceptance record](release-acceptance.md#task-037--new-nested-library-acceptance-unfinished). The Linux deb/AppImage in `dist/task037-linux/` predate the fix and are superseded; a fixed-source Linux build and actual sudo install/removal/reinstall are still pending. All of these are different bytes from the public 0.1.1 downloads despite keeping version 0.1.1. Nothing was published.
 
-Actual Linux install/removal/reinstall is not run because sudo requires authentication unavailable to this session; the installed 0.1.0 package is preserved. The current session cannot run Windows 11 acceptance: VBoxManage reports unavailable driver/IPC, and no authorized guest shell/desktop is connected. Remote master differs from this local source, so its existing CI cannot verify these exact bytes. Historical Windows/installer evidence does not clear these blockers. Independent extracted-deb/AppImage checks are recorded separately, including failed attempts and test-fixture corrections.
+Issues found by the Windows run, and their status:
+
+- **Fixed: guarded rename/delete dialog stayed open after Save.** With unsaved request edits, choosing Save in the unsaved-changes prompt from a Rename/Delete dialog applied the change but left the dialog open. The cause was a revision-triggered library reload superseding the mutation's own reload. Verified fixed on Windows; Linux re-run pending.
+- **Fixed: Ctrl+S on non-Latin keyboard layouts.** With the Persian layout, Ctrl+S now saves (physical-key fallback). Verified manually on Windows.
+- **Windows unit symlink case needs elevation or Developer Mode.** In a normal user shell it fails with EPERM, a test-environment privilege limit. Elevated, it passed 11/11.
+- **The NSIS uninstall confirmation can open behind Settings.** Uninstall then appears not to happen until its taskbar window is confirmed. This is the likely cause of the TASK-029 "second attempt"; on the second 2026-10-12 run it appeared in front.
+
+Independent extracted-deb/AppImage checks of the unfixed source are recorded separately, including failed attempts and test-fixture corrections.
 
 ## Observed issues and evidence limits
 

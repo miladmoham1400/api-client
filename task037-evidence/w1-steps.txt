@@ -1,0 +1,15 @@
+# TASK-037 native Windows build steps (one command per line; run from the repository root)
+ver
+git rev-parse HEAD
+git status --porcelain
+node --version
+npm.cmd --version
+npm.cmd ci
+npm.cmd exec --no -- install-electron
+npm.cmd run typecheck
+npm.cmd run lint
+npm.cmd run test:unit -- --maxWorkers=1
+npm.cmd run package:win
+dir dist\windows
+certutil -hashfile dist\windows\offline-api-client-0.1.1-x64-setup.exe SHA256
+git status --porcelain
