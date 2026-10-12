@@ -63,7 +63,7 @@ Use **Create Collection** for one-level grouping. Each saved request has a colle
 
 ## Nested API libraries — current source/local acceptance builds
 
-This section applies to TASK-031–036 source and the unpublished TASK-037 Linux acceptance artifacts, not the public v0.1.1 downloads. Filename/version alone cannot distinguish these builds; compare the exact [TASK-037 artifact hashes and remaining checks](task-reports/TASK-037.md). Full installed Linux/Windows acceptance is pending; these are not a new public release.
+This section applies to TASK-031–036 source and the unpublished TASK-037 Linux acceptance artifacts, not the public v0.1.1 downloads. Filename/version alone cannot distinguish these builds; compare the exact [TASK-037 artifact hashes and coverage limits](task-reports/TASK-037.md). Installed Linux/Windows acceptance is recorded in TASK-037 with platform limits; these local artifacts are not a new public release.
 
 Create a collection, then use its ellipsis menu → **New folder** to create `Users`. Use the `Users` menu to add `Admin` and `Auth`. Each collection/folder menu provides **New request**: enter its name, method and URL/body, then explicitly Save. The draft is created at that destination; cancelling/discarding does not add a blank saved request. Save many APIs and select any one when needed; selection never sends it. Example:
 

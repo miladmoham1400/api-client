@@ -61,7 +61,7 @@ At boundary enforce names, timeout range, max 200 query/header/form rows per gro
 
 ## Approved next milestone: folder and search APIs
 
-The API table above describes the current source API; published 0.1.1 installers do not include the new folder calls. TASK-033 implements explicit workspace-owned folder CRUD/move handlers and folder-aware request destinations, without changing partial-save config preservation. TASK-035 adds bounded metadata-only search; caller, destination and workspace ownership are validated in main. No generic IPC or credential-bearing tree/search DTO is permitted. See [API library specification](api-library.md) for the authoritative new behavior, bounds, intermediate export gate and task mapping. Folder/tree operations and bounded search are implemented in source (TASK-033–035); v2 transfer is implemented in TASK-036; packaged acceptance remains TASK-037.
+The API table above describes the current source API; published 0.1.1 installers do not include the new folder calls. TASK-033 implements explicit workspace-owned folder CRUD/move handlers and folder-aware request destinations, without changing partial-save config preservation. TASK-035 adds bounded metadata-only search; caller, destination and workspace ownership are validated in main. No generic IPC or credential-bearing tree/search DTO is permitted. See [API library specification](api-library.md) for the authoritative new behavior, bounds, intermediate export gate and task mapping. Folder/tree operations and bounded search are implemented in source (TASK-033–035); v2 transfer is implemented in TASK-036; packaged acceptance and coverage limits are recorded in completed TASK-037.
 
 ### TASK-033 destination and folder contracts
 

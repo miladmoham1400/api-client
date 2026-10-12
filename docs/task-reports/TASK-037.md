@@ -1,6 +1,6 @@
 # TASK-037 — Nested-library packaged acceptance
 
-Status: blocked — waiting only on the Linux run of the fixed source (rebuild, payload/AppImage suites, sudo install and removal/reinstall preservation).
+Status: done — final Linux installed/preservation evidence reviewed alongside recorded Windows 11 acceptance.
 - Windows 11: the guarded-dialog and Ctrl+S defects found on 2026-10-12 are fixed; the rebuilt installer passed every Windows check (see "Defect fixes and Windows re-acceptance").
 - Linux: the earlier deb/AppImage were built from the unfixed source, so they are superseded and need a rebuild; actual install/preservation was never run (sudo).
 
@@ -153,10 +153,10 @@ Installed `offline-api-client.exe` SHA-256 `2411ebbf68e3907bc74e517ed638c835b926
 
 Windows 11 acceptance for the fixed bytes is therefore complete. The deviations remain as recorded above: firewall egress block instead of a disconnected network, the user's account with test data only, and checks performed by Claude.
 
-## Exact remaining blockers and resumption
+## Historical blockers and resumption (resolved by final acceptance below)
 
 - *Resolved 2026-10-12:* the Windows guarded-dialog failures, the Ctrl+S layout defect and the Windows unit symlink case are fixed or verified; see the section above.
-- **Linux deb/AppImage must be rebuilt from the fixed source and re-accepted.** The `dc3771d5…`/`cc593562…` artifacts and their suite results predate the fix and are superseded. Resume on the Ubuntu machine with `bash task037-linux-acceptance.sh /path/to/api-client /path/to/task037-fix.patch`, run as the regular user (the script is attached in chat). It applies the patch, runs install/type/lint/unit/Graphify, builds into `dist/task037-linux-fix/` with hashes, runs the full payload suite plus 5× guard/Ctrl+S repeats and the AppImage focused suite, then does the sudo steps below.
+- *Resolved by the Linux continuation below:* **Linux deb/AppImage rebuild and extracted-payload re-acceptance.** Historical resumption instructions: The `dc3771d5…`/`cc593562…` artifacts and their suite results predate the fix and are superseded. Resume on the Ubuntu machine with `bash task037-linux-acceptance.sh /path/to/api-client /path/to/task037-fix.patch`, run as the regular user (the script is attached in chat). It applies the patch, runs install/type/lint/unit/Graphify, builds into `dist/task037-linux-fix/` with hashes, runs the full payload suite plus 5× guard/Ctrl+S repeats and the AppImage focused suite, then does the sudo steps below.
 - **Linux actual install, manual upgrade, uninstall/reinstall preservation are not run.** Elevated `sudo -n true` returned `sudo: a password is required`. Existing installed package is 0.1.0 (`dpkg-query`), untouched; extracted payload checks cannot count as installer acceptance. Resume with OS-prompt authentication, install the exact hashed deb, run installed executable offline with synthetic profiles, then actual removal/reinstall and hash/logical-state preservation using the sequential procedure in [release.md](../release.md). Include new nested structure in reopened-state evidence. Never provide a sudo password in chat or command arguments.
 - *Superseded 2026-10-12:* the earlier "no Windows runner" blocker was resolved by the Windows 11 execution above. Windows Server CI smoke was not used and is not a substitute.
 - **Default AppImage FUSE mounting not run:** no `/dev/fuse`. Extraction-and-run evidence is recorded separately. Other distributions/Wayland/platforms and downloaded Windows reputation prompts remain untested.
@@ -166,3 +166,88 @@ TASK-037 must remain unfinished while required platform/installer criteria are m
 ## Graphify and final review
 
 Applied project Graphify skill with repository local-only override. Queried acceptance relationships, then inspected actual source/specifications; graph output is not test evidence. Local `python3 scripts/graphify.py update` succeeded with 1,183 nodes / 3,847 edges / 53 communities after initial changes. Generated graph remains ignored; no cloud extraction, global configuration, hooks or model labeling. Final `npm run typecheck && npm run lint && git diff --check` exited 0 after test corrections. Final Graphify update exited 0, still 1,183 nodes / 3,847 edges / 53 communities. Final `npm run test:unit -- --maxWorkers=1` exited 0: **37 files / 369 tests passed**, 146.67 s, after the earlier timeout. Developer SQLite was rebuilt for Node by that script; packaged Electron SQLite remains inside the unchanged hashed artifacts. No performance assertions were changed.
+
+
+## Linux continuation — supplied patch/script review, 2026-10-12
+
+Resumed only TASK-037 at `0586aaf22f3587ebf953c25e25531018a1ee8583`. Initial changes: the user's `.gitignore` addition `.idea`, and the supplied untracked `task037-fix.patch` / `task037-linux-acceptance.sh`. Preserved those changes. `git apply -R --check task037-fix.patch` exited 0: all four patch changes are already present in this commit, so no patch was reapplied or source overwritten. The current source contains the guarded-reload ownership fix, non-Latin Ctrl+S regression and nested preservation fixture described above. Supplied Windows evidence logs contain the recorded 31-pass/5-skip installed run, 30-pass repeats and 11-pass elevated symlink rerun; these remain Claude's Windows observations, not a new Windows run by Codex.
+
+The supplied script originally continued after failed steps, could reach removal despite failed prerequisites, printed rather than asserted installed/DB identity, deleted prior output, and returned success even with accumulated failures. Hardened it to fail immediately/nonzero; preserve prior artifacts and failed synthetic profiles; separate `--prepare-only` from `--install-only ARTIFACT_DIR`; retain exact hashes and production-source identity; require a completed prepare marker before installation; compare installed executable, app.asar and native SQLite; assert actual binary removal and closed database hash preservation. Optional Graphify failure is reported without becoming a product gate. Added generated Linux evidence directory to .gitignore while retaining the user's .idea entry. No new dependency, runtime feature, version, release or security bypass was added.
+
+`bash -n task037-linux-acceptance.sh` and reverse patch check passed; invalid-mode invocation exited 2 with usage before any build/install/profile changes. Current elevated `sudo -n true` exited 1 (`sudo: a password is required`): actual installed acceptance still cannot run in this session. Password entry must occur in the user's OS terminal. Independent fixed-source checks/build results follow; task/index stay blocked until installed evidence exists.
+
+
+Fixed-source Linux source checks: typecheck/lint exited 0. First unit attempt ran inside the restricted sandbox and failed local-fixture cases; a direct loopback listener probe returned EPERM. That incomplete attempt was interrupted (exit 130), not counted as product/test acceptance. Full rerun with loopback/FIFO access exited 0: 37 files / 369 tests passed, 141.51 s (`/tmp/task037-fix-unit-linux-final.log`). No thresholds or assertions changed. Graphify local update exited 0: 1,203 nodes / 3,883 edges / 59 communities; generated output is optional and ignored, not test evidence.
+
+
+Fixed-source build: `npm run build && npm exec --no -- electron-builder --config electron-builder.json --config.directories.output=dist/task037-linux-fix/20261012-codex --linux AppImage deb --x64 --publish never` exited 0. Native sequential Electron 44.5.1 x64 SQLite rebuild completed; existing Zod annotation/builder duplicate-dependency advice remains. Existing local dependencies were used; npm ci was not repeated in this continuation. Developer Node 22.18.0/npm 11.6.2, Ubuntu 24.04.3 x64/X11/kernel 7.0.0-38-generic. Packages are unsigned/unpublished, version unchanged, previous outputs untouched.
+
+| Fixed-source Linux artifact | Bytes | SHA-256 |
+|---|---|---|
+| `dist/task037-linux-fix/20261012-codex/offline-api-client-0.1.1-amd64.deb` | 112870776 | `8b09c1ce2b54079f296590d34c0e4be2bda5437909f7feae0ffa6181cb98bf46` |
+| `dist/task037-linux-fix/20261012-codex/offline-api-client-0.1.1-x86_64.AppImage` | 143974205 | `491e58c0ca577631888c9c671506fb07f76b9827619a4464c4c0a37ec36a1316` |
+
+Fixed-source packaged checks completed sequentially; actual results are recorded below. No actual package install/removal was performed. `dpkg-query` still reports installed version 0.1.0; no /dev/fuse, so default AppImage FUSE startup is not run. Local raw logs are in ignored `task037-evidence-linux/20261012-codex/`; committed report/performance samples retain summarized evidence.
+
+
+Fixed-source extracted deb: full `bash scripts/test-offline.sh --reporter=list` under the fresh payload executable exited 0, **36 passed, no skips (5.2 min)**. This includes exact method/URL/body selection sends, isolation, security/TLS, native transfer/file dialogs, dirty/active navigation, safeStorage, legacy migration and normal restart. Metrics are [TASK-037-linux-fixed-performance.json](TASK-037-linux-fixed-performance.json): cold 1408.59 ms, selection p95 262.34 ms, search p95 150.66 ms, one warm-up/20 samples each, depth 16/100 collections/1,000 folders/1,000 requests plus isolated workspace, bounded 50 tree/100 search rows. All documented timing targets passed. This result does not cover installation, manual upgrade, actual removal/reinstall, or a real Linux Persian keyboard-layout switch (Ctrl+S regression uses a synthetic DOM event).
+
+
+Fixed-source deb repeats: `bash scripts/test-offline.sh tests/library-tree.spec.ts tests/navigation.spec.ts tests/requests.spec.ts --reporter=list --repeat-each=5` with the same extracted executable exited 0, **30 passed (5.1 min)**. Together with the full suite, the guarded-dialog and Ctrl+S specs passed 6/6 each. No timeout increase or forced-dialog-close workaround was used.
+
+Acceptance-runner prerequisite check: `--install-only` against the artifact directory before the AppImage stage completed exited 1 with `Successful prepare evidence/payload required.` No sudo/install/removal was reached. This verifies the new prerequisite gate; it is not installer acceptance. Bash syntax, invalid-mode exit 2 and diff checks also passed.
+
+
+Fixed-source AppImage extraction mode: `APPIMAGE_EXTRACT_AND_RUN=1 API_CLIENT_EXECUTABLE=<fresh AppImage> bash scripts/test-offline.sh tests/library-upgrade.spec.ts tests/library-tree.spec.ts tests/navigation.spec.ts tests/requests.spec.ts tests/import.spec.ts tests/offline.spec.ts tests/database.spec.ts tests/security.spec.ts --reporter=list` exited 0, **11 passed, no skips (2.6 min)**. All three packaged stages ran sequentially in one fail-fast driver (exit 0); no native rebuild overlapped another rebuild. Driver created `SOURCE.sha256` and `PREPARE_PASSED` only after these independent checks passed. These local markers enable the installed-only continuation, not task completion.
+
+Afterward, both artifact hashes rechecked OK. Installed-only preflight validated the source fingerprint, markers, hashes and package metadata, then exited 1 with `Installed acceptance requires your local terminal for sudo authentication.` It reached no sudo/install/remove command. Current installed 0.1.0 package and real user data remain untouched. Actual install/manual upgrade/removal/reinstall/nested preservation is still **not run**. Default AppImage FUSE startup remains not run (no device). Windows observations remain those supplied by Claude; no new Windows run occurred here.
+
+Final runner syntax and `git diff --check` passed. Graphify final refresh exited 0, 1,203 nodes / 3,883 edges / 59 communities. Required task and index both remain **blocked**, with no subsequent task/publication started. The `.idea` ignore entry was preserved.
+
+Resume in a regular-user local terminal, from the repository root (password only in sudo's prompt):
+
+```bash
+bash task037-linux-acceptance.sh "$PWD" "$PWD/task037-fix.patch" --install-only "$PWD/dist/task037-linux-fix/20261012-codex"
+```
+
+This reuses the hashed, fixed-source packages; it first refuses changed source/artifacts, then installs the deb, compares installed bundled code/native SQLite, runs the full installed offline suite, and performs actual removal/reinstall with the nested synthetic preservation fixture. Stop and retain the generated evidence/profile if a stage fails. Review the resulting `task037-evidence-linux/<timestamp>/linux-acceptance.log`, installed performance JSON, hashes and preservation manifest before marking TASK-037 done. This continuation does not publish or alter the version. A fresh all-stage run or `--prepare-only` is also available using the same repository/patch arguments; it preserves existing outputs and uses a new timestamped folder.
+
+
+## User-terminal install and runner path correction — 2026-10-12 (21:50)
+
+User ran the installed-only command in their local terminal; log `task037-evidence-linux/20261012-215019/linux-acceptance.log` corroborates the pasted transcript. Exact artifact hashes passed. Sudo authentication and apt upgrade from installed 0.1.0 to 0.1.1 exited 0; package status is `install ok installed`. Installed Electron executable and app.asar compare byte-identically to the extracted deb (cmp exit 0).
+
+Runner then exited 2 at the native comparison because its hardcoded legacy `build/Release/better_sqlite3.node` did not exist. This was Codex's acceptance-script path assumption, not an observed app/SQLite startup failure. The failure stopped before the full installed suite and before seed/remove/reinstall; those steps are not counted as passed. Inspection of pinned better-sqlite3 13's `lib/binding.js` and actual package contents shows the glibc Linux x64 N-API addon is `resources/app.asar.unpacked/node_modules/better-sqlite3/prebuilds/linux-x64.node`. Updated the runner to compare that actual file, also after reinstall; kept fail-fast behavior. No runtime source, dependency, package bytes or version changed.
+
+Corrected native-file cmp exited 0; installed addon SHA-256 `6fd4292c6c5f352436cd85c9e1cb286978efa43c20ae350973f83414ced9991d`. Installed app.asar cmp and dpkg status rechecked successfully. Bash syntax and diff checks passed. The same installed-only command can now be rerun without rebuilding; it will reinstall the same verified deb, then run the remaining full suite and preservation stages. Historical statements that no install occurred are superseded by this user-terminal evidence. Task and index remain blocked until the remaining installed stages have actual evidence.
+
+
+Installed native SQLite focused verification: `API_CLIENT_EXECUTABLE=/opt/offline-api-client/offline-api-client bash scripts/test-offline.sh tests/database.spec.ts` exited 0, **1 passed (3.3 s)**, with an isolated synthetic profile, non-root sandboxed Electron and loopback-only network. It verifies actual installed SQLite load/write/reopen and corrupt-startup recovery; it does not replace the full installed suite or actual preservation sequence. Log `/tmp/task037-installed-sqlite-path-smoke.log`. Local Graphify update exited 0 (59 communities), optional/non-test evidence. No sudo/install/removal was invoked by Codex in this correction.
+
+
+## Final installed Linux acceptance and completion — 2026-10-12 (21:54–22:00)
+
+Reviewed the user's successful local-terminal rerun and matching generated log/metrics/manifest. Durable synthetic-only evidence: [full transcript](TASK-037-linux-installed/acceptance.txt), [installed performance samples](TASK-037-linux-installed/performance.json), [closed preservation manifest](TASK-037-linux-installed/preservation.json), [artifact hashes](TASK-037-linux-installed/SHA256SUMS.txt). No passwords/credential values are recorded. This was performed by the user on Ubuntu, not an automatic sudo action by Codex.
+
+- Same installed-only command, fixed source/artifacts: hash/source checks passed, sudo reinstallation exited 0, installed executable/app.asar/Linux x64 N-API addon cmp all exited 0. The earlier attempt already recorded actual upgrade 0.1.0 → 0.1.1.
+- Full **installed** loopback-only suite exited 0: **36 passed, no skips (5.0 min)**. Only loopback/no IPv4 routes and ENETUNREACH proof are recorded; non-root Electron retains Chromium sandboxing. Native v1/v2 transfer and file dialogs, exact selected-request wire behavior, dirty/active guards, TLS/security, safe response rendering, real gnome_libsecret, legacy migration, large-library and normal-restart checks passed. Runtime observed Electron 44.5.1/embedded Node 24.21.0/ABI 149/N-API 10.
+- Installed 1,000-request/1,000-folder/depth-16 library: cold **1357.74 ms**, selection p95 **277.90 ms**, search p95 **152.06 ms**, 20 samples each after warm-up, bounded 50 tree/100 search rows. Targets passed on the recorded i7-1165G7/8 logical CPUs/16,538,353,664-byte RAM environment.
+- Synthetic preservation seed exited 0: **1 passed (2.1 s)**. Normal close produced database SHA-256 `54abe211d532094196ac7c35304721220f5aa2ae55bc85ff21ba790d3b4cdce3`.
+- Actual `sudo apt-get remove -y offline-api-client` exited 0; the runner asserted installed binary absent. Closed synthetic database hash was unchanged. Removal emitted update-alternatives dangling-link warnings and then updated the links; removal and subsequent checks succeeded. The unrelated apt autoremove suggestion was not executed.
+- Reinstalled the **same hashed deb**, exit 0; executable/app.asar/native addon cmp all passed again. Preservation verify exited 0: **1 passed (2.1 s)**, checking exact database bytes before startup and restored selected root request, environment/plain variable/theme plus collection → folder → nested folder → request identities, names, parents and destination. The successfully verified synthetic profile was removed by the runner; real user profiles were not tested or deleted.
+- Runner finished `INSTALLED ACCEPTANCE PASSED`. Post-run Codex read-only rechecks confirmed installed 0.1.1 `install ok installed`, app.asar and native addon byte identity. Earlier failed/cancelled attempts remain above; none are counted as passes.
+
+### Acceptance closure
+
+| Required criterion | Recorded evidence |
+|---|---|
+| Closed legacy migration; nested/large-library restart and isolation | Fresh Linux full installed suite; Windows fixture/normal reopen and recorded upgrade |
+| First/middle/last browse/search/select/exact send; existing guards/security | Linux 36/36 installed plus 30/30 payload repeats; Windows 31 passed and 30/30 repeats |
+| V1 import/v2 hierarchy transfer, native choosers, exclusions/no auto-send | Linux installed native chooser tests; recorded Windows manual transfer/file checks (first milestone build; transfer code unchanged by the later guard/shortcut fix) and fixed-build manual guard/shortcut/send observations |
+| Target-native packages/hash/installed offline runtime | Current fixed Linux deb above and AppImage extraction 11/11; Windows 11 fixed NSIS `67a839a2…a0a569`, installed/firewall-blocked suite |
+| Actual installation/uninstall/reinstall preservation | Linux user-terminal sequence above; Windows 11 provided actual uninstall/hash/reinstall/nested reopen record |
+| Guide, limitations, per-OS acceptance and task/index | Updated together to reflect these exact artifacts and retained deviations |
+
+TASK-037 is **done** with the documented platform observations/deviations. Windows evidence remains Claude's provided Windows 11 work, not a new Windows test by Codex: five Linux-only automated skips are not passes, manual native-dialog observations cover those behaviors; first-build transfer observations are explicitly distinguished from fixed-build guard re-acceptance. No Windows Server CI result is substituted. Coverage limits remain: Linux default AppImage FUSE startup (no device), other distros/Wayland/architectures, Linux real Persian-layout switching, Windows downloaded-installer reputation prompts and separate-account preservation are not verified. These are recorded limits, not silently passed checks. Packages remain unsigned/unpublished local acceptance artifacts distinct from the public 0.1.1 downloads.
+
+Final documentation/evidence consistency and diff checks passed. No source/runtime/dependency/version changes or additional test reruns were needed to review this completed user run. No next task, commit/push or publication was started.

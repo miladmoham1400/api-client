@@ -61,7 +61,7 @@ All tasks and release acceptance must have actual evidence. If Windows hardware/
 
 ## Highest-priority next milestone — nested API library
 
-Approved by the user on 2026-10-11; **implemented in source through TASK-036; packaged/platform acceptance remains unfinished in TASK-037**. The phase-1 table/defaults above remain the released baseline. Multiple saved requests already exist; one editor/send is not a one-request storage limit. The next milestone extends collection organization to nested folders and fast navigation, ahead of cURL, history or tabs.
+Approved by the user on 2026-10-11; **implemented through TASK-036; TASK-037 packaged acceptance completed for the recorded Linux/Windows artifacts on 2026-10-12**. The phase-1 table/defaults above remain the released baseline. Multiple saved requests already exist; one editor/send is not a one-request storage limit. The next milestone extends collection organization to nested folders and fast navigation, ahead of cURL, history or tabs.
 
 | ID | Approved next requirement |
 |---|---|

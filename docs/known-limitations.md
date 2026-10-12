@@ -8,20 +8,20 @@ Version 0.1.1 was published through an explicitly dispatched workflow. Native Ub
 
 The published 0.1.1 navigation deletion-dialog test timed out after choosing Save while deleting a collection. TASK-031 reproduced and fixed the Save-triggered sidebar refresh/mutation race in source; see [TASK-031 evidence](task-reports/TASK-031.md). Published installers have not been rebuilt with that fix, and no new full desktop/package acceptance is claimed. See [panel layout evidence](tooling-reports/panel-layout.md) and [0.1.1 release evidence](tooling-reports/public-release.md). The original 0.1.0 observations below remain historical.
 
-The nested-library source milestones TASK-031–036, including strict v2 folder-aware transfer and v1 import, are separate from those published binaries. Fresh packaged Linux/Windows library acceptance remains TASK-037; TASK-036 does not supply Windows chooser or packaged-app evidence. Exports above 10 MiB reject before the save chooser, even if the saved database itself is larger. See [TASK-036 evidence](task-reports/TASK-036.md).
+The nested-library source milestones TASK-031–036, including strict v2 folder-aware transfer and v1 import, are separate from those published binaries. Fresh packaged Linux/Windows library acceptance is recorded in completed TASK-037; TASK-036 does not supply Windows chooser or packaged-app evidence. Exports above 10 MiB reject before the save chooser, even if the saved database itself is larger. See [TASK-036 evidence](task-reports/TASK-036.md).
 
-## Nested-library TASK-037 acceptance — unfinished
+## Nested-library TASK-037 acceptance — completed with coverage limits
 
-The current Windows candidate is a fresh unsigned NSIS installer built natively on Windows 11 from the fixed source and fully accepted on 2026-10-12. Its hash and results are in [TASK-037](task-reports/TASK-037.md) and the [new acceptance record](release-acceptance.md#task-037--new-nested-library-acceptance-unfinished). The Linux deb/AppImage in `dist/task037-linux/` predate the fix and are superseded; a fixed-source Linux build and actual sudo install/removal/reinstall are still pending. All of these are different bytes from the public 0.1.1 downloads despite keeping version 0.1.1. Nothing was published.
+The current Windows candidate is a fresh unsigned NSIS installer built natively on Windows 11 from the fixed source and fully accepted on 2026-10-12. Its hash and results are in [TASK-037](task-reports/TASK-037.md) and the [new acceptance record](release-acceptance.md#task-037--new-nested-library-acceptance-completed). The Linux deb/AppImage in `dist/task037-linux/` predate the fix and are superseded; fresh fixed-source packages in `dist/task037-linux-fix/20261012-codex/` passed extracted-deb/AppImage acceptance, and actual user-terminal install succeeded; full installed offline acceptance (36/36) and actual removal/reinstall preservation also passed. All of these are different bytes from the public 0.1.1 downloads despite keeping version 0.1.1. Nothing was published.
 
 Issues found by the Windows run, and their status:
 
-- **Fixed: guarded rename/delete dialog stayed open after Save.** With unsaved request edits, choosing Save in the unsaved-changes prompt from a Rename/Delete dialog applied the change but left the dialog open. The cause was a revision-triggered library reload superseding the mutation's own reload. Verified fixed on Windows; Linux re-run pending.
-- **Fixed: Ctrl+S on non-Latin keyboard layouts.** With the Persian layout, Ctrl+S now saves (physical-key fallback). Verified manually on Windows.
+- **Fixed: guarded rename/delete dialog stayed open after Save.** With unsaved request edits, choosing Save in the unsaved-changes prompt from a Rename/Delete dialog applied the change but left the dialog open. The cause was a revision-triggered library reload superseding the mutation's own reload. Verified on Windows and the fresh Linux deb full suite plus five repeats.
+- **Fixed: Ctrl+S on non-Latin keyboard layouts.** With the Persian layout, Ctrl+S now saves (physical-key fallback). Verified manually on Windows; Linux deb/AppImage regression uses a synthetic non-Latin keyboard event, not a manual Linux layout switch.
 - **Windows unit symlink case needs elevation or Developer Mode.** In a normal user shell it fails with EPERM, a test-environment privilege limit. Elevated, it passed 11/11.
 - **The NSIS uninstall confirmation can open behind Settings.** Uninstall then appears not to happen until its taskbar window is confirmed. This is the likely cause of the TASK-029 "second attempt"; on the second 2026-10-12 run it appeared in front.
 
-Independent extracted-deb/AppImage checks of the unfixed source are recorded separately, including failed attempts and test-fixture corrections.
+Independent historical unfixed checks remain recorded separately. The fixed-source Linux run passed 369 unit tests, 36 full deb-payload tests, 30 guard/Ctrl+S repeats and 11 focused AppImage tests. Extracting packages is not installation; [TASK-037 report](task-reports/TASK-037.md) records current hashes, installed/payload samples and the completed user-terminal sequence.
 
 ## Observed issues and evidence limits
 

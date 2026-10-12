@@ -1,0 +1,2 @@
+8b09c1ce2b54079f296590d34c0e4be2bda5437909f7feae0ffa6181cb98bf46  offline-api-client-0.1.1-amd64.deb
+491e58c0ca577631888c9c671506fb07f76b9827619a4464c4c0a37ec36a1316  offline-api-client-0.1.1-x86_64.AppImage
