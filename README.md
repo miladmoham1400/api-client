@@ -6,23 +6,23 @@ Create, save and send HTTP requests; organize APIs in collections and nested fol
 
 Installed startup and local data operations require no account, cloud service or developer Node/npm. Sending requests requires access to the target API. Data stays on your computer; no automatic updates are provided.
 
-## Download v0.1.1
+## Download v0.2.0
 
 | Platform | Installer |
 |---|---|
-| Ubuntu 24.04 x64 | [Download .deb](https://github.com/miladmoham1400/api-client/releases/download/v0.1.1/offline-api-client-0.1.1-amd64.deb) |
-| Windows x64 | [Download .exe](https://github.com/miladmoham1400/api-client/releases/download/v0.1.1/offline-api-client-0.1.1-x64-setup.exe) |
-| Linux x64 | [Download AppImage](https://github.com/miladmoham1400/api-client/releases/download/v0.1.1/offline-api-client-0.1.1-x86_64.AppImage) |
+| Ubuntu 24.04 x64 | [Download .deb](https://github.com/miladmoham1400/api-client/releases/download/v0.2.0/offline-api-client-0.2.0-amd64.deb) |
+| Windows x64 | [Download .exe](https://github.com/miladmoham1400/api-client/releases/download/v0.2.0/offline-api-client-0.2.0-x64-setup.exe) |
+| Linux x64 | [Download AppImage](https://github.com/miladmoham1400/api-client/releases/download/v0.2.0/offline-api-client-0.2.0-x86_64.AppImage) |
 
-Verify downloads with [SHA256SUMS.txt](https://github.com/miladmoham1400/api-client/releases/download/v0.1.1/SHA256SUMS.txt). See [release notes and verification limits](https://github.com/miladmoham1400/api-client/releases/tag/v0.1.1).
+Verify downloads with [SHA256SUMS.txt](https://github.com/miladmoham1400/api-client/releases/download/v0.2.0/SHA256SUMS.txt). See [release notes and verification limits](https://github.com/miladmoham1400/api-client/releases/tag/v0.2.0).
 
-The public v0.1.1 installers are older than the current source: they do not include the nested API library or distinct HTTP method colors. They are unsigned pre-release builds. Focused installed checks passed on Ubuntu 24.04 and Windows Server 2022; full Windows 11 acceptance for those public package bytes remains unverified. AppImage extraction-and-run was tested; default FUSE launch remains unverified.
+These unsigned pre-release installers include the nested API library and distinct HTTP method colors. [Native builds](https://github.com/miladmoham1400/api-client/actions/runs/38358944238) passed 369 Linux unit tests, 368 Windows unit tests (1 native permission fixture skipped), and 13 installed-app tests on each OS. Builds and installed checks ran on Ubuntu 24.04 and Windows Server 2022; full Windows 11, offline/manual chooser and uninstall/reinstall acceptance has not been repeated for these public package bytes. Hosted installed checks target the deb and exe; default AppImage FUSE launch remains unverified.
 
 ### Install and use
 
-- Ubuntu: download the `.deb`, then run `sudo apt install ./offline-api-client-0.1.1-amd64.deb` from its directory.
+- Ubuntu: download the `.deb`, then run `sudo apt install ./offline-api-client-0.2.0-amd64.deb` from its directory.
 - Windows: run the downloaded `.exe` installer. Windows may show an unsigned-app reputation prompt.
-- AppImage: make it executable with `chmod +x offline-api-client-0.1.1-x86_64.AppImage`. If FUSE is unavailable, run it with `--appimage-extract-and-run`.
+- AppImage: make it executable with `chmod +x offline-api-client-0.2.0-x86_64.AppImage`. If FUSE is unavailable, run it with `--appimage-extract-and-run`.
 
 Open the app, create a workspace and request, enter a method and URL, then select **Send**. **Save** stores edits separately from sending. Responses are untrusted text; response HTML is never executed. Mark sensitive variables appropriately; if secure OS storage is unavailable, secrets remain session-only. Workspace exports omit credential values and local upload paths by default.
 
