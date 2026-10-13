@@ -1,250 +1,0 @@
-
->>> uname -a [2026-10-12T21:54:48+03:30]
-Linux milad-pc 7.0.0-38-generic #38~24.04.4-Ubuntu SMP PREEMPT_DYNAMIC Mon Sep 14 16:37:11 UTC 2 x86_64 x86_64 x86_64 GNU/Linux
-[exit 0]
-
->>> lsb_release -ds [2026-10-12T21:54:48+03:30]
-Ubuntu 24.04.3 LTS
-[exit 0]
-
->>> git rev-parse HEAD [2026-10-12T21:54:48+03:30]
-0586aaf22f3587ebf953c25e25531018a1ee8583
-[exit 0]
-
->>> git status --porcelain [2026-10-12T21:54:48+03:30]
- M .gitignore
- M docs/known-limitations.md
- M docs/release-acceptance.md
- M docs/task-index.md
- M docs/task-reports/TASK-037.md
- M docs/tasks/TASK-037-api-library-acceptance.md
-?? docs/task-reports/TASK-037-linux-fixed-performance.json
-?? task037-fix.patch
-?? task037-linux-acceptance.sh
-[exit 0]
-
->>> node --version [2026-10-12T21:54:48+03:30]
-v22.18.0
-[exit 0]
-
->>> npm --version [2026-10-12T21:54:48+03:30]
-11.6.2
-[exit 0]
-Patch already applied; no source overwritten.
-offline-api-client-0.1.1-amd64.deb: OK
-offline-api-client-0.1.1-x86_64.AppImage: OK
-
->>> stat -c %n %s bytes /home/milad/Projects/Personal/api-client/dist/task037-linux-fix/20261012-codex/offline-api-client-0.1.1-amd64.deb /home/milad/Projects/Personal/api-client/dist/task037-linux-fix/20261012-codex/offline-api-client-0.1.1-x86_64.AppImage [2026-10-12T21:54:49+03:30]
-/home/milad/Projects/Personal/api-client/dist/task037-linux-fix/20261012-codex/offline-api-client-0.1.1-amd64.deb 112870776 bytes
-/home/milad/Projects/Personal/api-client/dist/task037-linux-fix/20261012-codex/offline-api-client-0.1.1-x86_64.AppImage 143974205 bytes
-[exit 0]
-
->>> dpkg-deb -f /home/milad/Projects/Personal/api-client/dist/task037-linux-fix/20261012-codex/offline-api-client-0.1.1-amd64.deb Package Version Architecture [2026-10-12T21:54:49+03:30]
-Package: offline-api-client
-Version: 0.1.1
-Architecture: amd64
-[exit 0]
-
->>> sudo -v [2026-10-12T21:54:49+03:30]
-[exit 0]
-offline-api-client 0.1.1 install ok installed
-
->>> sudo apt-get install --reinstall --no-remove -y /home/milad/Projects/Personal/api-client/dist/task037-linux-fix/20261012-codex/offline-api-client-0.1.1-amd64.deb [2026-10-12T21:54:49+03:30]
-Reading package lists...
-Building dependency tree...
-Reading state information...
-The following package was automatically installed and is no longer required:
-  nvidia-firmware-595-595.84
-Use 'sudo apt autoremove' to remove it.
-0 upgraded, 0 newly installed, 1 reinstalled, 0 to remove and 0 not upgraded.
-Need to get 0 B/113 MB of archives.
-After this operation, 0 B of additional disk space will be used.
-Get:1 /home/milad/Projects/Personal/api-client/dist/task037-linux-fix/20261012-codex/offline-api-client-0.1.1-amd64.deb offline-api-client amd64 0.1.1 [113 MB]
-(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 364712 files and directories currently installed.)
-Preparing to unpack .../offline-api-client-0.1.1-amd64.deb ...
-Unpacking offline-api-client (0.1.1) over (0.1.1) ...
-Setting up offline-api-client (0.1.1) ...
-update-alternatives: using /opt/offline-api-client/offline-api-client to provide /usr/bin/offline-api-client (offline-api-client) in auto mode
-Processing triggers for hicolor-icon-theme (0.17-2) ...
-Processing triggers for gnome-menus (3.36.0-1.1ubuntu3) ...
-Processing triggers for desktop-file-utils (0.27-2build1) ...
-[exit 0]
-
->>> dpkg-query -W -f=${Package} ${Version} ${Status}\n offline-api-client [2026-10-12T21:55:12+03:30]
-offline-api-client 0.1.1 install ok installed
-[exit 0]
-
->>> cmp /home/milad/Projects/Personal/api-client/dist/task037-linux-fix/20261012-codex/deb-extracted/opt/offline-api-client/offline-api-client /opt/offline-api-client/offline-api-client [2026-10-12T21:55:12+03:30]
-[exit 0]
-
->>> cmp /home/milad/Projects/Personal/api-client/dist/task037-linux-fix/20261012-codex/deb-extracted/opt/offline-api-client/resources/app.asar /opt/offline-api-client/resources/app.asar [2026-10-12T21:55:12+03:30]
-[exit 0]
-
->>> cmp /home/milad/Projects/Personal/api-client/dist/task037-linux-fix/20261012-codex/deb-extracted/opt/offline-api-client/resources/app.asar.unpacked/node_modules/better-sqlite3/prebuilds/linux-x64.node /opt/offline-api-client/resources/app.asar.unpacked/node_modules/better-sqlite3/prebuilds/linux-x64.node [2026-10-12T21:55:12+03:30]
-[exit 0]
-
->>> env API_CLIENT_EXECUTABLE=/opt/offline-api-client/offline-api-client API_CLIENT_PERFORMANCE_REPORT=/home/milad/Projects/Personal/api-client/task037-evidence-linux/20261012-215448/installed-performance.json bash scripts/test-offline.sh --reporter=list [2026-10-12T21:55:12+03:30]
-lo               UNKNOWN        127.0.0.1/8 ::1/128 
-
-Running 36 tests using 1 worker
-
-  ✓   1 tests/auth.spec.ts:8:5 › auth editing saves literal handles, templates, replacements and missing session state without enabling Send (4.4s)
-Embedded runtime: {
-  node: '24.21.0',
-  acorn: '8.18.0',
-  ada: '4.0.0',
-  amaro: '1.1.11',
-  ares: '1.34.8',
-  brotli: '1.2.0',
-  cldr: '48.0',
-  icu: '78.2',
-  llhttp: '9.4.3',
-  merve: '1.2.2',
-  modules: '149',
-  napi: '10',
-  nbytes: '0.1.4',
-  ncrypto: '0.0.1',
-  nghttp2: '1.70.0',
-  nghttp3: '',
-  ngtcp2: '',
-  openssl: '0.0.0',
-  simdjson: '4.6.7',
-  simdutf: '7.7.0',
-  sqlite: '3.53.4',
-  tz: '2025c',
-  undici: '7.29.1',
-  unicode: '17.0',
-  uv: '1.52.1',
-  uvwasi: '0.0.23',
-  v8: '15.2.124.28-electron.0',
-  zlib: '1.3.2.1-motley',
-  zstd: '1.6.0',
-  electron: '44.5.1',
-  chrome: '152.0.7977.130'
-}
-  ✓   2 tests/baseline.spec.ts:7:5 › built local Electron window renders Chakra without remote resources (1.2s)
-  ✓   3 tests/body-editor.spec.ts:8:5 › body modes retain inactive drafts while Save/restart persists only the active source (4.3s)
-  ✓   4 tests/cancel-timeout.spec.ts:9:5 › Send/Cancel and Ctrl+Enter execute unsaved snapshots, release busy state and never save implicitly (2.7s)
-  ✓   5 tests/collections.spec.ts:12:5 › collection tree CRUD, contextual moves, failure rollback and workspace isolation preserve saved requests after reopen (9.2s)
-  ✓   6 tests/database.spec.ts:8:5 › native SQLite loads in Electron, reopens saved data and reports corrupt startup without replacement (2.8s)
-  ✓   7 tests/execution.spec.ts:10:5 › sandboxed preload sends captured native requests, receives immediate completion and cleans up execution lifetimes (1.9s)
-  ✓   8 tests/export.spec.ts:12:5 › native workspace export/cancel preserves saved configuration, omissions and unsaved editor; destination errors retain data (13.0s)
-  ✓   9 tests/folders.spec.ts:10:5 › registered folder bridge preserves nested requests through move, duplicate, deletion and restart without sending (2.8s)
-  ✓  10 tests/import.spec.ts:12:5 › native export/import preview confirms only a new workspace, cancels neutrally, rejects invalid data and never sends (24.9s)
-  ✓  11 tests/json-presentation.spec.ts:9:5 › JSON colors preserve editing, wire bytes and safe raw/pretty text across themes (3.1s)
-{"coldMs":1357.7378800000006,"selections":[277.9016300000076,228.21105699999316,228.19198600000527,230.30288299999665,211.80246999999508,227.8481909999973,228.34052299999166,164.9477909999987,146.8872180000035,181.09208200000285,164.672264000008,229.55981400000746,228.01989699999103,212.20357300000614,246.17388200000278,229.4600000000064,197.1764770000009,211.83750700000382,295.531032999992,212.3650939999934],"searches":[152.05665100000624,150.1808250000031,134.23734800000966,149.16431200000807,150.27408799999102,133.98113000000012,150.6356220000016,116.44658000000345,116.45936799999618,116.17952299999888,100.25948600000993,149.86537300000782,149.9951180000062,149.94321100000525,116.34569099999499,167.00841100000252,132.98405999998795,133.0757190000004,149.69450899999356,149.73372799999197],"selectionP95":277.9016300000076,"searchP95":152.05665100000624,"maxTreeRows":50,"maxSearchRows":100,"searchCounts":[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],"platform":"linux","cpu":"11th Gen Intel(R) Core(TM) i7-1165G7 @ 2.80GHz","logicalCpus":8,"memoryBytes":16538353664,"dataset":{"requests":1000,"folders":1000,"collections":100,"depth":16,"otherRequests":1},"viewport":{"width":1280,"height":720}}
-  ✓  12 tests/library-scale.spec.ts:11:5 › 1000 requests/1000 folders remain bounded, paged, searchable, guarded and correct on the wire with measured readiness (25.1s)
-  ✓  13 tests/library-search.spec.ts:8:5 › late search replies cannot replace newer queries or cross workspace changes (1.9s)
-  ✓  14 tests/library-search.spec.ts:42:5 › search result selection respects active Stay/Cancel and dirty Save decisions without sending another request (2.9s)
-  ✓  15 tests/library-tree.spec.ts:35:5 › Users/Admin and Users/Auth contextual tree works, sends only selected request, preserves paths/deletion and expansion on normal restart (15.1s)
-  ✓  16 tests/library-tree.spec.ts:105:5 › folder actions use dirty and active-send guards; cancelled contextual drafts never create a blank saved row (9.3s)
-  ✓  17 tests/library-upgrade.spec.ts:13:5 › closed phase-1 database upgrades in the target app without losing 1005 requests, configs, secrets, variables or state (5.0s)
-  ✓  18 tests/multi-request.spec.ts:9:5 › twenty explicitly saved requests remain independently selectable, grouped and sendable after normal reopen (32.8s)
-  ✓  19 tests/multipart.spec.ts:12:5 › multipart editor selects native files, sends unsaved rows, preserves selection on Save and requires reselection after restart (14.8s)
-  ✓  20 tests/navigation.spec.ts:30:5 › dirty request/workspace navigation, failed Save and normal close preserve explicit decisions and selection (11.5s)
-  ✓  21 tests/navigation.spec.ts:133:5 › confirmed request/collection/workspace deletions cannot bypass dirty or active-request guards (12.8s)
-  ✓  22 tests/navigation.spec.ts:239:5 › cancel-and-navigate waits for an attempt still preparing before an execution ID exists (5.0s)
-Offline proof: only lo, no IPv4 routes, non-root Electron, external probe ENETUNREACH
-Offline actual secret storage mode: secure
-  ✓  23 tests/offline.spec.ts:15:5 › loopback-only integrated story: persistence, isolation, failures and safe transfer recovery (13.9s)
-  ✓  24 tests/panel-layout.spec.ts:9:5 › layout toggle and pointer/keyboard resizing preserve drafts, inactive body modes and Pretty response (4.7s)
-  ✓  25 tests/redirects.spec.ts:11:5 › sandboxed Electron follows redirects, strips credentials permanently and rejects verified HTTPS downgrade (1.4s)
-  ✓  26 tests/request-fields.spec.ts:8:5 › keyboard row editing preserves duplicate/disabled/order and validated settings after restart (5.1s)
-  ✓  27 tests/requests.spec.ts:8:5 › explicit Save/Ctrl+S persists independent drafts; failed save, duplicate and delete are safe (5.6s)
-  ✓  28 tests/response-viewer.spec.ts:10:5 › response viewer safely presents HTTP/error/binary states, snapshots, stale events and restart emptiness (8.6s)
-Actual safeStorage capability: {
-  available: true,
-  backend: 'gnome_libsecret',
-  mode: 'secure',
-  roundTrip: true,
-  plaintextAbsent: true
-}
-  ✓  29 tests/secrets.spec.ts:8:5 › real Electron reports safeStorage capability without exposing synthetic values (1.1s)
-  ✓  30 tests/security.spec.ts:9:5 › owned production window exposes only validated APIs and denies browser capabilities (2.0s)
-  ✓  31 tests/shell.spec.ts:8:5 › shell fits desktop sizes, traps/restores dialog focus and recovers from bootstrap failure (3.7s)
-light field-error contrast 8.374706273455857
-dark field-error contrast 10.48245210373737
-  ✓  32 tests/theme.spec.ts:9:5 › theme survives restart and failed saves without draft loss; keyboard scopes, contrast and resizing work in both appearances (7.8s)
-  ✓  33 tests/uploads.spec.ts:13:5 › Linux native selection/cancel, workspace isolation, reload and restart require reselection (11.5s)
-  ✓  34 tests/urlencoded.spec.ts:9:5 › form editor sends unsaved ordered snapshots, validates before I/O and reopens saved forms (5.9s)
-  ✓  35 tests/variables.spec.ts:8:5 › two-workspace environments and variables preserve scope, masking, selection and restart state (6.9s)
-  ✓  36 tests/workspaces.spec.ts:8:5 › workspace CRUD and selection persist across restart; confirmation and failed writes retain data (11.4s)
-
-  36 passed (5.0m)
-[exit 0]
-
->>> env API_CLIENT_PRESERVATION_DIR=/tmp/api-client-task028-preservation-AhsDrJ6jaf API_CLIENT_EXECUTABLE=/opt/offline-api-client/offline-api-client API_CLIENT_PRESERVATION_PHASE=seed bash scripts/test-offline.sh --config playwright.linux-preservation.config.ts [2026-10-12T22:00:11+03:30]
-lo               UNKNOWN        127.0.0.1/8 ::1/128 
-
-Running 1 test using 1 worker
-
-  ✓  1 tests/linux-preservation.check.ts:12:5 › installed Linux app preserves the same synthetic configuration across actual package removal/reinstall (1.4s)
-
-  1 passed (2.1s)
-[exit 0]
-Closed synthetic DB before removal: 54abe211d532094196ac7c35304721220f5aa2ae55bc85ff21ba790d3b4cdce3
-
->>> sudo apt-get remove -y offline-api-client [2026-10-12T22:00:14+03:30]
-Reading package lists...
-Building dependency tree...
-Reading state information...
-The following package was automatically installed and is no longer required:
-  nvidia-firmware-595-595.84
-Use 'sudo apt autoremove' to remove it.
-The following packages will be REMOVED:
-  offline-api-client
-0 upgraded, 0 newly installed, 1 to remove and 0 not upgraded.
-After this operation, 365 MB disk space will be freed.
-(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 364712 files and directories currently installed.)
-Removing offline-api-client (0.1.1) ...
-update-alternatives: warning: alternative /opt/offline-api-client/offline-api-client (part of link group offline-api-client) doesn't exist; removing from list of alternatives
-update-alternatives: warning: /etc/alternatives/offline-api-client is dangling; it will be updated with best choice
-Processing triggers for hicolor-icon-theme (0.17-2) ...
-Processing triggers for gnome-menus (3.36.0-1.1ubuntu3) ...
-Processing triggers for desktop-file-utils (0.27-2build1) ...
-[exit 0]
-Closed synthetic DB after removal: 54abe211d532094196ac7c35304721220f5aa2ae55bc85ff21ba790d3b4cdce3
-
->>> sudo apt-get install --no-remove -y /home/milad/Projects/Personal/api-client/dist/task037-linux-fix/20261012-codex/offline-api-client-0.1.1-amd64.deb [2026-10-12T22:00:17+03:30]
-Reading package lists...
-Building dependency tree...
-Reading state information...
-The following package was automatically installed and is no longer required:
-  nvidia-firmware-595-595.84
-Use 'sudo apt autoremove' to remove it.
-The following NEW packages will be installed:
-  offline-api-client
-0 upgraded, 1 newly installed, 0 to remove and 0 not upgraded.
-Need to get 0 B/113 MB of archives.
-After this operation, 365 MB of additional disk space will be used.
-Get:1 /home/milad/Projects/Personal/api-client/dist/task037-linux-fix/20261012-codex/offline-api-client-0.1.1-amd64.deb offline-api-client amd64 0.1.1 [113 MB]
-Selecting previously unselected package offline-api-client.
-(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 364548 files and directories currently installed.)
-Preparing to unpack .../offline-api-client-0.1.1-amd64.deb ...
-Unpacking offline-api-client (0.1.1) ...
-Setting up offline-api-client (0.1.1) ...
-update-alternatives: using /opt/offline-api-client/offline-api-client to provide /usr/bin/offline-api-client (offline-api-client) in auto mode
-Processing triggers for hicolor-icon-theme (0.17-2) ...
-Processing triggers for gnome-menus (3.36.0-1.1ubuntu3) ...
-Processing triggers for desktop-file-utils (0.27-2build1) ...
-[exit 0]
-
->>> cmp /home/milad/Projects/Personal/api-client/dist/task037-linux-fix/20261012-codex/deb-extracted/opt/offline-api-client/offline-api-client /opt/offline-api-client/offline-api-client [2026-10-12T22:00:37+03:30]
-[exit 0]
-
->>> cmp /home/milad/Projects/Personal/api-client/dist/task037-linux-fix/20261012-codex/deb-extracted/opt/offline-api-client/resources/app.asar /opt/offline-api-client/resources/app.asar [2026-10-12T22:00:38+03:30]
-[exit 0]
-
->>> cmp /home/milad/Projects/Personal/api-client/dist/task037-linux-fix/20261012-codex/deb-extracted/opt/offline-api-client/resources/app.asar.unpacked/node_modules/better-sqlite3/prebuilds/linux-x64.node /opt/offline-api-client/resources/app.asar.unpacked/node_modules/better-sqlite3/prebuilds/linux-x64.node [2026-10-12T22:00:38+03:30]
-[exit 0]
-
->>> env API_CLIENT_PRESERVATION_DIR=/tmp/api-client-task028-preservation-AhsDrJ6jaf API_CLIENT_EXECUTABLE=/opt/offline-api-client/offline-api-client API_CLIENT_PRESERVATION_PHASE=verify bash scripts/test-offline.sh --config playwright.linux-preservation.config.ts [2026-10-12T22:00:38+03:30]
-lo               UNKNOWN        127.0.0.1/8 ::1/128 
-
-Running 1 test using 1 worker
-
-  ✓  1 tests/linux-preservation.check.ts:12:5 › installed Linux app preserves the same synthetic configuration across actual package removal/reinstall (1.4s)
-
-  1 passed (2.1s)
-[exit 0]
-INSTALLED ACCEPTANCE PASSED. Evidence: /home/milad/Projects/Personal/api-client/task037-evidence-linux/20261012-215448; update TASK-037 only after reviewing all platform evidence.

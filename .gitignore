@@ -17,3 +17,19 @@ __pycache__/
 task037-evidence-linux/
 task037-fix.patch
 task037-linux-acceptance.sh
+
+# Local planning, acceptance evidence and optional assistant tooling.
+# Release notes remain tracked: the publication workflow reads them.
+/docs/*
+!/docs/releases/
+/AGENTS.md
+/START-CODEX.md
+/.agents/
+/.graphifyignore
+/tools/graphify/
+/scripts/graphify.py
+/scripts/setup-graphify.py
+/task*-evidence/
+/task*-evidence-linux/
+/build/README.md
+/build/icon-source.png

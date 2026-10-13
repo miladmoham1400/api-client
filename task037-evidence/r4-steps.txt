@@ -1,7 +1,0 @@
-# TASK-037 installed fixed-build desktop suite (API_CLIENT_EXECUTABLE and API_CLIENT_PERFORMANCE_REPORT set by r4-desktop-suite.cmd)
-ver
-powershell -NoProfile -Command (Get-Item $env:API_CLIENT_EXECUTABLE).VersionInfo.ProductVersion
-powershell -NoProfile -Command (Get-FileHash $env:API_CLIENT_EXECUTABLE -Algorithm SHA256).Hash
-netsh advfirewall firewall show rule name=TASK037-block-offline-api-client
-npm.cmd exec --no -- playwright test --reporter=list
-npm.cmd exec --no -- playwright test tests/library-tree.spec.ts tests/navigation.spec.ts tests/requests.spec.ts --reporter=list --repeat-each=5

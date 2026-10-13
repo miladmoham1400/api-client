@@ -1,2 +1,0 @@
-# TASK-037 diagnostic only: rename-after-dirty-Save race probe against the INSTALLED app, three repetitions
-npm.cmd exec --no -- playwright test --config task037-evidence/diag.config.ts --repeat-each=3

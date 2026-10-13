@@ -1,2 +1,0 @@
-# TASK-037 focused rerun of the two guard specs that failed in w3 (installed app, same isolation), twice each, keeping traces on failure
-npm.cmd exec --no -- playwright test tests/library-tree.spec.ts tests/navigation.spec.ts --reporter=list --repeat-each=2 --trace=retain-on-failure

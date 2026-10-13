@@ -1,5 +1,0 @@
-# TASK-037 installed-app desktop suite steps (API_CLIENT_EXECUTABLE and API_CLIENT_PERFORMANCE_REPORT are set by w3-desktop-suite.cmd)
-ver
-powershell -NoProfile -Command (Get-Item $env:API_CLIENT_EXECUTABLE).VersionInfo.ProductVersion
-netsh advfirewall firewall show rule name=TASK037-block-offline-api-client
-npm.cmd exec --no -- playwright test --reporter=list
