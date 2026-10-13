@@ -59,3 +59,8 @@ Use pinned form-data-encoder 4.1.0 for multipart delimiters, name escaping, Form
 ## Nested API library priority — 2026-10-11
 
 User explicitly authorized documenting this as the first next milestone: collections contain nested folders and many saved APIs, with fast selection and explicit sending. Keep one editor/one send; do not add tabs, history, scripts, inherited auth or cloud. Use a collection-owned adjacency hierarchy, owned destination validation and append-only SQLite migration. Preserve request IDs/config/secret ownership; delete folder by promoting direct contents and delete collection by moving all requests to workspace root. Add v2 transfer with v1 import compatibility, bounded metadata search and a 1,000-request/1,000-folder acceptance baseline. Full specification: [API library](api-library.md). Tasks: TASK-031–037; all are initially todo. Only documentation/planning was authorized for this turn, not implementation or a new release.
+
+
+## HTTP method colors — 2026-10-12
+
+User requested distinct request-type colors before the next release. Reuse bundled Chakra v3 semantic palettes consistently in tree/search badges and the native editor selector: GET green, POST yellow, PUT blue, PATCH orange, DELETE red, HEAD purple, OPTIONS cyan. Keep method text and native keyboard behavior; no package, request logic or persistence change. This is a post-TASK-037 source presentation enhancement, with [Linux visual/contrast evidence and platform limits](tooling-reports/http-method-colors.md). Existing accepted/public installers do not include it; fresh package verification is needed before publication.

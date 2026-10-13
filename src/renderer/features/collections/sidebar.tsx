@@ -1,3 +1,4 @@
+import { httpMethodPalette } from '../../theme/http-method'
 import { LibrarySearch } from '../library/search'
 import type { GuardTransition } from '../navigation/transition'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -160,7 +161,7 @@ export function CollectionSidebar({workspaceId,requestController,guard}:{guard:G
               if(key==='Enter' && !locked) void choose(node)
             }}>
             <Button aria-label={node.label} tabIndex={-1} variant="ghost" size="sm" minW="0" flex="1" justifyContent="start" whiteSpace="normal" h="auto" py="2" disabled={locked} onClick={() => { focus(node.id); void choose(node) }}>
-              {node.kind==='request' ? <Badge colorPalette="blue" fontSize="xs">{node.method}</Badge> : <Text aria-hidden="true">{expanded.has(node.id) ? '▾' : '▸'}</Text>}
+              {node.kind==='request' ? <Badge colorPalette={httpMethodPalette(node.method)} fontSize="xs">{node.method}</Badge> : <Text aria-hidden="true">{expanded.has(node.id) ? '▾' : '▸'}</Text>}
               <Text overflowWrap="anywhere" textAlign="left">{node.label}</Text>
             </Button>
             <Menu.Root><Menu.Trigger asChild><Button ref={el => { if(el) triggers.current.set(node.id,el); else triggers.current.delete(node.id) }} variant="ghost" size="xs" disabled={locked} aria-label={`Actions for ${node.kind}: ${node.label}`}>⋯</Button></Menu.Trigger>

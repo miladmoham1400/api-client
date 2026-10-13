@@ -1,3 +1,4 @@
+import { httpMethodPalette } from '../../theme/http-method'
 import { useEffect, useRef, useState } from 'react'
 import { Badge, Box, Button, Input, NativeSelect, Text } from '@chakra-ui/react'
 import type { SearchPage } from '../../../shared/library-search'
@@ -36,7 +37,7 @@ export function LibrarySearch({workspaceId,snapshot,revision,locked,onSelect,onS
       {error && <Box role="alert"><Text>Search changed or is unavailable. Restart from the first page.</Text><Button size="xs" onClick={()=>{void fetchRef.current(0)}}>Retry search</Button></Box>}
       {page && <>
         <Text role="status" data-search-ready={page.query} fontSize="xs">{page.total ? page.offset+1 : 0}–{page.offset+page.rows.length} of {page.total} requests</Text>
-        {page.rows.map((row,index)=><Button key={row.id} data-search-id={row.id} title={row.id} variant="ghost" h="auto" py="2" w="full" whiteSpace="normal" justifyContent="start" disabled={locked} onClick={()=>{void onSelect(row.id)}}><Box textAlign="left" overflowWrap="anywhere"><Badge colorPalette="blue">{row.method}</Badge> {row.name}<Text fontSize="xs">{row.path} · #{page.offset+index+1}</Text></Box></Button>)}
+        {page.rows.map((row,index)=><Button key={row.id} data-search-id={row.id} title={row.id} variant="ghost" h="auto" py="2" w="full" whiteSpace="normal" justifyContent="start" disabled={locked} onClick={()=>{void onSelect(row.id)}}><Box textAlign="left" overflowWrap="anywhere"><Badge colorPalette={httpMethodPalette(row.method)}>{row.method}</Badge> {row.name}<Text fontSize="xs">{row.path} · #{page.offset+index+1}</Text></Box></Button>)}
         {page.offset>0 && <Button size="xs" variant="outline" onClick={()=>{void fetchRef.current(Math.max(0,page.offset-page.limit),page.revision)}}>Previous results</Button>}
         {page.nextOffset!==null && <Button size="xs" variant="outline" onClick={()=>{void fetchRef.current(page.nextOffset!,page.revision)}}>Next results</Button>}
       </>}

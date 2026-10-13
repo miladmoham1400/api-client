@@ -1,3 +1,4 @@
+import { httpMethodPalette } from '../../theme/http-method'
 import type { GuardTransition } from '../navigation/transition'
 import { useEffect, useRef, useState } from 'react'
 import { Box, Button, Dialog, Flex, Heading, Input, NativeSelect, Portal, Tabs, Text } from '@chakra-ui/react'
@@ -36,8 +37,8 @@ export function RequestEditor({ controller: c, guard }: { controller: RequestCon
     {c.draft && <Text aria-label="Request location" fontSize="sm" color="fg.muted" mb="2" overflowWrap="anywhere">{c.path}</Text>}
     {c.draft && <Box mb="3"><label htmlFor="request-name">Request name</label><Input id="request-name" value={c.draft.name} aria-invalid={!!c.validation.name} aria-describedby={c.validation.name ? "request-name-error" : undefined} disabled={c.busy} onChange={event => { if (c.draft) c.setDraft({ ...c.draft, name: event.target.value }) }} />{c.validation.name && <Text id="request-name-error" role="alert" color="red.fg">name: {c.validation.name}</Text>}</Box>}
     <Flex gap="2" mb="3" flexWrap="wrap">
-      <NativeSelect.Root width="110px" flexShrink="0" disabled={!c.draft || c.busy}><NativeSelect.Field aria-label="HTTP method" value={c.draft?.method ?? ''} onChange={event => { if (c.draft) c.setDraft({ ...c.draft, method: httpMethodSchema.parse(event.target.value) }) }}>
-        {!c.draft && <option value="">Method</option>}{httpMethodSchema.options.map(method => <option key={method} value={method}>{method}</option>)}
+      <NativeSelect.Root colorPalette={httpMethodPalette(c.draft?.method)} width="110px" flexShrink="0" disabled={!c.draft || c.busy}><NativeSelect.Field color="colorPalette.fg" bg="colorPalette.subtle" fontWeight="semibold" aria-label="HTTP method" value={c.draft?.method ?? ''} onChange={event => { if (c.draft) c.setDraft({ ...c.draft, method: httpMethodSchema.parse(event.target.value) }) }}>
+        {!c.draft && <option value="">Method</option>}{httpMethodSchema.options.map(method => <option key={method} value={method} style={{ color: `var(--chakra-colors-${httpMethodPalette(method)}-fg)`, backgroundColor: 'var(--chakra-colors-bg)' }}>{method}</option>)}
       </NativeSelect.Field><NativeSelect.Indicator /></NativeSelect.Root>
       <Input flex="1" minW="140px" aria-label="Request URL" placeholder="Request URL" aria-invalid={!!c.validation.urlTemplate} aria-describedby={c.validation.urlTemplate ? "request-url-error" : undefined} value={c.draft?.urlTemplate ?? ''} disabled={!c.draft || c.busy} onChange={event => { if (c.draft) c.setDraft({ ...c.draft, urlTemplate: event.target.value }) }} />
       <Button disabled={!c.canSend || c.busy} onClick={() => { void c.send() }}>Send</Button><Button disabled={!c.canCancel} variant="outline" onClick={() => { void c.cancel() }}>{c.cancelling ? 'Cancelling…' : 'Cancel'}</Button>
