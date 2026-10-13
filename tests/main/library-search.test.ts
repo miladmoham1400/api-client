@@ -18,14 +18,17 @@ function fixture() {
   const r=new Repositories(db),w=r.createWorkspace('Search').id,other=r.createWorkspace('Other').id,c=r.createCollection(w,'Café Users').id,f=r.createFolder(w,c,null,'Auth').id,foreign=r.createCollection(other,'Foreign').id
   r.selectWorkspace(w)
   const frame={url:'file:///app/index.html'},contents={mainFrame:frame},service=new RequestService(db),handlers=createRequestHandlers(()=>({isDestroyed:()=>false,webContents:contents}),frame.url,()=>service)
-  return {r,w,other,c,f,foreign,service,handlers,event:{sender:contents,senderFrame:frame},frame,contents}
+  return {db,r,w,other,c,f,foreign,service,handlers,event:{sender:contents,senderFrame:frame},frame,contents}
 }
 it('searches literal NFC Latin-folded metadata/path only, retaining duplicates and stable complete pages',()=>{
   const f=fixture()
   const config={...stored(),method:'POST' as const,body:{kind:'json' as const,text:'{"privateMarker":"payloadOnly"}'},urlTemplate:'http://urlOnly.invalid',headerRows:[{id:randomUUID(),key:'X-Test',value:'headerOnly',enabled:true}]}
-  for(let i=0;i<205;i++) f.r.createRequest(f.w,i<2 ? 'Duplicate' : `Item ${String(i).padStart(3,'0')}`,f.c,config,f.f)
-  f.r.createRequest(f.w,'Literal %_*[x]',null,stored())
-  f.r.createRequest(f.other,'Item foreign',f.foreign,stored())
+  // Seed in one transaction so fixture disk commits do not dominate this search test.
+  f.db.transaction(()=>{
+    for(let i=0;i<205;i++) f.r.createRequest(f.w,i<2 ? 'Duplicate' : `Item ${String(i).padStart(3,'0')}`,f.c,config,f.f)
+    f.r.createRequest(f.w,'Literal %_*[x]',null,stored())
+    f.r.createRequest(f.other,'Item foreign',f.foreign,stored())
+  })()
   const read=vi.spyOn(Repositories.prototype,'getRequest').mockImplementation(()=>{throw new Error('No configs')})
   const args={query:' cafe\u0301 USERS / AUTH ',offset:0,limit:100}
   const first=f.service.search(f.w,args),second=f.service.search(f.w,{...args,offset:first.nextOffset!,revision:first.revision}),third=f.service.search(f.w,{...args,offset:second.nextOffset!,revision:second.revision})
