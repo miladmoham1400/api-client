@@ -73,7 +73,7 @@ test('closed phase-1 database upgrades in the target app without losing 1005 req
     expect(other).toMatchObject({ok:true,data:{requests:[expect.objectContaining({name:'Legacy API 1003'})],editor:null}})
     await page.getByLabel('Workspace',{exact:true}).selectOption(before.w)
     await expect(page.getByLabel('Request name',{exact:true})).toHaveValue('Legacy selected')
-    await expect(page.getByRole('button',{name:'Save',exact:true})).toBeEnabled()
+    await expect(page.getByLabel('Request name',{exact:true})).toBeEnabled()
     await app.close();app=await launchDesktop({args:['.'],chromiumSandbox:true,env:envFor(legacy)});page=await app.firstWindow()
     await expect(page.getByLabel('Request name',{exact:true})).toHaveValue('Legacy selected')
     const reopened=await page.evaluate(w=>window.offlineApi.requests.list(w),before.w)

@@ -2,7 +2,7 @@
 
 An offline desktop HTTP client for Linux and Windows, built with Electron, React, TypeScript, SQLite and Chakra UI v3.
 
-Create, save and send HTTP requests; organize APIs in collections and nested folders; search requests; use workspaces, environments and variables. The source includes JSON syntax highlighting, distinct HTTP method colors, light/dark themes and adjustable stacked or side-by-side request/response panels. One request editor is active at a time.
+Create, save and send HTTP requests; organize APIs in collections and nested folders; search requests; use workspaces, environments and variables. The 0.3.0 source includes a dark glass interface, automatic saving, collapsible Pretty JSON, isolated static HTML previews, distinct HTTP method colors and adjustable side-by-side request/response panels. One request editor is active at a time.
 
 Installed startup and local data operations require no account, cloud service or developer Node/npm. Sending requests requires access to the target API. Data stays on your computer; no automatic updates are provided.
 
@@ -24,7 +24,7 @@ These unsigned pre-release installers include the nested API library and distinc
 - Windows: run the downloaded `.exe` installer. Windows may show an unsigned-app reputation prompt.
 - AppImage: make it executable with `chmod +x offline-api-client-0.2.0-x86_64.AppImage`. If FUSE is unavailable, run it with `--appimage-extract-and-run`.
 
-Open the app, create a workspace and request, enter a method and URL, then select **Send**. **Save** stores edits separately from sending. Responses are untrusted text; response HTML is never executed. Mark sensitive variables appropriately; if secure OS storage is unavailable, secrets remain session-only. Workspace exports omit credential values and local upload paths by default.
+Open the app, create a workspace and request, enter a method and URL, then select **Send**. The current 0.2.0 downloads use manual **Save**; the 0.3.0 source automatically saves valid edits and supports **Ctrl+S** to flush/retry. Responses are untrusted text; response HTML is never executed. Mark sensitive variables appropriately; if secure OS storage is unavailable, secrets remain session-only. Workspace exports omit credential values and local upload paths by default.
 
 ## Development
 
@@ -64,3 +64,7 @@ The manually dispatched **Native installer builds** GitHub workflow builds and c
 Internal specifications, task reports, assistant instructions and optional Graphify tooling are kept locally and ignored by Git. Release notes remain tracked because publication depends on them. Application source, assets, tests, lockfile, build scripts and workflows remain available for reproducible development.
 
 ARM, older OS baselines, multiple tabs, cloud sync, scripting and OAuth are outside the implemented scope. The project currently declares `UNLICENSED`.
+
+### Local disk use
+
+`node_modules/` contains development dependencies and Electron. `out/` contains compiled code; `dist/` contains installers and unpacked application copies from builds. Optional `.tools/` and `graphify-out/` hold local developer tooling. These directories are ignored by Git and are not uploaded with source pushes. Installer downloads belong in GitHub Releases, not commits. Multiple retained native build directories can consume several gigabytes even though the source repository is small.

@@ -52,7 +52,7 @@ test('1000 requests/1000 folders remain bounded, paged, searchable, guarded and 
     expect(seen.size).toBe(2100);for(const i of [0,500,999]) expect(seen.has(seeded.requests[i]!)).toBe(true)
     const search=page.getByLabel('Search requests',{exact:true})
     async function query(value:string) {await search.fill(value);await expect(page.locator('[data-search-ready]')).toHaveAttribute('data-search-ready',value);await painted(page)}
-    async function select(index:number) {await page.locator(`[data-search-id="${seeded.requests[index]}"]`).click();await expect(page.getByLabel('Request name',{exact:true})).toHaveValue(`API ${String(index).padStart(4,'0')}`);await expect(page.getByRole('button',{name:'Save',exact:true})).toBeEnabled();await painted(page)}
+    async function select(index:number) {await page.locator(`[data-search-id="${seeded.requests[index]}"]`).click();await expect(page.getByLabel('Request name',{exact:true})).toHaveValue(`API ${String(index).padStart(4,'0')}`);await expect(page.getByLabel('Request name',{exact:true})).toBeEnabled();await painted(page)}
     await query('API 0000');await select(0) // One warm-up before measuring.
     for(let i=1;i<=20;i++) {
       const index=i*47,name=`API ${String(index).padStart(4,'0')}`
@@ -67,14 +67,14 @@ test('1000 requests/1000 folders remain bounded, paged, searchable, guarded and 
     for(let i=0;i<10;i++) {for(const id of await page.locator('[data-search-id]').evaluateAll(es=>es.map(e=>e.getAttribute('data-search-id')!))) resultIds.add(id);if(i<9) await page.getByRole('button',{name:'Next results',exact:true}).click()}
     expect(resultIds.size).toBe(1000);await expect(page.getByRole('button',{name:'Next results',exact:true})).toHaveCount(0)
     await page.getByLabel('Request name',{exact:true}).fill('API 0999 revised')
-    await page.getByRole('button',{name:'Save',exact:true}).click();await expect(page.getByRole('status').filter({hasText:/^Saved$/})).toBeVisible()
+    await page.keyboard.press('Control+s');await expect(page.getByRole('status').filter({hasText:/^Saved$/})).toBeVisible()
     await expect(page.locator('[data-search-ready]')).toContainText('1–100 of 1000 requests')
     await page.getByLabel('Search collection').selectOption(seeded.collections[50]!);await expect(page.getByRole('region',{name:'Request search'})).toContainText('of 10 requests')
     // Guard result selection, clear/reveal selection, and preserve normal expansion.
     await page.getByLabel('Search collection').selectOption('');await query('API 0000')
-    await page.getByLabel('Request name',{exact:true}).fill('Unsaved scale draft')
+    await page.getByLabel('Request name',{exact:true}).fill('')
     await page.locator(`[data-search-id="${seeded.requests[0]}"]`).click()
-    const guard=page.getByRole('dialog',{name:'Unsaved request changes',exact:true});await guard.getByRole('button',{name:'Cancel',exact:true}).click();await expect(page.getByLabel('Request name',{exact:true})).toHaveValue('Unsaved scale draft')
+    const guard=page.getByRole('dialog',{name:'Unsaved request changes',exact:true});await guard.getByRole('button',{name:'Cancel',exact:true}).click();await expect(page.getByLabel('Request name',{exact:true})).toHaveValue('')
     await page.locator(`[data-search-id="${seeded.requests[0]}"]`).click();await guard.getByRole('button',{name:'Discard',exact:true}).click();await expect(page.getByLabel('Request name',{exact:true})).toHaveValue('API 0000')
     await page.getByRole('button',{name:'Clear search',exact:true}).click();await expect(page.locator(`[data-library-id="${seeded.requests[0]}"]`)).toBeVisible()
     const library=await page.evaluate(w=>window.offlineApi.library.list(w),seeded.w);expect(library).toMatchObject({ok:true,data:{treeState:{expandedCollectionIds:seeded.collections,expandedFolderIds:expect.arrayContaining([])}}})

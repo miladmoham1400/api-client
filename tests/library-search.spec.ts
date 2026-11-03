@@ -39,7 +39,7 @@ test('late search replies cannot replace newer queries or cross workspace change
     await page.getByRole('button',{name:'Clear search',exact:true}).click();await expect(page.getByRole('treeitem')).toContainText('Other')
   }finally{await shutdown(app);rmSync(directory,{recursive:true,force:true})}
 })
-test('search result selection respects active Stay/Cancel and dirty Save decisions without sending another request',async()=>{
+test('search result selection respects active Stay/Cancel and automatic save flush without sending another request',async()=>{
   const received:string[]=[]
   const fixture=await startFixture(false,(req,res)=>{received.push(req.url??'');res.writeHead(200);res.write('holding')}),directory=mkdtempSync(join(tmpdir(),'api-client-search-guards-')),env={...Object.fromEntries(Object.entries(process.env).filter((e):e is [string,string]=>e[1]!==undefined&&!['ELECTRON_RUN_AS_NODE','ELECTRON_RENDERER_URL'].includes(e[0]))),XDG_CONFIG_HOME:directory,APPDATA:directory},app=await launchDesktop({args:['.'],chromiumSandbox:true,env})
   try {
@@ -57,7 +57,7 @@ test('search result selection respects active Stay/Cancel and dirty Save decisio
     const active=page.getByRole('dialog',{name:'Request in progress',exact:true});await active.getByRole('button',{name:'Stay',exact:true}).click();await expect(page.getByLabel('Request name',{exact:true})).toHaveValue('API Hold')
     await page.getByLabel('Request name',{exact:true}).fill('API Saved before selection')
     await page.locator(`[data-search-id="${seed.second}"]`).click();await active.getByRole('button',{name:'Cancel request',exact:true}).click()
-    await page.getByRole('dialog',{name:'Unsaved request changes',exact:true}).getByRole('button',{name:'Save',exact:true}).click()
+    await expect(page.getByRole('dialog',{name:'Unsaved request changes',exact:true})).not.toBeVisible()
     await expect(page.getByLabel('Request name',{exact:true})).toHaveValue('API Other');await expect(page.getByRole('status').filter({hasText:/^Request cancelled$/})).toBeVisible()
     expect(received).toEqual(['/hold'])
     expect(await page.evaluate(async data=>{const requests=await window.offlineApi.requests.list(data.w);return requests.ok && requests.data.requests.find(r=>r.id===data.first)?.name},seed)).toBe('API Saved before selection')
