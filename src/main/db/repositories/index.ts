@@ -202,7 +202,7 @@ export class Repositories {
   }
   getTheme(): ThemePreference { return this.read(() => {
     const row = this.db.prepare("SELECT value_json AS value FROM app_settings WHERE key='theme'").get()
-    return row ? themeSchema.parse(JSON.parse(z.strictObject({ value: z.string() }).parse(row).value)) : 'system'
+    return row ? themeSchema.parse(JSON.parse(z.strictObject({ value: z.string() }).parse(row).value)) : 'dark'
   }) }
   setTheme(theme: ThemePreference): ThemePreference { return this.write(() => {
     const value = themeSchema.parse(theme)

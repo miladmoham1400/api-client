@@ -31,9 +31,11 @@
     "@chakra-ui/react": "3.37.0",
     "@emotion/react": "11.14.0",
     "better-sqlite3": "13.0.3",
+    "dompurify": "3.4.17",
     "form-data-encoder": "4.1.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
+    "react-json-tree": "0.20.0",
     "zod": "4.6.5"
   },
   "devDependencies": {

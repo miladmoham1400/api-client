@@ -1,3 +1,4 @@
+import { Icon } from '../../components/icon'
 import { httpMethodPalette } from '../../theme/http-method'
 import { LibrarySearch } from '../library/search'
 import type { GuardTransition } from '../navigation/transition'
@@ -136,8 +137,8 @@ export function CollectionSidebar({workspaceId,requestController,guard}:{guard:G
   const locked=busy || requestController.busy
   const expanded=new Set([...(expansion?.expandedCollectionIds??[]),...(expansion?.expandedFolderIds??[])])
   return <>
-    <Heading size="sm">Collections</Heading>
-    <Button ref={create} disabled={!snapshot || locked} variant="outline" size="sm" onClick={() => open({kind:'create-collection'})}>Create Collection</Button>
+    <Heading className="sidebar-label library-label" size="sm">Collections</Heading>
+    <Button ref={create} disabled={!snapshot || locked} variant="outline" size="sm" onClick={() => open({kind:'create-collection'})}><Icon name="plus" size={14} />Create Collection</Button>
     {!workspaceId && <Text fontSize="sm">Select a workspace to manage collections.</Text>}
     {workspaceId && !snapshot && !error && <Text role="status">Loading library…</Text>}
     {error && <Box role="alert"><Text fontSize="sm">{error}</Text><Button size="sm" disabled={busy} onClick={() => { void reload() }}>Reload library</Button></Box>}
@@ -160,8 +161,8 @@ export function CollectionSidebar({workspaceId,requestController,guard}:{guard:G
               if(key==='ArrowLeft') { if(node.kind!=='request' && expanded.has(node.id)) toggle(node); else if(node.parent) focus(node.parent) }
               if(key==='Enter' && !locked) void choose(node)
             }}>
-            <Button aria-label={node.label} tabIndex={-1} variant="ghost" size="sm" minW="0" flex="1" justifyContent="start" whiteSpace="normal" h="auto" py="2" disabled={locked} onClick={() => { focus(node.id); void choose(node) }}>
-              {node.kind==='request' ? <Badge colorPalette={httpMethodPalette(node.method)} fontSize="xs">{node.method}</Badge> : <Text aria-hidden="true">{expanded.has(node.id) ? '▾' : '▸'}</Text>}
+            <Button title={node.label} aria-label={node.label} tabIndex={-1} variant="ghost" size="sm" minW="0" flex="1" justifyContent="start" whiteSpace="normal" h="auto" py="2" fontSize="xs" disabled={locked} onClick={() => { focus(node.id); void choose(node) }}>
+              {node.kind==='request' ? <Badge colorPalette={httpMethodPalette(node.method)} fontSize="xs">{node.method}</Badge> : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="M3 7V5a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v3" />{expanded.has(node.id) ? <path d="M3 8h18l-3 12H3L1 10a2 2 0 0 1 2-2Z" /> : <path d="M3 8h18v12H3Z" />}</svg>}
               <Text overflowWrap="anywhere" textAlign="left">{node.label}</Text>
             </Button>
             <Menu.Root><Menu.Trigger asChild><Button ref={el => { if(el) triggers.current.set(node.id,el); else triggers.current.delete(node.id) }} variant="ghost" size="xs" disabled={locked} aria-label={`Actions for ${node.kind}: ${node.label}`}>⋯</Button></Menu.Trigger>
@@ -169,6 +170,7 @@ export function CollectionSidebar({workspaceId,requestController,guard}:{guard:G
                 {node.kind!=='request' && <><Menu.Item value="request" onClick={() => { void newRequest(node.destination) }}>New request</Menu.Item><Menu.Item value="folder" onClick={() => open({kind:'create-folder',destination:node.destination})}>New folder</Menu.Item></>}
                 <Menu.Item value="rename" onClick={() => { if(node.kind==='request') void guard(async () => { const ok=await current.current.open(node.id); if(ok) current.current.focusName(); return ok }); else open({kind:'rename',node}) }}>Rename {node.kind}</Menu.Item>
                 {node.kind!=='collection' && <Menu.Item value="move" onClick={() => open({kind:'move',node})}>Move {node.kind}</Menu.Item>}
+                {node.kind==='request' && <Menu.Item value="duplicate" onClick={() => { void guard(() => current.current.duplicate(node.id)) }}>Duplicate request</Menu.Item>}
                 <Menu.Item value="delete" onClick={() => open({kind:'delete',node})}>Delete {node.kind}</Menu.Item>
               </Menu.Content></Menu.Positioner></Portal>
             </Menu.Root>
@@ -182,7 +184,7 @@ export function CollectionSidebar({workspaceId,requestController,guard}:{guard:G
       </>}
       {!searching && !visible.length && <Text fontSize="sm" color="fg.muted">No collections or saved requests</Text>}
     </>}
-    <Button data-create-request disabled={!snapshot || locked} variant="outline" size="sm" onClick={() => { void newRequest(root) }}>Create Request</Button>
+    <Button className="create-request" data-create-request disabled={!snapshot || locked} variant="outline" size="sm" onClick={() => { void newRequest(root) }}><Icon name="plus" size={14} />Create Request</Button>
     <Dialog.Root open={editing!==null} onOpenChange={({open}) => { if(!open && !busy) setEditing(null) }} initialFocusEl={() => editing?.kind==='delete' ? cancel.current : editing?.kind==='move' ? select.current : input.current} finalFocusEl={() => returnId.current ? triggers.current.get(returnId.current)??create.current : create.current}>
       <Portal><Dialog.Backdrop/><Dialog.Positioner><Dialog.Content>
         <Dialog.Header><Dialog.Title>{title}</Dialog.Title></Dialog.Header>

@@ -20,7 +20,13 @@ export function JsonEditor(props: ComponentProps<typeof Textarea> & { value: str
   const highlighted = tokens.some(token => token.kind !== 'plain')
   return <div className="json-editor">
     <pre ref={backdrop} className="json-editor-backdrop" aria-hidden="true">{highlighted && <><TokenSpans tokens={tokens} />{'\n'}</>}</pre>
-    <Textarea {...props} className={`json-editor-input${highlighted ? ' json-editor-highlighted' : ''}`} spellCheck={false} autoCapitalize="off" autoCorrect="off" onScroll={event => {
+    <Textarea {...props} className={`json-editor-input${highlighted ? ' json-editor-highlighted' : ''}`} spellCheck={false} autoCapitalize="off" autoCorrect="off" onKeyDown={event => {
+      props.onKeyDown?.(event)
+      if (event.defaultPrevented || event.key !== 'Tab' || event.ctrlKey || event.altKey || event.metaKey || event.shiftKey || event.nativeEvent.isComposing) return
+      event.preventDefault()
+      // Native editing preserves selection and dispatches the normal input event to React.
+      document.execCommand('insertText', false, '  ')
+    }} onScroll={event => {
       if (backdrop.current) { backdrop.current.scrollTop = event.currentTarget.scrollTop; backdrop.current.scrollLeft = event.currentTarget.scrollLeft }
     }} />
   </div>

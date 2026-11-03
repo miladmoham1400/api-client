@@ -12,9 +12,9 @@ function fixture() {
   cleanup.push(() => { if (db.open) db.close(); rmSync(directory,{ recursive:true,force:true }) })
   return { db, r, path }
 }
-it('defaults to System, persists all themes across reopen and preserves unrelated selection/data', () => {
+it('defaults to Dark, persists all themes across reopen and preserves unrelated selection/data', () => {
   const f = fixture(), w = f.r.createWorkspace('Kept'); f.r.selectWorkspace(w.id)
-  expect(f.r.getTheme()).toBe('system')
+  expect(f.r.getTheme()).toBe('dark')
   for (const theme of ['light','dark','system'] as const) {
     expect(f.r.setTheme(theme)).toBe(theme)
     const other = openDatabase(f.path)

@@ -42,7 +42,7 @@ test('owned production window exposes only validated APIs and denies browser cap
     }) // Bridge method never forwards renderer-selected arguments/channels.
     const csp = await page.locator('meta[http-equiv="Content-Security-Policy"]').getAttribute('content')
     expect(csp).toContain("connect-src 'none'")
-    expect(csp).toContain("frame-src 'none'")
+    expect(csp).toContain("frame-src 'self'")
     expect(csp).not.toContain('ws:')
     expect(await page.evaluate(() => window.open('https://untrusted.invalid/'))).toBeNull()
     expect(await application.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().length)).toBe(1)

@@ -1,3 +1,4 @@
+import { Icon } from '../../components/icon'
 import { WorkspaceImportDialog } from './import-dialog'
 import { WorkspaceExportDialog } from './export-dialog'
 import type { GuardTransition } from '../navigation/transition'
@@ -45,14 +46,14 @@ export function WorkspaceControls({ controller, placement, guard, locked = false
   const title = editing?.kind === 'delete' ? 'Delete workspace' : editing?.kind === 'rename' ? 'Rename workspace' : 'Create workspace'
   return <>
     {placement === 'top' ? <>
-      <NativeSelect.Root width="210px" disabled={!snapshot || busy || locked}>
+      <NativeSelect.Root width="176px" disabled={!snapshot || busy || locked}>
         <NativeSelect.Field ref={selector} aria-label="Workspace" value={snapshot?.selectedWorkspaceId ?? ''} onChange={event => { const id = event.target.value || null; if (id !== snapshot?.selectedWorkspaceId) void guard(() => apply(() => window.offlineApi.workspaces.select(id))) }}>
           <option value="">{snapshot ? 'No workspace selected' : 'Loading workspaces…'}</option>
           {snapshot?.workspaces.map(workspace => <option key={workspace.id} value={workspace.id}>{workspace.name}</option>)}
         </NativeSelect.Field><NativeSelect.Indicator />
       </NativeSelect.Root>
-      <Button ref={importButton} size="sm" variant="outline" disabled={!snapshot || busy || locked} onClick={() => { setImportStatus(null); setImportOpen(true) }}>Import workspace JSON</Button>
-      <Menu.Root><Menu.Trigger asChild><Button ref={menu} disabled={!selected || busy || locked} size="sm" variant="outline" aria-label="Workspace menu">Workspace menu</Button></Menu.Trigger>
+      <Button ref={importButton} aria-label="Import workspace JSON" title="Import workspace JSON" className="toolbar-icon" size="sm" variant="ghost" disabled={!snapshot || busy || locked} onClick={() => { setImportStatus(null); setImportOpen(true) }}><Icon name="import" /></Button>
+      <Menu.Root><Menu.Trigger asChild><Button ref={menu} disabled={!selected || busy || locked} size="sm" variant="ghost" title="Workspace menu" className="toolbar-icon" aria-label="Workspace menu"><Icon name="settings" /></Button></Menu.Trigger>
         <Portal><Menu.Positioner><Menu.Content>
           <Menu.Item value="export" onClick={() => { if (selected) { setExportStatus(null); setExportTarget({ id: selected.id, name: selected.name }) } }}>Export workspace JSON</Menu.Item>
           <Menu.Item value="rename" onClick={() => { if (selected) open({ kind: 'rename', id: selected.id, name: selected.name }) }}>Rename workspace</Menu.Item>
@@ -61,7 +62,7 @@ export function WorkspaceControls({ controller, placement, guard, locked = false
       </Menu.Root>
     </> : <>
       <Text fontSize="sm" color="fg.muted" overflowWrap="anywhere">{selected?.name ?? (snapshot ? 'No workspace selected' : 'Loading workspaces…')}</Text>
-      <Button ref={create} disabled={!snapshot || busy || locked} onClick={() => open({ kind: 'create' })}>Create Workspace</Button>
+      <Button ref={create} className="create-workspace" variant="outline" size="sm" disabled={!snapshot || busy || locked} onClick={() => open({ kind: 'create' })}><Icon name="plus" size={14} />Create Workspace</Button>
       {busy && <Text role="status" fontSize="sm">Updating workspaces…</Text>}
       {error && <Box role="alert"><Text fontSize="sm">{error}</Text><Button variant="outline" size="sm" disabled={busy} onClick={() => { void guard(reload, true) }}>Reload workspaces</Button></Box>}
     </>}

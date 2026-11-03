@@ -12,6 +12,7 @@ import { useRequests } from './features/requests/controller'
 import { VariableControls } from './features/variables/controls'
 import { RequestResponsePanels } from './features/layout/panels'
 import type { WorkspaceController } from './features/workspaces/use-workspaces'
+import { Icon } from './components/icon'
 import appIcon from '../../build/icons/64x64.png?url'
 
 type Startup = { status: 'loading' } | { status: 'error' } | { status: 'ready'; data: Bootstrap }
@@ -53,34 +54,34 @@ function Desktop({ workspaces, closeGuard }: { workspaces: WorkspaceController; 
   const requests = useRequests(workspaces.snapshot?.selectedWorkspaceId ?? null)
   const navigation = useNavigationGuard(requests)
   useEffect(() => { closeGuard.current = navigation.close; return () => { closeGuard.current = null } }, [closeGuard, navigation.close])
-  return <Flex direction="column" h="100dvh" bg="bg" color="fg">
-    <Flex as="header" gap="3" p="3" borderBottomWidth="1px" align="center" flexWrap="wrap">
-      <Flex align="center" gap="2" flexShrink="0" mr="2">
-        <img src={appIcon} alt="" aria-hidden="true" width="32" height="32" draggable={false} />
-        <Heading size="md">Offline API Client</Heading>
+  return <Flex className="app-shell" direction="column" h="100dvh" color="fg">
+    <Flex as="header" className="app-toolbar" gap="2" align="center" flexWrap="wrap">
+      <Flex className="app-brand" align="center" gap="2" flexShrink="0">
+        <img src={appIcon} alt="" aria-hidden="true" width="28" height="28" draggable={false} />
+        <Box><Heading size="md">Offline API Client</Heading><Text className="brand-caption">YOUR LOCAL API WORKSPACE</Text></Box>
       </Flex>
       <WorkspaceControls controller={workspaces} locked={requests.busy} guard={navigation.guard} placement="top" />
       <VariableControls key={workspaces.snapshot?.selectedWorkspaceId ?? 'none'} workspace={workspaces.snapshot?.selectedWorkspaceId ?? null} />
       <ThemeControl />
       <Dialog.Root initialFocusEl={() => closeButton.current}>
-        <Dialog.Trigger asChild><Button size="sm" variant="ghost">About this shell</Button></Dialog.Trigger>
+        <Dialog.Trigger asChild><Button className="about-button" size="sm" variant="ghost" aria-label="About this shell" title="About"><Icon name="info" /></Button></Dialog.Trigger>
         <Portal><Dialog.Backdrop /><Dialog.Positioner><Dialog.Content>
           <Dialog.Header><Dialog.Title>Local desktop shell</Dialog.Title></Dialog.Header>
-          <Dialog.Body><Dialog.Description>Workspaces, collections and nested folders can be managed locally. The API library supports contextual request creation, guarded selection and moves between folders, collections and workspace root. Request fields, JSON/raw bodies and URL-encoded forms and timeout/redirect settings support explicit Save. Environments and variables can be managed locally. Auth editing supports explicit Save. Send and Cancel execute the current draft without saving it. Responses are shown as safe text, with raw headers and optional JSON formatting. No sample data or automatic requests are created. Light, Dark and System appearance preferences are saved locally.</Dialog.Description></Dialog.Body>
+          <Dialog.Body><Dialog.Description>Workspaces, collections and nested folders can be managed locally. The API library supports contextual request creation, guarded selection and moves between folders, collections and workspace root. Request fields, JSON/raw bodies and URL-encoded forms and timeout/redirect settings save automatically. Environments and variables can be managed locally. Auth edits save automatically. Send and Cancel execute the current draft. Responses support collapsible JSON and isolated static HTML previews. No sample data or automatic requests are created. Light, Dark and System appearance preferences are saved locally.</Dialog.Description></Dialog.Body>
           <Dialog.Footer><Dialog.CloseTrigger asChild><Button ref={closeButton}>Close</Button></Dialog.CloseTrigger></Dialog.Footer>
         </Dialog.Content></Dialog.Positioner></Portal>
       </Dialog.Root>
     </Flex>
     <Flex flex="1" minH="0">
-      <VStack as="aside" aria-label="Collections and requests" tabIndex={0} align="stretch" gap="4" w="250px" minW="210px" p="4" overflow="auto" borderRightWidth="1px">
-        <Heading size="sm">Workspace</Heading>
+      <VStack as="aside" className="app-sidebar" aria-label="Collections and requests" tabIndex={0} align="stretch" gap="3" w="236px" minW="210px" p="4" overflow="auto" borderRightWidth="1px">
+        <Heading className="sidebar-label" size="sm">Workspace</Heading>
         <WorkspaceControls controller={workspaces} locked={requests.busy} guard={navigation.guard} placement="sidebar" />
         <CollectionSidebar key={workspaces.snapshot?.selectedWorkspaceId ?? "none"} workspaceId={workspaces.snapshot?.selectedWorkspaceId ?? null} requestController={requests} guard={navigation.guard} />
       </VStack>
-      <RequestResponsePanels controller={requests} guard={navigation.guard} workspace={workspaces.snapshot?.selectedWorkspaceId ?? null} />
+      <RequestResponsePanels controller={requests} workspace={workspaces.snapshot?.selectedWorkspaceId ?? null} />
     </Flex>
     {navigation.dialog}
-    <Box as="footer" borderTopWidth="1px" px="4" py="2"><Text fontSize="xs" color="fg.muted">Local storage ready</Text></Box>
+    <Flex as="footer" className="app-footer" justify="space-between" align="center"><Text><span className="local-dot" />Local storage ready</Text><Text>LOCAL FIRST <span className="footer-divider">/</span> PRIVATE BY DESIGN</Text></Flex>
   </Flex>
 }
 

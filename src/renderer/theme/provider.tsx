@@ -1,19 +1,20 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
-import { Box, ChakraProvider, NativeSelect, Text, defaultSystem } from '@chakra-ui/react'
+import { Box, ChakraProvider, NativeSelect, Text } from '@chakra-ui/react'
+import { glassSystem } from './system'
 import { themeSchema, type ThemePreference } from '../../shared/theme'
 const ThemeContext = createContext<{ preference: ThemePreference; busy: boolean; error: string | null; change: (value: ThemePreference) => Promise<void> } | null>(null)
 
 /** Bundled Chakra v3 class/semantic-token appearance; SQLite owns the preference. */
 export function LocalProvider({ children }: { children: ReactNode }) {
-  const [preference, setPreference] = useState<ThemePreference>('system'), [busy, setBusy] = useState(true), [error, setError] = useState<string | null>(null)
+  const [preference, setPreference] = useState<ThemePreference>('dark'), [busy, setBusy] = useState(true), [error, setError] = useState<string | null>(null)
   const running = useRef(false)
   useEffect(() => {
     let active = true
     void window.offlineApi.app.getTheme().then(result => {
       if (!active) return
       if (result.ok) setPreference(result.data)
-      else setError('Theme preference could not be loaded. System appearance is in use; choose a theme to retry.')
-    }).catch(() => { if (active) setError('Theme preference could not be loaded. System appearance is in use; choose a theme to retry.') }).finally(() => { if (active) setBusy(false) })
+      else setError('Theme preference could not be loaded. Default appearance is in use; choose a theme to retry.')
+    }).catch(() => { if (active) setError('Theme preference could not be loaded. Default appearance is in use; choose a theme to retry.') }).finally(() => { if (active) setBusy(false) })
     return () => { active = false }
   }, [])
   useEffect(() => {
@@ -37,13 +38,13 @@ export function LocalProvider({ children }: { children: ReactNode }) {
     } catch { setError('Theme could not be saved. Your previous preference and draft have been kept. Try again.') }
     finally { running.current = false; setBusy(false) }
   }
-  return <ChakraProvider value={defaultSystem}><ThemeContext.Provider value={{ preference, busy, error, change }}>{children}</ThemeContext.Provider></ChakraProvider>
+  return <ChakraProvider value={glassSystem}><ThemeContext.Provider value={{ preference, busy, error, change }}>{children}</ThemeContext.Provider></ChakraProvider>
 }
 export function ThemeControl() {
   const theme = useContext(ThemeContext)
   if (!theme) throw new Error('Theme provider missing')
   return <Box>
-    <NativeSelect.Root width="140px" size="sm" disabled={theme.busy}>
+    <NativeSelect.Root width="108px" size="sm" disabled={theme.busy}>
       <NativeSelect.Field aria-label="Theme" value={theme.preference} aria-describedby={theme.error ? 'theme-error' : undefined} onChange={event => { void theme.change(themeSchema.parse(event.target.value)) }}>
         <option value="light">Light</option><option value="dark">Dark</option><option value="system">System</option>
       </NativeSelect.Field><NativeSelect.Indicator />

@@ -17,6 +17,10 @@ export function useRequests(workspace: string | null) {
   const [path,setPath]=useState('Workspace root')
   const [destination,setDestination] = useState<RequestDestination>({collectionId:null,folderId:null})
   const [busy, setBusy] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const saveFlight = useRef<Promise<boolean> | null>(null)
+  const latestSave = useRef<() => Promise<boolean>>(async () => false)
+  const latestDraft = useRef(draft); latestDraft.current = draft
   const [error, setError] = useState<string | null>(null)
   const [validation, setValidation] = useState<Record<string, string>>({})
   const [revision, setRevision] = useState(0)
@@ -70,12 +74,48 @@ export function useRequests(workspace: string | null) {
     if (workspace) void apply(() => window.offlineApi.requests.list(workspace))
     return () => { generation.current++; running.current = false; releaseSelections() }
   }, [apply, workspace, releaseSelections])
-  const save = useCallback(async () => {
-    if (!currentWorkspace || !workspace || !draft) return false
-    const parsed = requestDraftSchema.safeParse(draft)
-    if (!parsed.success) { setValidation(fieldErrors(draft)); setError('Correct the highlighted fields before saving. Your draft has been kept.'); return false }
-    return apply(() => saved ? window.offlineApi.requests.save(workspace, saved.id, parsed.data) : window.offlineApi.requests.create(workspace, { ...parsed.data, ...destination }), true, true)
-  }, [currentWorkspace, workspace, draft, saved, apply, destination])
+  const save = useCallback(async (): Promise<boolean> => {
+    if (saveFlight.current) {
+      const ok = await saveFlight.current
+      return ok ? latestSave.current() : false
+    }
+    const value = latestDraft.current, selected = latestSaved.current
+    if (!currentWorkspace || !workspace || !value || running.current) return false
+    if (selected && comparison(value) === comparison(selected)) return true
+    const parsed = requestDraftSchema.safeParse(value)
+    if (!parsed.success) { setValidation(fieldErrors(value)); setError('Correct the highlighted fields to save automatically. Your edits have been kept.'); return false }
+    const stamp = generation.current
+    setSaving(true); setError(null); setValidation({})
+    const operation = (async () => {
+      try {
+        const result = await (selected ? window.offlineApi.requests.save(workspace, selected.id, parsed.data) : window.offlineApi.requests.create(workspace, { ...parsed.data, ...destination }))
+        if (stamp !== generation.current) return false
+        if (!result.ok || result.data.workspaceId !== workspace || !result.data.editor) {
+          setError('Automatic save failed. Your edits have been kept. Press Ctrl+S to retry.'); return false
+        }
+        const editor = result.data.editor
+        latestSaved.current = editor; setSaved(editor)
+        setDestination({ collectionId: editor.collectionId, folderId: editor.folderId })
+        // A slow save must never replace text entered while its IPC call was pending.
+        if (latestDraft.current === value) {
+          const next = { ...copyDraft(editor), body: retainSelections(editor.body ?? undefined, value.body) }
+          latestDraft.current = next; setDraft(next)
+        }
+        setRevision(value => value + 1)
+        return true
+      } catch { if (stamp === generation.current) setError('Automatic save unavailable. Your edits have been kept. Press Ctrl+S to retry.'); return false }
+      finally { saveFlight.current = null; if (stamp === generation.current) setSaving(false) }
+    })()
+    saveFlight.current = operation
+    const ok = await operation
+    return ok ? latestSave.current() : false
+  }, [currentWorkspace, workspace, draft, saved, destination])
+  latestSave.current = save
+  useEffect(() => {
+    if (!dirty || busy || saving || error || !draft || !requestDraftSchema.safeParse(draft).success) return
+    const timer = window.setTimeout(() => { void save() }, 500)
+    return () => window.clearTimeout(timer)
+  }, [dirty, busy, saving, error, draft, save])
   useEffect(() => {
     function shortcut(event: KeyboardEvent) {
       // Non-Latin layouts report another character for the S key, so fall back to its physical code.
@@ -95,6 +135,7 @@ export function useRequests(workspace: string | null) {
     return () => window.removeEventListener('keydown', shortcut)
   }, [save])
   async function addRow(group: RowGroup, kind: 'text' | 'file' = 'text') {
+    if (saveFlight.current && !await latestSave.current()) return
     if (!workspace || !draft || running.current || (group === 'body.rows' && draft.body?.kind === 'multipart' ? draft.body.rows.length : getRows(draft, group).length) >= 200) return
     running.current = true; setBusy(true); setError(null)
     const current = ++generation.current
@@ -113,9 +154,10 @@ export function useRequests(workspace: string | null) {
       selections.current.delete(row.fileId)
       if (workspace) void window.offlineApi.files.releaseUpload(workspace, row.fileId).catch(() => {})
     }
-    setDraft({ ...draft, body: { ...draft.body, rows } }); setValidation({})
+    setDraft({ ...draft, body: { ...draft.body, rows } }); setValidation({}); setError(null)
   }
   async function chooseFile(rowId: string) {
+    if (saveFlight.current && !await latestSave.current()) return
     if (!workspace || !draft || draft.body?.kind !== 'multipart' || running.current) return
     running.current = true; setBusy(true); setError(null)
     const current = ++generation.current
@@ -142,7 +184,7 @@ export function useRequests(workspace: string | null) {
     focusName: () => { pendingNameFocus.current=true; setFocusVersion(value => value+1) },
     path, setPath, destination, chooseFile, changeMultipart,
     ...execution,
-    saved: currentWorkspace ? saved : null, draft: currentWorkspace ? draft : null, busy: currentWorkspace ? busy : workspace !== null, dirty, error: currentWorkspace ? error : null, revision, validation, addRow, changeBody: (kind: EditableBody['kind']) => { if (!draft || busy) return; const result = switchBody(bodyCache.current, draft.body, kind); bodyCache.current = result.cache; setDraft({ ...draft, body: result.body }); setValidation({}) }, setDraft: (value: RequestDraft) => { setDraft(value); setValidation({}) }, save,
+    saving, saved: currentWorkspace ? saved : null, draft: currentWorkspace ? draft : null, busy: currentWorkspace ? busy : workspace !== null, dirty, error: currentWorkspace ? error : null, revision, validation, addRow, changeBody: (kind: EditableBody['kind']) => { if (!draft || busy) return; const result = switchBody(bodyCache.current, draft.body, kind); bodyCache.current = result.cache; setDraft({ ...draft, body: result.body }); setValidation({}); setError(null) }, setDraft: (value: RequestDraft) => { setDraft(value); setValidation({}); setError(null) }, save,
     create: (target: RequestDestination = {collectionId:null,folderId:null}) => { if (!workspace || running.current) return false; releaseSelections(); setDestination(target); bodyCache.current = initialBodyDrafts(); latestSaved.current=null; setSaved(null); setDraft(copyDraft({ name: 'New request', method: 'GET', urlTemplate: '', body: { kind: 'none' }, auth: { mode: 'none' } })); setError(null); setValidation({}); return true },
     syncPlacement: (rows: readonly { id:string; destination:RequestDestination }[]) => {
       const selected=latestSaved.current
@@ -154,7 +196,7 @@ export function useRequests(workspace: string | null) {
     },
     discard: () => { if (!busy) { releaseSelections(); bodyCache.current = initialBodyDrafts(latestSaved.current?.body ?? undefined); setDraft(latestSaved.current ? copyDraft(latestSaved.current) : null); setError(null); setValidation({}) } },
     open: (id: string) => workspace ? apply(() => window.offlineApi.requests.get(workspace, id)) : Promise.resolve(false),
-    duplicate: () => workspace && saved ? apply(() => window.offlineApi.requests.duplicate(workspace, saved.id), true) : Promise.resolve(false),
+    duplicate: (id = saved?.id) => workspace && id ? apply(() => window.offlineApi.requests.duplicate(workspace, id), true) : Promise.resolve(false),
     delete: () => workspace && saved ? apply(() => window.offlineApi.requests.delete(workspace, saved.id), true) : Promise.resolve(false)
   }
 }

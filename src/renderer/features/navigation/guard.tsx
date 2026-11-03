@@ -20,8 +20,11 @@ export function useNavigationGuard(controller: RequestController) {
     try {
       const result = await authorizeTransition({
         sending: () => current.current.isSending(),
-        dirty: () => current.current.dirty,
-        ask: kind => new Promise<Decision>(resolve => { answer.current = resolve; setPrompt(kind) }),
+        dirty: () => current.current.dirty || current.current.saving,
+        ask: async kind => {
+          if (kind === 'dirty' && await current.current.save()) return 'save'
+          return new Promise<Decision>(resolve => { answer.current = resolve; setPrompt(kind) })
+        },
         cancel: () => current.current.cancelForTransition(),
         save: () => current.current.save()
       })

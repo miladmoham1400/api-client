@@ -8,8 +8,6 @@ export function MultipartEditor({ controller: c }: { controller: RequestControll
   const rows = body.rows
   const error = (path: string) => c.validation[path] || c.executionField === path ? <Text id={`${path}-error`} role="alert" color="red.fg">{c.validation[path] ?? c.executionError}</Text> : null
   return <VStack align="stretch" gap="3">
-    <Text fontSize="sm">Enabled fields retain order and duplicate keys. Keys and text values resolve variables at send time. Content-Type and boundary are generated automatically; remove an explicit Content-Type header.</Text>
-    <Text fontSize="sm">Files: 20 MiB each, 50 MiB total; complete payload: 55 MiB. Saved files require selection again after reopening. Maximum 200 rows.</Text>
     {rows.map((row, index) => {
       const path = `body.rows[${index}]`
       const update = (key: string, enabled: boolean) => c.changeMultipart(rows.map(item => item.id === row.id ? { ...item, key, enabled } : item))
@@ -32,6 +30,10 @@ export function MultipartEditor({ controller: c }: { controller: RequestControll
         {error(`${path}.key`)}{error(`${path}.value`)}{error(`${path}.fileId`)}{error(`${path}.id`)}
       </Box>
     })}
+    <details><summary>Multipart details</summary>
+    <Text fontSize="sm">Enabled fields retain order and duplicate keys. Keys and text values resolve variables at send time. Content-Type and boundary are generated automatically; remove an explicit Content-Type header.</Text>
+    <Text fontSize="sm">Files: 20 MiB each, 50 MiB total; complete payload: 55 MiB. Saved files require selection again after reopening. Maximum 200 rows.</Text>
+    </details>
     {rows.length === 0 && <Text>No multipart fields.</Text>}{error('body.rows')}
     <Flex gap="2"><Button disabled={c.busy || rows.length >= LIMITS.rowsPerGroup} onClick={() => { void c.addRow('body.rows', 'text') }}>Add multipart text</Button><Button disabled={c.busy || rows.length >= LIMITS.rowsPerGroup} onClick={() => { void c.addRow('body.rows', 'file') }}>Add multipart file</Button></Flex>
   </VStack>

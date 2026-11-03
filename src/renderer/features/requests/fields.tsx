@@ -7,7 +7,7 @@ export function RowsEditor({ controller: c, group }: { controller: RequestContro
   const label = group === 'queryRows' ? 'Param' : group === 'body.rows' ? 'Form' : 'Header', rows = getRows(c.draft, group)
   function error(path: string) { return c.validation[path] ? <Text id={`${path}-error`} role="alert" fontSize="sm" color="red.fg">{path}: {c.validation[path]}</Text> : null }
   return <VStack align="stretch" gap="3">
-    <Text fontSize="sm" color="fg.muted">Rows keep their order and duplicate keys. Disabled rows are saved. Maximum 200 rows; 10,000 characters per key/value.</Text>
+    <details className="field-details"><summary>Field details</summary><Text fontSize="sm" color="fg.muted">Rows keep their order and duplicate keys. Disabled rows are saved. Maximum 200 rows; 10,000 characters per key/value.</Text></details>
     {rows.map((row, index) => {
       const path = `${group}[${index}]`
       return <Box key={row.id} role="group" aria-label={`${label} row ${index + 1}`} borderWidth="1px" borderRadius="sm" p="2">
