@@ -29,7 +29,7 @@ it('exposes immutable fixed folder methods, validates both directions and keeps 
   expect(mock.invoke).toHaveBeenLastCalledWith('library:set-expansion',w,{expandedCollectionIds:[c],expandedFolderIds:[id]})
   mock.invoke.mockClear()
   expect(Object.isFrozen(api.folders)).toBe(true)
-  expect(Object.keys(api.folders)).toEqual(['list','create','rename','move','delete'])
+  expect(Object.keys(api.folders)).toEqual(['list','create','rename','move','duplicate','delete'])
   expect(await api.folders.create(w,c,null,' ')).toMatchObject({ok:false,error:{code:'VALIDATION'}})
   expect(await api.folders.move(w,id,c,'/arbitrary/path')).toMatchObject({ok:false,error:{code:'VALIDATION'}})
   expect(mock.invoke).not.toHaveBeenCalled()
@@ -37,6 +37,7 @@ it('exposes immutable fixed folder methods, validates both directions and keeps 
   for(const [operation,channel,args] of [
     [() => api.folders.list(w),'folders:list',[w]], [() => api.folders.create(w,c,null,' Auth '),'folders:create',[w,c,null,'Auth']],
     [() => api.folders.rename(w,id,'New'),'folders:rename',[w,id,'New']], [() => api.folders.move(w,id,c,null),'folders:move',[w,id,c,null]],
+    [() => api.folders.duplicate(w,id),'folders:duplicate',[w,id]],
     [() => api.folders.delete(w,id),'folders:delete',[w,id]]
   ] as const) { expect(await operation()).toEqual({ok:true,data:snapshot}); expect(mock.invoke).toHaveBeenLastCalledWith(channel,...args) }
   for(const invalid of [{...snapshot,folders:[{...folder,path:'/private'}]},{...snapshot,folders:[{...folder,workspaceId:randomUUID()}]},{...snapshot,folders:[{...folder,parentFolderId:randomUUID()}]}]) {

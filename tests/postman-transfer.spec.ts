@@ -43,7 +43,7 @@ test('Postman file preview/import and collection export use the real IPC/file se
   await expect(exporting.getByLabel('Collection to export')).toContainText('Postman fixture')
   await page.screenshot({path:'/tmp/api-client-postman-export.png',animations:'disabled'})
   await exporting.getByRole('button',{name:'Choose save location',exact:true}).click()
-  await expect(exporting).toContainText('Collection exported.')
+  await expect(exporting).not.toBeVisible()
   const output:unknown=JSON.parse(readFileSync(destination,'utf8'))
   expect(output).toMatchObject({info:{schema:'https://schema.getpostman.com/json/collection/v2.1.0/collection.json'},item:[{name:'Users',item:[{name:'Create user',request:{method:'POST',body:{raw:'{"case":2}'}}}]}]})
   expect(readFileSync(destination,'utf8')).not.toContain('mustNotRun')

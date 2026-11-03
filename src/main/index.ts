@@ -201,9 +201,9 @@ else {
     const libraryService = database ? new LibraryService(database) : null
     const libraryHandlers = createLibraryHandlers(() => ownedWindow,trustedUrl,() => libraryService)
     for(const method of ['list','setExpansion'] as const) ipcMain.handle(LIBRARY_CHANNELS[method],libraryHandlers[method])
-    const folderService = database ? new FolderService(database) : null
+    const folderService = database ? new FolderService(database, secretStore ?? undefined) : null
     const folderHandlers = createFolderHandlers(() => ownedWindow, trustedUrl, () => folderService)
-    for (const method of ['list', 'create', 'rename', 'move', 'delete'] as const) ipcMain.handle(FOLDER_CHANNELS[method], folderHandlers[method])
+    for (const method of ['list', 'create', 'rename', 'move', 'duplicate', 'delete'] as const) ipcMain.handle(FOLDER_CHANNELS[method], folderHandlers[method])
     const collectionService = database ? new CollectionService(database) : null
     const collectionHandlers = createCollectionHandlers(() => ownedWindow, trustedUrl, () => collectionService)
     for (const method of ['list', 'create', 'rename', 'delete', 'move'] as const) ipcMain.handle(COLLECTION_CHANNELS[method], collectionHandlers[method])

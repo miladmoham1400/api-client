@@ -1,3 +1,4 @@
+import { AppTooltips } from './components/tooltips'
 import { useNavigationGuard } from './features/navigation/guard'
 import { StrictMode, useEffect, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
@@ -67,7 +68,7 @@ function Desktop({ workspaces, closeGuard }: { workspaces: WorkspaceController; 
       <VariableControls key={workspaces.snapshot?.selectedWorkspaceId ?? 'none'} workspace={workspaces.snapshot?.selectedWorkspaceId ?? null} />
       <ThemeControl />
       <Dialog.Root initialFocusEl={() => closeButton.current}>
-        <Dialog.Trigger asChild><Button className="about-button" size="sm" variant="ghost" aria-label="About this shell" title="About"><Icon name="info" /></Button></Dialog.Trigger>
+        <Dialog.Trigger asChild><Button className="about-button" size="sm" variant="ghost" aria-label="About this shell" data-tooltip="About"><Icon name="info" /></Button></Dialog.Trigger>
         <Portal><Dialog.Backdrop /><Dialog.Positioner><Dialog.Content>
           <Dialog.Header><Dialog.Title>Local desktop shell</Dialog.Title></Dialog.Header>
           <Dialog.Body><Dialog.Description>Workspaces, collections and nested folders can be managed locally. The API library supports contextual request creation, guarded selection and moves between folders, collections and workspace root. Request fields, JSON/raw bodies and URL-encoded forms and timeout/redirect settings save automatically. Environments and variables can be managed locally. Auth edits save automatically. Send and Cancel execute the current draft. Responses support collapsible JSON and isolated static HTML previews. No sample data or automatic requests are created. Light, Dark and System appearance preferences are saved locally.</Dialog.Description></Dialog.Body>
@@ -85,7 +86,7 @@ function Desktop({ workspaces, closeGuard }: { workspaces: WorkspaceController; 
     </Flex>
     {navigation.dialog}
     <Flex as="footer" className="app-footer" justify="space-between" align="center"><Text><span className="local-dot" />Local storage ready</Text><Text>LOCAL FIRST <span className="footer-divider">/</span> PRIVATE BY DESIGN</Text></Flex>
-  </Flex></VariableNamesProvider>
+  </Flex><AppTooltips /></VariableNamesProvider>
 }
 
 const root = document.getElementById('root')

@@ -69,15 +69,25 @@ export function TemplateInput(props: ComponentProps<typeof Input>) {
   </div>
 }
 export function TemplateTextarea({ syntax = 'text', ...props }: ComponentProps<typeof Textarea> & { value: string; syntax?: 'text' | 'json' }) {
-  const c = useCompletion(props.value), backdrop = useRef<HTMLPreElement>(null)
+  const c = useCompletion(props.value), backdrop = useRef<HTMLPreElement>(null), gutter = useRef<HTMLPreElement>(null)
   const tokens = useMemo(() => syntax === 'json' ? jsonTokens(props.value) : [{ text: props.value, kind: 'plain' as const }], [props.value, syntax])
   const highlighted = tokens.some(t => t.kind !== 'plain') || (props.value.length <= 65536 && props.value.includes('{{'))
-  return <div className="template-field json-editor">
+  const syncScroll = (input: HTMLTextAreaElement) => {
+    // Match the native viewport, excluding its horizontal scrollbar, before scrolling.
+    // Otherwise the decorative layers clamp early at the bottom of long JSON.
+    for (const layer of [gutter.current, backdrop.current]) if (layer) {
+      layer.style.height = `${input.clientHeight + 2}px`
+      layer.scrollTop = input.scrollTop
+    }
+    if (backdrop.current) backdrop.current.scrollLeft = input.scrollLeft
+  }
+  return <div className={`template-field json-editor${syntax === 'json' ? ' has-line-numbers' : ''}`}>
+    {syntax === 'json' && <pre ref={gutter} className="json-line-numbers" aria-hidden="true">{Array.from({ length: props.value.split('\n').length }, (_, i) => i + 1).join('\n')}</pre>}
     <pre ref={backdrop} className="json-editor-backdrop" aria-hidden="true">{highlighted && <><ColoredTokens tokens={tokens} />{'\n'}</>}</pre>
-    <Textarea {...props} ref={node => { c.element.current = node }} className={`json-editor-input${highlighted ? ' json-editor-highlighted' : ''}`} spellCheck={false} autoCapitalize="off" autoCorrect="off" onFocus={e => { c.focus(); props.onFocus?.(e) }} onBlur={e => { c.blur(); props.onBlur?.(e) }} onSelect={e => { c.updateCursor(); props.onSelect?.(e) }} onKeyDown={e => {
+    <Textarea {...props} wrap={syntax === 'json' ? 'off' : props.wrap} ref={node => { c.element.current = node }} className={`json-editor-input${highlighted ? ' json-editor-highlighted' : ''}`} spellCheck={false} autoCapitalize="off" autoCorrect="off" onFocus={e => { c.focus(); props.onFocus?.(e) }} onBlur={e => { c.blur(); props.onBlur?.(e) }} onSelect={e => { c.updateCursor(); props.onSelect?.(e) }} onKeyDown={e => {
       c.keyDown(e); if (!e.defaultPrevented) props.onKeyDown?.(e)
       if (!e.defaultPrevented && syntax === 'json' && e.key === 'Tab' && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey && !e.nativeEvent.isComposing) { e.preventDefault(); document.execCommand('insertText', false, '  ') }
-    }} onScroll={e => { if (backdrop.current) { backdrop.current.scrollTop = e.currentTarget.scrollTop; backdrop.current.scrollLeft = e.currentTarget.scrollLeft }; props.onScroll?.(e) }} />
+    }} onScroll={e => { syncScroll(e.currentTarget); props.onScroll?.(e) }} />
     {c.menu}
   </div>
 }

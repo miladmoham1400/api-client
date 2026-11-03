@@ -26,7 +26,7 @@ test('named Body variants, JSON diagnostics, variable completion, expanded respo
   await expect(editor.getByRole('alert')).toContainText(/Line 1, column/)
   await expect(body).toHaveValue('{"case":1 "broken":2}')
   await editor.getByRole('tab',{name:'Params',exact:true}).click()
-  await expect(editor.getByRole('alert')).toBeVisible()
+  await expect(editor.getByRole('alert')).not.toBeVisible()
   await editor.getByRole('tab',{name:'Body',exact:true}).click()
   await body.fill('{"case":1}')
   await editor.getByRole('button',{name:'+ Body variant',exact:true}).click()

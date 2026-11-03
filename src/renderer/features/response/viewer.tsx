@@ -29,10 +29,10 @@ function HttpView({ response: r }: { response: Extract<NonNullable<RequestContro
   const html = /(?:text\/html|application\/xhtml\+xml)(?:\s*;|$)/i.test(type) || /^\s*(?:<!doctype html|<html[\s>])/i.test(raw)
   return <>
     <Flex gap="2" align="center" flexWrap="wrap" mb="2" aria-label="Response metrics">
-      <Badge colorPalette={r.statusCode >= 400 ? 'red' : r.statusCode >= 300 ? 'yellow' : 'green'} title="HTTP status">{r.statusCode} {r.statusMessage}</Badge>
-      <Badge colorPalette="blue" title="Duration">{r.durationMs.toFixed(1)} ms</Badge>
-      <Badge colorPalette="purple" title="Decoded body size">{r.bodySizeBytes.toLocaleString()} B</Badge>
-      {r.body.kind === 'text' && <Button size="xs" variant="ghost" ml="auto" aria-label="Copy response" title="Copy raw response" onClick={() => { void window.offlineApi.app.copyResponse(raw).then(result => setCopyState(result.ok ? 'Copied' : 'Copy failed')).catch(() => setCopyState('Copy failed')) }}><Icon name="copy" size={13} /></Button>}
+      <Badge colorPalette={r.statusCode >= 400 ? 'red' : r.statusCode >= 300 ? 'yellow' : 'green'} data-tooltip="HTTP status">{r.statusCode} {r.statusMessage}</Badge>
+      <Badge colorPalette="blue" data-tooltip="Duration">{r.durationMs.toFixed(1)} ms</Badge>
+      <Badge colorPalette="purple" data-tooltip="Decoded body size">{r.bodySizeBytes.toLocaleString()} B</Badge>
+      {r.body.kind === 'text' && <Button size="xs" variant="ghost" ml="auto" aria-label="Copy response" data-tooltip="Copy raw response" onClick={() => { void window.offlineApi.app.copyResponse(raw).then(result => setCopyState(result.ok ? 'Copied' : 'Copy failed')).catch(() => setCopyState('Copy failed')) }}><Icon name="copy" size={13} /></Button>}
       {copyState && <Text role="status" fontSize="xs">{copyState}</Text>}
     </Flex>
     <Tabs.Root defaultValue="body" size="sm">

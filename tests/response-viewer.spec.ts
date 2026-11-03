@@ -45,7 +45,7 @@ test('response viewer safely presents HTTP/error/binary states, snapshots, stale
     for (const status of [401, 500]) {
       await run('/' + status)
       await expect(region).toContainText(String(status))
-      await expect(region.locator('[title="Decoded body size"]')).toContainText(' B')
+      await expect(region.locator('[data-tooltip="Decoded body size"]')).toContainText(' B')
       await expect(page.getByRole('alert')).toHaveCount(0)
       await region.getByRole('tab', { name: 'Headers', exact: true }).click()
       await expect(region.getByLabel('Raw response headers')).toContainText('Set-Cookie: synthetic=a\nSet-Cookie: synthetic=b')

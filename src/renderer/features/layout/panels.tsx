@@ -24,13 +24,13 @@ export function RequestResponsePanels({ controller, workspace }: { controller: R
   return <Flex as="main" className="panels-workspace" aria-label="Request and response panels" tabIndex={0} direction="column" flex="1" minW="0" minH="0" p="4" overflow="hidden">
     <Flex className="panels-toolbar" gap="3" align="center" mb="2" flexShrink="0" flexWrap="wrap">
       <span className="workspace-eyebrow">REQUEST WORKBENCH</span>
-      <Button size="xs" variant="ghost" title="Toggle panel layout" aria-label="Side-by-side layout" aria-pressed={side} onClick={() => { setDragging(false); setLayout(current => current === 'stacked' ? 'side' : 'stacked') }}>
+      <Button size="xs" variant="ghost" data-tooltip="Toggle panel layout" aria-label="Side-by-side layout" aria-pressed={side} onClick={() => { setDragging(false); setLayout(current => current === 'stacked' ? 'side' : 'stacked') }}>
         <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><rect x="2" y="2" width="14" height="14" rx="2" />{side ? <path d="M9 2v14" /> : <path d="M2 9h14" />}</svg>
       </Button>
     </Flex>
     <div ref={split} className={`request-response-split ${side ? 'split-side' : 'split-stacked'}${dragging ? ' split-dragging' : ''}`} style={side ? { gridTemplateColumns: tracks, gridTemplateRows: 'minmax(0, 1fr)' } : { gridTemplateRows: tracks, gridTemplateColumns: 'minmax(0, 1fr)' }}>
       <div id="request-panel" className="split-pane"><RequestEditor key={workspace ?? 'none'} controller={controller} /></div>
-      <div role="separator" tabIndex={0} className="panel-divider" aria-label="Resize request and response panels" aria-orientation={side ? 'vertical' : 'horizontal'} aria-controls="request-panel response-panel" aria-valuemin={20} aria-valuemax={80} aria-valuenow={Math.round(ratio)} aria-valuetext={`Request ${Math.round(ratio)}%, response ${Math.round(100 - ratio)}%`} title="Drag to resize. Arrow keys adjust; Home/End move to the limits."
+      <div role="separator" tabIndex={0} className="panel-divider" aria-label="Resize request and response panels" aria-orientation={side ? 'vertical' : 'horizontal'} aria-controls="request-panel response-panel" aria-valuemin={20} aria-valuemax={80} aria-valuenow={Math.round(ratio)} aria-valuetext={`Request ${Math.round(ratio)}%, response ${Math.round(100 - ratio)}%`} data-tooltip="Drag to resize. Arrow keys adjust; Home/End move to the limits."
         onPointerDown={event => { if (event.button !== 0) return; event.preventDefault(); event.currentTarget.focus(); event.currentTarget.setPointerCapture(event.pointerId); setDragging(true) }}
         onPointerMove={event => { if (event.currentTarget.hasPointerCapture(event.pointerId)) drag(event.clientX, event.clientY) }}
         onPointerUp={event => { if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId); setDragging(false) }}

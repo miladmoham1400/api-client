@@ -63,16 +63,18 @@ test('JSON colors preserve editing, wire bytes and safe raw/pretty text across t
     await expect(response.locator('script,img,iframe')).toHaveCount(0)
     expect(await page.evaluate(() => Reflect.get(window, 'syntheticExecuted'))).toBeUndefined()
     expect(requests).toEqual([])
-    // Wrapped lines, native resizing and scrolling use identical text metrics.
-    await editor.fill(JSON.stringify({ text: 'word '.repeat(2000) }, null, 2))
-    await editor.evaluate(element => { element.style.height = '160px'; element.scrollTop = element.scrollHeight; element.dispatchEvent(new Event('scroll', { bubbles: true })) })
+    // Source lines stay numbered; horizontal/vertical scrolling and native resizing align both layers.
+    await editor.fill(JSON.stringify({ text: 'word '.repeat(2000), ...Object.fromEntries(Array.from({ length: 80 }, (_, i) => [`line${i}`, i])) }, null, 2))
+    await editor.evaluate(element => { element.style.height = '160px'; element.scrollTop = element.scrollHeight; element.scrollLeft = element.scrollWidth; element.dispatchEvent(new Event('scroll', { bubbles: true })) })
     const metrics = await page.locator('.json-editor').evaluate(element => {
-      const input = element.querySelector('textarea'), pre = element.querySelector('pre')
+      const input = element.querySelector('textarea'), pre = element.querySelector('.json-editor-backdrop')
       if (!input || !pre) throw new Error('Missing editor layers')
-      return { inputScroll: input.scrollTop, preScroll: pre.scrollTop, inputHeight: input.scrollHeight, preHeight: pre.scrollHeight }
+      return { inputScroll: input.scrollTop, preScroll: pre.scrollTop, inputLeft: input.scrollLeft, preLeft: pre.scrollLeft, inputHeight: input.scrollHeight, preHeight: pre.scrollHeight }
     })
     expect(metrics.inputScroll).toBeGreaterThan(0)
     expect(metrics.preScroll).toBe(metrics.inputScroll)
+    expect(metrics.inputLeft).toBeGreaterThan(0)
+    expect(metrics.preLeft).toBe(metrics.inputLeft)
     expect(Math.abs(metrics.inputHeight - metrics.preHeight)).toBeLessThan(25)
     await editor.fill('x'.repeat(65537))
     await expect(editor).not.toHaveClass(/json-editor-highlighted/)

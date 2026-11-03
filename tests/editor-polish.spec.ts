@@ -178,7 +178,7 @@ test('request menu duplicates and deletes the addressed request', async () => {
     await row.getByRole('button', { name: 'Folder icons', exact: true }).click()
     await expect(row).toHaveAttribute('aria-expanded', 'true')
     expect(await row.locator('svg').innerHTML()).not.toBe(closed)
-    await expect(row.getByRole('button', { name: 'Folder icons', exact: true })).toHaveCSS('font-size', '12px')
+    await expect(row.getByRole('button', { name: 'Folder icons', exact: true })).toHaveCSS('font-size', '11px')
     await page.getByRole('button', { name: 'Actions for request: First', exact: true }).click()
     await page.getByRole('menuitem', { name: 'Duplicate request', exact: true }).click()
     await expect.poll(async () => (await saved(page, workspace)).requests.map(r => r.name).sort()).toEqual(['First', 'First (copy)', 'Second'])

@@ -163,8 +163,8 @@ export function CollectionSidebar({workspaceId,requestController,guard}:{guard:G
               if(key==='ArrowLeft') { if(node.kind!=='request' && expanded.has(node.id)) toggle(node); else if(node.parent) focus(node.parent) }
               if(key==='Enter' && !locked) void choose(node)
             }}>
-            <Button title={node.label} aria-label={node.label} tabIndex={-1} variant="ghost" size="sm" minW="0" flex="1" justifyContent="start" whiteSpace="normal" h="auto" py="2" fontSize="xs" disabled={locked} onClick={() => { focus(node.id); void choose(node) }}>
-              {node.kind==='request' ? <Badge colorPalette={httpMethodPalette(node.method)} fontSize="xs">{node.method}</Badge> : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="M3 7V5a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v3" />{expanded.has(node.id) ? <path d="M3 8h18l-3 12H3L1 10a2 2 0 0 1 2-2Z" /> : <path d="M3 8h18v12H3Z" />}</svg>}
+            <Button data-tooltip={node.label} aria-label={node.label} tabIndex={-1} variant="ghost" size="sm" minW="0" flex="1" justifyContent="start" whiteSpace="normal" h="auto" py="2" fontSize="xs" disabled={locked} onClick={() => { focus(node.id); void choose(node) }}>
+              {node.kind==='request' ? <Badge className="method-badge" data-method={node.method} colorPalette={httpMethodPalette(node.method)} fontSize="xs">{node.method}</Badge> : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="M3 7V5a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v3" />{expanded.has(node.id) ? <path d="M3 8h18l-3 12H3L1 10a2 2 0 0 1 2-2Z" /> : <path d="M3 8h18v12H3Z" />}</svg>}
               <Text overflowWrap="anywhere" textAlign="left">{node.label}</Text>
             </Button>
             <Menu.Root><Menu.Trigger asChild><Button ref={el => { if(el) triggers.current.set(node.id,el); else triggers.current.delete(node.id) }} variant="ghost" size="xs" disabled={locked} aria-label={`Actions for ${node.kind}: ${node.label}`}>⋯</Button></Menu.Trigger>
@@ -173,6 +173,7 @@ export function CollectionSidebar({workspaceId,requestController,guard}:{guard:G
                 {node.kind==='collection' && <Menu.Item value="export-postman" onClick={() => { returnId.current=node.id; setExporting({id:node.id,name:node.name}) }}>Export to Postman</Menu.Item>}
                 <Menu.Item value="rename" onClick={() => { if(node.kind==='request') void guard(async () => { const ok=await current.current.open(node.id); if(ok) current.current.focusName(); return ok }); else open({kind:'rename',node}) }}>Rename {node.kind}</Menu.Item>
                 {node.kind!=='collection' && <Menu.Item value="move" onClick={() => open({kind:'move',node})}>Move {node.kind}</Menu.Item>}
+                {node.kind==='folder' && <Menu.Item value="duplicate-folder" onClick={() => { if (workspaceId) void guard(() => mutate(() => window.offlineApi.folders.duplicate(workspaceId,node.id)), true) }}>Duplicate folder</Menu.Item>}
                 {node.kind==='request' && <Menu.Item value="duplicate" onClick={() => { void guard(() => current.current.duplicate(node.id)) }}>Duplicate request</Menu.Item>}
                 <Menu.Item value="delete" onClick={() => open({kind:'delete',node})}>Delete {node.kind}</Menu.Item>
               </Menu.Content></Menu.Positioner></Portal>

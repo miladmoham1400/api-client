@@ -144,6 +144,7 @@ it('partial saves and duplicates retain placement and independent secret copies;
 it('validates owned sender, active workspace, exact inputs, outgoing metadata and unavailable database', () => {
   const f=fixture(), foreignFolder=f.r.createFolder(f.foreign,f.fc,null,'Foreign'), bytes=before(f.db)
   for(const event of [{sender:{},senderFrame:f.frame},{sender:f.contents,senderFrame:null},{sender:f.contents,senderFrame:{url:f.frame.url}}]) {
+    expect(f.handlers.duplicate(event,f.w,randomUUID())).toMatchObject({ok:false,error:{code:'NOT_FOUND'}})
     expect(f.handlers.list(event,f.w)).toMatchObject({ok:false,error:{code:'NOT_FOUND'}})
     expect(f.handlers.create(event,f.w,f.c,null,'Denied')).toMatchObject({ok:false,error:{code:'NOT_FOUND'}})
   }
@@ -171,3 +172,55 @@ it('exports empty folders as v2, keeping one snapshot when folders change during
   expect(exportService.snapshot(f.w).workspace.folders).toHaveLength(2)
   expect(readdirSync(f.directory).filter(n => n.endsWith('.tmp'))).toEqual([])
 })
+
+it('duplicates a nested folder atomically with independent session credentials and unchanged selection', async () => {
+  const { SecretStore } = await import('../../src/main/security/secrets')
+  const f = fixture(), store = new SecretStore(f.db, { isEncryptionAvailable: () => false, getSelectedStorageBackend: () => 'basic_text', encryptString: () => { throw new Error('Unavailable') }, decryptString: () => { throw new Error('Unavailable') } }, 'linux')
+  const root = f.r.createFolder(f.w, f.c, null, 'Users'), child = f.r.createFolder(f.w, f.c, root.id, 'Nested'), empty = f.r.createFolder(f.w, f.c, child.id, 'Empty')
+  const secret = store.create(f.w, 'synthetic-folder-token')
+  const stored = { ...config(), method: 'POST' as const, auth: { mode: 'bearer' as const, token: { kind: 'secret' as const, secretId: secret.secretId } }, body: { kind: 'json' as const, text: '{"case":2}' } }
+  const original = f.r.createRequest(f.w, 'Create', f.c, stored, child.id)
+  f.r.setState(f.w, null, original.id)
+  const result = new FolderService(f.db, store).duplicate(f.w, root.id)
+  const copyRoot = result.folders.find(folder => folder.name === 'Users (copy)')!
+  const copyChild = result.folders.find(folder => folder.parentFolderId === copyRoot.id)!
+  expect(result.folders.some(folder => folder.parentFolderId === copyChild.id && folder.name === empty.name)).toBe(true)
+  expect(f.r.getState(f.w).selectedRequestId).toBe(original.id)
+  const copied = f.r.listRequests(f.w).find(request => request.folderId === copyChild.id)!
+  expect(copied.name).toBe(original.name)
+  const copiedConfig = f.r.getRequest(f.w, copied.id).config
+  expect(copiedConfig.body).toEqual(stored.body)
+  if (copiedConfig.auth.mode !== 'bearer' || copiedConfig.auth.token.kind !== 'secret') throw new Error('Missing copied credential')
+  const copiedSecret = copiedConfig.auth.token.secretId
+  expect(copiedSecret).not.toBe(secret.secretId)
+  expect(store.reveal(f.w, copiedSecret)).toBe('synthetic-folder-token')
+  new RequestService(f.db, store, store).delete(f.w, original.id)
+  expect(store.reveal(f.w, copiedSecret)).toBe('synthetic-folder-token')
+  expect(f.r.getState(f.w).selectedRequestId).toBeNull()
+  expect(copyRoot.parentFolderId).toBeNull()
+  expect(f.db.pragma('foreign_key_check')).toEqual([])
+})
+
+it('rejects foreign folder duplication and rolls back all copies on mid-copy failure', () => {
+  const f = fixture(), root = f.r.createFolder(f.w, f.c, null, 'Root')
+  f.r.createFolder(f.w, f.c, root.id, 'Child')
+  f.r.createRequest(f.w, 'Copy fails', f.c, config(), root.id)
+  expect(() => f.service.duplicate(f.foreign, root.id)).toThrow('Item not found')
+  f.db.exec("CREATE TRIGGER reject_request_copy BEFORE INSERT ON requests BEGIN SELECT RAISE(ABORT,'synthetic failure'); END")
+  const withTrigger = before(f.db)
+  expect(() => f.service.duplicate(f.w, root.id)).toThrow('Local data operation failed')
+  expect(before(f.db)).toEqual(withTrigger)
+  f.db.exec('DROP TRIGGER reject_request_copy')
+  expect(f.r.listFolders(f.w)).toHaveLength(2)
+  expect(f.r.listRequests(f.w)).toHaveLength(1)
+})
+
+it('rolls back folder duplication at the folder capacity instead of leaving a partial subtree', () => {
+  const f = fixture(), root = f.r.createFolder(f.w, f.c, null, 'Root')
+  f.r.createFolder(f.w, f.c, root.id, 'Child')
+  const stamp = new Date().toISOString(), insert = f.db.prepare('INSERT INTO folders VALUES (?,?,?,?,?,?,?,?)')
+  f.db.transaction(() => { for (let i = 2; i < 999; i++) insert.run(randomUUID(), f.w, f.c, null, `Folder ${i}`, i, stamp, stamp) })()
+  const bytes = before(f.db)
+  expect(() => f.service.duplicate(f.w, root.id)).toThrow('Invalid input')
+  expect(before(f.db)).toEqual(bytes)
+}, 15000)

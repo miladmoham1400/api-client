@@ -33,8 +33,11 @@ export function useRequests(workspace: string | null) {
     for (const [id, w] of selections.current) void window.offlineApi.files.releaseUpload(w, id).catch(() => {})
     selections.current.clear()
   }, [])
+  const acknowledgedAuth = useRef<{ id: string; auth: RequestDraft['auth'] } | null>(null)
   const comparison = (value: Parameters<typeof copyDraft>[0]) => {
     const copy = copyDraft(value)
+    const acknowledged = acknowledgedAuth.current
+    if ('id' in value && acknowledged && acknowledged.id === value.id) copy.auth = acknowledged.auth
     return JSON.stringify({ ...copy, ...(copy.bodyVariants ? { bodyVariants: copy.bodyVariants.map(v => ({ ...v, body: persistedBody(v.body) })) } : {}), ...(copy.body ? { body: persistedBody(copy.body) } : {}) })
   }
   const pendingNameFocus=useRef(false)
@@ -60,7 +63,7 @@ export function useRequests(workspace: string | null) {
       if (current !== generation.current) return false
       if (result.ok && result.data.workspaceId === workspace) {
         const editor = result.data.editor
-        latestSaved.current=editor; setSaved(editor); if(editor) setDestination({collectionId:editor.collectionId,folderId:editor.folderId}); setDraft(previous => editor ? { ...copyDraft(editor), ...(preserveBody ? { body: retainSelections(editor.body ?? undefined, previous?.body) } : {}) } : null)
+        acknowledgedAuth.current = null; latestSaved.current=editor; setSaved(editor); if(editor) setDestination({collectionId:editor.collectionId,folderId:editor.folderId}); setDraft(previous => editor ? { ...copyDraft(editor), ...(preserveBody ? { body: retainSelections(editor.body ?? undefined, previous?.body) } : {}) } : null)
         if (!preserveBody) { releaseSelections(); bodyCache.current = initialBodyDrafts(editor?.body ?? undefined) }
         if (refresh) setRevision(value => value + 1)
         return true
@@ -72,7 +75,7 @@ export function useRequests(workspace: string | null) {
     finally { if (current === generation.current) { running.current = false; setBusy(false) } }
   }, [workspace, releaseSelections])
   useEffect(() => {
-    setLoadedWorkspace(workspace); setDestination({collectionId:null,folderId:null}); latestSaved.current=null; setSaved(null); setDraft(null); setError(null); setValidation({}); setBusy(false)
+    acknowledgedAuth.current = null; setLoadedWorkspace(workspace); setDestination({collectionId:null,folderId:null}); latestSaved.current=null; setSaved(null); setDraft(null); setError(null); setValidation({}); setBusy(false)
     if (workspace) void apply(() => window.offlineApi.requests.list(workspace))
     return () => { generation.current++; running.current = false; releaseSelections() }
   }, [apply, workspace, releaseSelections])
@@ -96,11 +99,12 @@ export function useRequests(workspace: string | null) {
           setError('Automatic save failed. Your edits have been kept. Press Ctrl+S to retry.'); return false
         }
         const editor = result.data.editor
+        acknowledgedAuth.current = { id: editor.id, auth: value.auth }
         latestSaved.current = editor; setSaved(editor)
         setDestination({ collectionId: editor.collectionId, folderId: editor.folderId })
         // A slow save must never replace text entered while its IPC call was pending.
         if (latestDraft.current === value) {
-          const next = { ...copyDraft(editor), body: retainSelections(editor.body ?? undefined, value.body), ...(editor.bodyVariants ? { bodyVariants: retainVariantSelections(editor.bodyVariants, value.bodyVariants) } : {}) }
+          const next = { ...copyDraft(editor), auth: value.auth, body: retainSelections(editor.body ?? undefined, value.body), ...(editor.bodyVariants ? { bodyVariants: retainVariantSelections(editor.bodyVariants, value.bodyVariants) } : {}) }
           latestDraft.current = next; setDraft(next)
         }
         setRevision(value => value + 1)
@@ -197,7 +201,7 @@ export function useRequests(workspace: string | null) {
     bodyIssue, setBodyIssue, path, setPath, destination, chooseFile, changeMultipart,
     ...execution,
     saving, saved: currentWorkspace ? saved : null, draft: currentWorkspace ? draft : null, busy: currentWorkspace ? busy : workspace !== null, dirty, error: currentWorkspace ? error : null, revision, validation, addRow, changeBody: (kind: EditableBody['kind']) => { if (!draft || busy) return; const result = switchBody(bodyCache.current, draft.body, kind); bodyCache.current = result.cache; setDraft({ ...draft, body: result.body }); setValidation({}); setError(null) }, setDraft: (value: RequestDraft) => { setDraft(value); setValidation({}); setError(null) }, save,
-    create: (target: RequestDestination = {collectionId:null,folderId:null}) => { if (!workspace || running.current) return false; releaseSelections(); setDestination(target); bodyCache.current = initialBodyDrafts(); latestSaved.current=null; setSaved(null); setDraft(copyDraft({ name: 'New request', method: 'GET', urlTemplate: '', body: { kind: 'none' }, auth: { mode: 'none' } })); setError(null); setBodyIssue(null); setValidation({}); return true },
+    create: (target: RequestDestination = {collectionId:null,folderId:null}) => { if (!workspace || running.current) return false; acknowledgedAuth.current = null; releaseSelections(); setDestination(target); bodyCache.current = initialBodyDrafts(); latestSaved.current=null; setSaved(null); setDraft(copyDraft({ name: 'New request', method: 'GET', urlTemplate: '', body: { kind: 'none' }, auth: { mode: 'none' } })); setError(null); setBodyIssue(null); setValidation({}); return true },
     syncPlacement: (rows: readonly { id:string; destination:RequestDestination }[]) => {
       const selected=latestSaved.current
       if(selected) {
@@ -206,7 +210,7 @@ export function useRequests(workspace: string | null) {
         else { releaseSelections(); latestSaved.current=null; setSaved(null); setDraft(null); bodyCache.current=initialBodyDrafts() }
       }
     },
-    discard: () => { if (!busy) { releaseSelections(); bodyCache.current = initialBodyDrafts(latestSaved.current?.body ?? undefined); setDraft(latestSaved.current ? copyDraft(latestSaved.current) : null); setError(null); setBodyIssue(null); setValidation({}) } },
+    discard: () => { if (!busy) { acknowledgedAuth.current = null; releaseSelections(); bodyCache.current = initialBodyDrafts(latestSaved.current?.body ?? undefined); setDraft(latestSaved.current ? copyDraft(latestSaved.current) : null); setError(null); setBodyIssue(null); setValidation({}) } },
     open: (id: string) => workspace ? apply(() => window.offlineApi.requests.get(workspace, id)) : Promise.resolve(false),
     duplicate: (id = saved?.id) => workspace && id ? apply(() => window.offlineApi.requests.duplicate(workspace, id), true) : Promise.resolve(false),
     delete: () => workspace && saved ? apply(() => window.offlineApi.requests.delete(workspace, saved.id), true) : Promise.resolve(false)

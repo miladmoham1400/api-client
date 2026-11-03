@@ -22,6 +22,7 @@ export function createFolderHandlers(getWindow: Parameters<typeof createOwnedHan
     create: handler(folderInputs.create,(s,[w,c,p,n]) => s.create(w,c,p,n)),
     rename: handler(folderInputs.rename,(s,[w,id,n]) => s.rename(w,id,n)),
     move: handler(folderInputs.move,(s,[w,id,c,p]) => s.move(w,id,c,p)),
+    duplicate: handler(folderInputs.duplicate,(s,[w,id]) => s.duplicate(w,id)),
     delete: handler(folderInputs.delete,(s,[w,id]) => s.delete(w,id))
   }
 }

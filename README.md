@@ -2,9 +2,11 @@
 
 An offline desktop HTTP client for Linux and Windows, built with Electron, React, TypeScript, SQLite and Chakra UI v3.
 
-Create, save and send HTTP requests; organize APIs in collections and nested folders; search requests; use workspaces, environments and variables. The 0.4.0 source includes a dark glass interface, automatic saving, collapsible Pretty JSON, isolated static HTML previews, distinct HTTP method colors and adjustable side-by-side request/response panels. One request editor is active at a time.
+Create, save and send HTTP requests; organize APIs in collections and nested folders; search requests; use workspaces, environments and variables. The current source includes a dark glass interface, automatic saving, collapsible Pretty JSON, isolated static HTML previews, distinct HTTP method colors and adjustable side-by-side request/response panels. One request editor is active at a time.
 
 Version 0.4.0 adds named selectable request bodies, variable-name highlighting/completion, JSON blur formatting and diagnostics, exact-response copy and Postman Collection v2.1 JSON transfer. Postman scripts, OAuth and unsupported modes are not executed/imported; transfer dialogs explain omissions.
+
+Version 0.4.1 source adds themed tooltips, compact library rows, retained readable Bearer drafts after autosave, JSON line numbers/inline diagnostics, automatic transfer-dialog dismissal and complete folder duplication.
 
 Installed startup and local data operations require no account, cloud service or developer Node/npm. Sending requests requires access to the target API. Data stays on your computer; no automatic updates are provided.
 

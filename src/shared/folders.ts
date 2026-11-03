@@ -18,9 +18,10 @@ export const folderInputs = {
   create: z.tuple([uuidSchema, uuidSchema, uuidSchema.nullable(), nameSchema]),
   rename: z.tuple([uuidSchema, uuidSchema, nameSchema]),
   move: z.tuple([uuidSchema, uuidSchema, uuidSchema, uuidSchema.nullable()]),
+  duplicate: z.tuple([uuidSchema, uuidSchema]),
   delete: z.tuple([uuidSchema, uuidSchema])
 }
-export const FOLDER_CHANNELS = Object.freeze({ list: 'folders:list', create: 'folders:create', rename: 'folders:rename', move: 'folders:move', delete: 'folders:delete' })
+export const FOLDER_CHANNELS = Object.freeze({ list: 'folders:list', create: 'folders:create', rename: 'folders:rename', move: 'folders:move', duplicate: 'folders:duplicate', delete: 'folders:delete' })
 export type FolderSnapshot = z.infer<typeof folderSnapshotSchema>
 type Reply = Promise<Result<FolderSnapshot>>
 export interface FolderApi {
@@ -28,5 +29,6 @@ export interface FolderApi {
   readonly create: (workspace: string, collection: string, parent: string | null, name: string) => Reply
   readonly rename: (workspace: string, id: string, name: string) => Reply
   readonly move: (workspace: string, id: string, collection: string, parent: string | null) => Reply
+  readonly duplicate: (workspace: string, id: string) => Reply
   readonly delete: (workspace: string, id: string) => Reply
 }

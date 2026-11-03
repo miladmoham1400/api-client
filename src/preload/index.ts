@@ -129,6 +129,7 @@ const api: DesktopApi = Object.freeze({
     create: (w: string, c: string, p: string|null, n: string) => folderCall(FOLDER_CHANNELS.create, folderInputs.create, [w,c,p,n]),
     rename: (w: string, id: string, n: string) => folderCall(FOLDER_CHANNELS.rename, folderInputs.rename, [w,id,n]),
     move: (w: string, id: string, c: string, p: string|null) => folderCall(FOLDER_CHANNELS.move, folderInputs.move, [w,id,c,p]),
+    duplicate: (w: string, id: string) => folderCall(FOLDER_CHANNELS.duplicate, folderInputs.duplicate, [w,id]),
     delete: (w: string, id: string) => folderCall(FOLDER_CHANNELS.delete, folderInputs.delete, [w,id])
   }),
   collections: Object.freeze({

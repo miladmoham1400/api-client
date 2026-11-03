@@ -52,8 +52,8 @@ export function WorkspaceControls({ controller, placement, guard, locked = false
           {snapshot?.workspaces.map(workspace => <option key={workspace.id} value={workspace.id}>{workspace.name}</option>)}
         </NativeSelect.Field><NativeSelect.Indicator />
       </NativeSelect.Root>
-      <Button ref={importButton} aria-label="Import collection or workspace" title="Import Postman collection or workspace JSON" size="sm" variant="ghost" disabled={!snapshot || busy || locked} onClick={() => { setImportStatus(null); setImportOpen(true) }}><Icon name="import" size={14} />Import</Button>
-      <Menu.Root><Menu.Trigger asChild><Button ref={menu} disabled={!selected || busy || locked} size="sm" variant="ghost" title="Workspace menu" className="toolbar-icon" aria-label="Workspace menu"><Icon name="settings" /></Button></Menu.Trigger>
+      <Button ref={importButton} aria-label="Import collection or workspace" data-tooltip="Import Postman collection or workspace JSON" size="sm" variant="ghost" disabled={!snapshot || busy || locked} onClick={() => { setImportStatus(null); setImportOpen(true) }}><Icon name="import" size={14} />Import</Button>
+      <Menu.Root><Menu.Trigger asChild><Button ref={menu} disabled={!selected || busy || locked} size="sm" variant="ghost" data-tooltip="Workspace menu" className="toolbar-icon" aria-label="Workspace menu"><Icon name="settings" /></Button></Menu.Trigger>
         <Portal><Menu.Positioner><Menu.Content>
           <Menu.Item value="export" onClick={() => { if (selected) { setExportStatus(null); setExportTarget({ id: selected.id, name: selected.name }) } }}>Export workspace JSON</Menu.Item>
           <Menu.Item value="rename" onClick={() => { if (selected) open({ kind: 'rename', id: selected.id, name: selected.name }) }}>Rename workspace</Menu.Item>
@@ -66,7 +66,7 @@ export function WorkspaceControls({ controller, placement, guard, locked = false
       {busy && <Text role="status" fontSize="sm">Updating workspaces…</Text>}
       {error && <Box role="alert"><Text fontSize="sm">{error}</Text><Button variant="outline" size="sm" disabled={busy} onClick={() => { void guard(reload, true) }}>Reload workspaces</Button></Box>}
     </>}
-    {importOpen && <WorkspaceImportDialog returnFocus={() => importButton.current} close={name => { setImportOpen(false); setImportStatus(name ? `Imported “${name}”. Select it from Workspace when ready.` : 'Import cancelled.'); if (name) void reload() }} />}
+    {importOpen && <WorkspaceImportDialog returnFocus={() => importButton.current} close={name => { setImportOpen(false); setImportStatus(name ? `Imported “${name}”. Select it from Workspace when ready.` : null); if (name) void reload() }} />}
     {placement === 'top' && importStatus && <Text role="status" fontSize="sm">{importStatus}</Text>}
     {placement === 'top' && exportStatus && <Text role="status" fontSize="sm">{exportStatus}</Text>}
     {exportTarget && <WorkspaceExportDialog workspace={exportTarget} returnFocus={() => menu.current} close={status => { setExportTarget(null); if (status) setExportStatus(status === 'saved' ? 'Workspace exported.' : 'Export cancelled.') }} />}
