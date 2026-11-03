@@ -61,11 +61,11 @@ test('native export/import preview confirms only a new workspace, cancels neutra
     expect(source.workspace.requests[0]?.folderId).toBe(source.workspace.folders.find(f => f.name === 'Auth')?.id)
     const before = await databaseBytes()
     async function choose(cancel = false) {
-      await page.getByRole('button',{name:'Import workspace JSON',exact:true}).click()
-      const dialog = page.getByRole('dialog',{name:'Import workspace JSON',exact:true})
+      await page.getByRole('button',{name:'Import collection or workspace',exact:true}).click()
+      const dialog = page.getByRole('dialog',{name:'Import collection or workspace',exact:true})
       await expect(dialog.getByRole('button',{name:'Cancel',exact:true})).toBeFocused()
       await dialog.getByRole('button',{name:'Choose JSON file',exact:true}).click()
-      await execute('python3',['tests/fixtures/native-upload-dialog.py',cancel ? 'cancel' : path,'Import workspace JSON'],{timeout:15_000})
+      await execute('python3',['tests/fixtures/native-upload-dialog.py',cancel ? 'cancel' : path,'Import collection or workspace'],{timeout:15_000})
       return dialog
     }
     let dialog = await choose(true)
@@ -79,7 +79,7 @@ test('native export/import preview confirms only a new workspace, cancels neutra
     await page.screenshot({path:'/tmp/api-client-import-preview.png',animations:'disabled'})
     await dialog.getByRole('button',{name:'Cancel',exact:true}).click()
     await expect(dialog).not.toBeVisible()
-    await expect(page.getByRole('button',{name:'Import workspace JSON',exact:true})).toBeFocused()
+    await expect(page.getByRole('button',{name:'Import collection or workspace',exact:true})).toBeFocused()
     expect(await databaseBytes()).toEqual(before)
     dialog = await choose()
     await expect(dialog.getByRole('button',{name:'Import as new workspace',exact:true})).toBeVisible()

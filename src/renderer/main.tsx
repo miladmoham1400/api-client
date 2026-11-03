@@ -6,12 +6,14 @@ import type { Bootstrap } from '../shared/desktop-api'
 import { LocalProvider, ThemeControl } from './theme/provider'
 import './shell.css'
 import { useWorkspaces } from './features/workspaces/use-workspaces'
+import { CollectionExportControl } from './features/collections/export-dialog'
 import { CollectionSidebar } from './features/collections/sidebar'
 import { WorkspaceControls } from './features/workspaces/controls'
 import { useRequests } from './features/requests/controller'
 import { VariableControls } from './features/variables/controls'
 import { RequestResponsePanels } from './features/layout/panels'
 import type { WorkspaceController } from './features/workspaces/use-workspaces'
+import { VariableNamesProvider } from './components/template-field'
 import { Icon } from './components/icon'
 import appIcon from '../../build/icons/64x64.png?url'
 
@@ -54,13 +56,14 @@ function Desktop({ workspaces, closeGuard }: { workspaces: WorkspaceController; 
   const requests = useRequests(workspaces.snapshot?.selectedWorkspaceId ?? null)
   const navigation = useNavigationGuard(requests)
   useEffect(() => { closeGuard.current = navigation.close; return () => { closeGuard.current = null } }, [closeGuard, navigation.close])
-  return <Flex className="app-shell" direction="column" h="100dvh" color="fg">
+  return <VariableNamesProvider workspace={workspaces.snapshot?.selectedWorkspaceId ?? null}><Flex className="app-shell" direction="column" h="100dvh" color="fg">
     <Flex as="header" className="app-toolbar" gap="2" align="center" flexWrap="wrap">
       <Flex className="app-brand" align="center" gap="2" flexShrink="0">
         <img src={appIcon} alt="" aria-hidden="true" width="28" height="28" draggable={false} />
         <Box><Heading size="md">Offline API Client</Heading><Text className="brand-caption">YOUR LOCAL API WORKSPACE</Text></Box>
       </Flex>
       <WorkspaceControls controller={workspaces} locked={requests.busy} guard={navigation.guard} placement="top" />
+      <CollectionExportControl workspace={workspaces.snapshot?.selectedWorkspaceId ?? null} controller={requests} />
       <VariableControls key={workspaces.snapshot?.selectedWorkspaceId ?? 'none'} workspace={workspaces.snapshot?.selectedWorkspaceId ?? null} />
       <ThemeControl />
       <Dialog.Root initialFocusEl={() => closeButton.current}>
@@ -82,7 +85,7 @@ function Desktop({ workspaces, closeGuard }: { workspaces: WorkspaceController; 
     </Flex>
     {navigation.dialog}
     <Flex as="footer" className="app-footer" justify="space-between" align="center"><Text><span className="local-dot" />Local storage ready</Text><Text>LOCAL FIRST <span className="footer-divider">/</span> PRIVATE BY DESIGN</Text></Flex>
-  </Flex>
+  </Flex></VariableNamesProvider>
 }
 
 const root = document.getElementById('root')

@@ -1,11 +1,12 @@
+import { COPY_RESPONSE_CHANNEL, copyResponseInput } from '../shared/clipboard'
 import { THEME_CHANNELS } from '../shared/theme'
 import { createThemeHandlers } from './ipc/theme'
 import { IMPORT_CHANNELS } from '../shared/import'
 import { WorkspaceImportService } from './services/workspace-import'
 import { createImportHandlers } from './ipc/import'
 import { WorkspaceExportService } from './services/workspace-export'
-import { createExportHandler } from './ipc/export'
-import { EXPORT_CHANNEL } from '../shared/export'
+import { createExportHandler, createPostmanExportHandler } from './ipc/export'
+import { EXPORT_CHANNEL, POSTMAN_EXPORT_CHANNEL } from '../shared/export'
 import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
 import { CLOSE_CHANNELS, closeDecisionInput } from '../shared/close'
@@ -13,7 +14,7 @@ import { UploadService } from './files/uploads'
 import { Repositories } from './db/repositories'
 import { createFileHandlers } from './ipc/files'
 import { FILE_CHANNELS } from '../shared/files'
-import { app, BrowserWindow, ipcMain, safeStorage, dialog } from 'electron'
+import { app, BrowserWindow, ipcMain, safeStorage, dialog, clipboard } from 'electron'
 import { dirname, join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { bootstrapInputSchema, bootstrapSchema, IPC_CHANNELS } from '../shared/desktop-api'
@@ -134,7 +135,7 @@ else {
     ipcMain.handle(THEME_CHANNELS.set, themeHandlers.set)
     const importService = database ? new WorkspaceImportService(new Repositories(database)) : null
     const importHandlers = createImportHandlers(() => ownedWindow, trustedUrl, () => importService, async () => {
-      const result = await dialog.showOpenDialog(window, { title: 'Import workspace JSON', filters: [{ name: 'Workspace JSON', extensions: ['json'] }], properties: ['openFile', 'dontAddToRecent'] })
+      const result = await dialog.showOpenDialog(window, { title: 'Import collection or workspace', filters: [{ name: 'Postman / workspace JSON', extensions: ['json'] }], properties: ['openFile', 'dontAddToRecent'] })
       return result.canceled ? null : result.filePaths[0] ?? null
     })
     ipcMain.handle(IMPORT_CHANNELS.choose, importHandlers.choose)
@@ -145,6 +146,10 @@ else {
     const exportService = database ? new WorkspaceExportService(database, [app.getPath('userData'), app.getAppPath(), dirname(app.getPath('exe'))]) : null
     ipcMain.handle(EXPORT_CHANNEL, createExportHandler(() => ownedWindow, trustedUrl, () => exportService, async () => {
       const result = await dialog.showSaveDialog(window, { title: 'Export workspace JSON', defaultPath: 'workspace.json', filters: [{ name: 'Workspace JSON', extensions: ['json'] }], properties: ['showOverwriteConfirmation', 'dontAddToRecent'] })
+      return result.canceled ? null : result.filePath ?? null
+    }))
+    ipcMain.handle(POSTMAN_EXPORT_CHANNEL, createPostmanExportHandler(() => ownedWindow, trustedUrl, () => exportService, async () => {
+      const result = await dialog.showSaveDialog(window, { title: 'Export Postman collection', defaultPath: 'collection.postman_collection.json', filters: [{ name: 'Postman Collection JSON', extensions: ['json'] }], properties: ['showOverwriteConfirmation', 'dontAddToRecent'] })
       return result.canceled ? null : result.filePath ?? null
     }))
     const fileHandlers = createFileHandlers(() => ownedWindow, trustedUrl, () => uploadService, async () => {
@@ -179,6 +184,7 @@ else {
         : url.protocol === 'file:' && url.href.startsWith(rendererRoot) && !url.search
       callback({ cancel: !allowed })
     })
+    ipcMain.handle(COPY_RESPONSE_CHANNEL, createOwnedHandler(() => ownedWindow, trustedUrl, copyResponseInput, z.null(), ([text]) => { clipboard.writeText(text); return null }))
     ipcMain.handle(IPC_CHANNELS.getBootstrap, createOwnedHandler(
       () => ownedWindow, trustedUrl, bootstrapInputSchema, bootstrapSchema,
       () => { closeReady = true; return bootstrap }
@@ -208,6 +214,8 @@ else {
       for (const channel of Object.values(THEME_CHANNELS)) ipcMain.removeHandler(channel)
       importService?.clear()
       for (const channel of Object.values(IMPORT_CHANNELS)) ipcMain.removeHandler(channel)
+      ipcMain.removeHandler(COPY_RESPONSE_CHANNEL)
+      ipcMain.removeHandler(POSTMAN_EXPORT_CHANNEL)
       ipcMain.removeHandler(EXPORT_CHANNEL)
       ipcMain.removeHandler(CLOSE_CHANNELS.decision)
       uploadService?.clear(); uploadService = null

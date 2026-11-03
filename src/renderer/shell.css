@@ -279,3 +279,20 @@ kbd { font: inherit; font-size: 9px; padding: 3px 5px; border: 1px solid var(--g
 .response-modes { padding: 3px; width: fit-content; border: 1px solid var(--glass-edge); border-radius: 8px; background: var(--glass-input); }
 .response-modes button { height: 25px; min-height: 25px; padding: 0 10px; font-size: 10px; color: var(--glass-muted); background: transparent; }
 .response-modes button[aria-pressed="true"] { color: var(--glass-accent); background: var(--glass-accent-soft); box-shadow: inset 0 1px 0 var(--glass-highlight); }
+
+.template-field { position: relative; min-width: 0; }
+.template-input { flex: 1; width: 100%; border-radius: 8px; background: var(--glass-input); }
+.template-backdrop { position: absolute; inset: 0; display: block; white-space: pre; overflow: hidden; padding: 0 12px; line-height: 34px; font: inherit; font-size: 12px; line-height: 34px; border: 1px solid transparent; color: var(--glass-text); pointer-events: none; }
+.app-shell .template-field.template-input .template-native { background: transparent; }
+.app-shell .template-field.has-template .template-native { color: transparent; caret-color: var(--glass-text); }
+.template-variable { color: var(--glass-accent); background: var(--glass-accent-soft); border-radius: 3px; }
+.template-unknown { text-decoration: underline dotted #d3a76b; text-underline-offset: 3px; }
+.template-suggestions { position: absolute; top: 100%; left: 0; min-width: 210px; max-width: 100%; max-height: 190px; overflow: auto; z-index: 30; padding: 5px; margin-top: 4px; border: 1px solid var(--glass-edge); border-radius: 9px; background: var(--chakra-colors-bg-panel); box-shadow: 0 10px 30px #0004; }
+.template-suggestions button { display: flex; justify-content: space-between; align-items: center; gap: 15px; width: 100%; padding: 7px 9px; text-align: left; color: var(--glass-accent); font: 11px ui-monospace, monospace; }
+.template-suggestions button[aria-selected="true"] { background: var(--glass-accent-soft); }
+.template-suggestions small { font: 9px sans-serif; color: var(--glass-muted); }
+.request-address > .template-field { flex: 1; min-width: 30px; }
+.request-address .template-backdrop { padding-left: 6px; }
+.app-shell .body-variants select { font-size: 11px; }
+@media (forced-colors: active) { .template-backdrop { display: none; } .app-shell .template-field.has-template .template-native { color: CanvasText; } .template-variable { color: LinkText; } }
+.json-variable { color: var(--glass-accent); }

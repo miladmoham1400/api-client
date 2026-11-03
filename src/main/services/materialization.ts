@@ -45,7 +45,7 @@ export class MaterializationService {
       const merged = mergeVariables(workspace, environmentId, entries)
       if (!merged.ok) return merged
       let capturedFiles: ReturnType<UploadService['captureForSend']> | undefined
-      return materialize({ ...createDefaultRequestConfig(), ...previous, method: d.method, urlTemplate: d.urlTemplate, queryRows: d.queryRows ?? previous?.queryRows ?? [], headerRows: d.headerRows ?? previous?.headerRows ?? [], body: d.body ?? previous?.body ?? { kind: 'none' }, timeoutMs: d.timeoutMs ?? previous?.timeoutMs ?? 30000, followRedirects: d.followRedirects ?? previous?.followRedirects ?? false, auth: runtime }, merged.data, this.uploads ? source => {
+      return materialize({ ...createDefaultRequestConfig(), ...previous, method: d.method, urlTemplate: d.urlTemplate, queryRows: d.queryRows ?? previous?.queryRows ?? [], headerRows: d.headerRows ?? previous?.headerRows ?? [], body: d.bodyVariants?.find(v => v.id === d.selectedBodyVariantId)?.body ?? d.body ?? previous?.body ?? { kind: 'none' }, timeoutMs: d.timeoutMs ?? previous?.timeoutMs ?? 30000, followRedirects: d.followRedirects ?? previous?.followRedirects ?? false, auth: runtime }, merged.data, this.uploads ? source => {
         try { capturedFiles ??= this.uploads!.captureForSend(workspace, source); return capturedFiles().map(lease => ({ ...lease, async *stream() {
           try { yield* lease.stream() } catch (error) { throw error instanceof UploadError ? new BodyError(error.dto()) : error }
         } })) }

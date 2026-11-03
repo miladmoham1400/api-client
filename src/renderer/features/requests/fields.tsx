@@ -1,3 +1,4 @@
+import { TemplateInput } from '../../components/template-field'
 import { Box, Button, Flex, Input, Text, VStack } from '@chakra-ui/react'
 import { LIMITS } from '../../../shared/primitives'
 import { updateRow, removeRow, moveRow, getRows, type RowGroup } from './fields-state'
@@ -17,7 +18,7 @@ export function RowsEditor({ controller: c, group }: { controller: RequestContro
           <Button size="xs" variant="outline" aria-label={`Move ${label.toLowerCase()} ${index + 1} down`} disabled={c.busy || index === rows.length - 1} onClick={() => { if (c.draft) c.setDraft(moveRow(c.draft, group, row.id, 1)) }}>Move down</Button>
           <Button size="xs" variant="outline" aria-label={`Remove ${label.toLowerCase()} ${index + 1}`} disabled={c.busy} onClick={() => { if (c.draft) c.setDraft(removeRow(c.draft, group, row.id)) }}>Remove</Button>
         </Flex>
-        <Flex gap="2"><Input aria-label={`${label} ${index + 1} key`} placeholder="Key" value={row.key} disabled={c.busy} aria-invalid={!!c.validation[`${path}.key`]} aria-describedby={c.validation[`${path}.key`] ? `${path}.key-error` : undefined} onChange={event => { if (c.draft) c.setDraft(updateRow(c.draft, group, row.id, { key: event.target.value })) }} /><Input aria-label={`${label} ${index + 1} value`} placeholder="Value" value={row.value} disabled={c.busy} aria-invalid={!!c.validation[`${path}.value`]} aria-describedby={c.validation[`${path}.value`] ? `${path}.value-error` : undefined} onChange={event => { if (c.draft) c.setDraft(updateRow(c.draft, group, row.id, { value: event.target.value })) }} /></Flex>
+        <Flex gap="2"><TemplateInput aria-label={`${label} ${index + 1} key`} placeholder="Key" value={row.key} disabled={c.busy} aria-invalid={!!c.validation[`${path}.key`]} aria-describedby={c.validation[`${path}.key`] ? `${path}.key-error` : undefined} onChange={event => { if (c.draft) c.setDraft(updateRow(c.draft, group, row.id, { key: event.target.value })) }} /><TemplateInput aria-label={`${label} ${index + 1} value`} placeholder="Value" value={row.value} disabled={c.busy} aria-invalid={!!c.validation[`${path}.value`]} aria-describedby={c.validation[`${path}.value`] ? `${path}.value-error` : undefined} onChange={event => { if (c.draft) c.setDraft(updateRow(c.draft, group, row.id, { value: event.target.value })) }} /></Flex>
         {error(`${path}.key`)}{error(`${path}.value`)}{error(`${path}.id`)}
       </Box>
     })}

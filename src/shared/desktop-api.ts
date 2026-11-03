@@ -1,8 +1,9 @@
+import type { ResponseCopyApi } from './clipboard'
 import type { LibraryApi } from './library-view'
 import type { FolderApi } from './folders'
 import type { ThemeApi } from './theme'
 import type { ImportApi } from './import'
-import type { ExportApi } from './export'
+import type { PostmanExportApi, ExportApi } from './export'
 import type { CloseApi } from './close'
 import type { FileApi } from './files'
 import type { EnvironmentApi, VariableApi } from './variable-management'
@@ -26,7 +27,7 @@ export const bootstrapInputSchema = z.tuple([])
 export const IPC_CHANNELS = Object.freeze({ getBootstrap: 'app:get-bootstrap' })
 export type Bootstrap = z.infer<typeof bootstrapSchema>
 export interface DesktopApi {
-  readonly transfer: ExportApi & ImportApi
+  readonly transfer: ExportApi & ImportApi & PostmanExportApi
   readonly files: FileApi
   readonly environments: EnvironmentApi
   readonly variables: VariableApi
@@ -36,5 +37,5 @@ export interface DesktopApi {
   readonly collections: CollectionApi
   readonly requests: RequestGroupingApi & RequestPersistenceApi
   readonly execution: ExecutionApi
-  readonly app: CloseApi & ThemeApi & { readonly getBootstrap: () => Promise<Result<Bootstrap>> }
+  readonly app: CloseApi & ThemeApi & ResponseCopyApi & { readonly getBootstrap: () => Promise<Result<Bootstrap>> }
 }

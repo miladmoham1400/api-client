@@ -142,7 +142,7 @@ test('loopback-only integrated story: persistence, isolation, failures and safe 
     expect(bytes).not.toContain('synthetic-offline-token'); expect(bytes).not.toContain('synthetic-offline-reentered'); expect(bytes).not.toContain('synthetic-offline-literal')
     expect(dto.workspace.variables.find(v => v.key === 'token')).toMatchObject({ isSensitive: true, requiresValue: true })
     const importing = page.evaluate(() => window.offlineApi.transfer.chooseImport())
-    await execute('python3', ['tests/fixtures/native-upload-dialog.py', destination, 'Import workspace JSON'], { timeout: 15000 })
+    await execute('python3', ['tests/fixtures/native-upload-dialog.py', destination, 'Import collection or workspace'], { timeout: 15000 })
     const preview = await importing
     if (!preview.ok || preview.data.status !== 'preview') throw new Error('Import preview failed')
     expect(preview.data.preview).toMatchObject({ missingVariables: 1, missingCredentials: 1, missingFiles: 1 })

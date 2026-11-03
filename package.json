@@ -1,6 +1,6 @@
 {
   "name": "offline-api-client",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
   "description": "Offline desktop HTTP client",
   "main": "out/main/index.js",
@@ -33,6 +33,7 @@
     "better-sqlite3": "13.0.3",
     "dompurify": "3.4.17",
     "form-data-encoder": "4.1.0",
+    "jsonc-parser": "3.3.1",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "react-json-tree": "0.20.0",

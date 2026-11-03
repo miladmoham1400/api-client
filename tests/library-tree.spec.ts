@@ -53,7 +53,7 @@ test('Users/Admin and Users/Auth contextual tree works, sends only selected requ
     await expect(page.getByLabel('Request location')).toHaveText('Workspace root / API / Users / Auth')
     expect(received).toEqual([])
     await page.getByRole('button',{name:'Send',exact:true}).click();await expect(page.getByRole('status').filter({hasText:/^Request completed$/})).toBeVisible()
-    expect(received).toEqual([{method:'POST',url:'/login',body:'{"auth":true}'}])
+    expect(received).toEqual([{method:'POST',url:'/login',body:'{\n  "auth": true\n}'}])
     await page.locator(`[data-library-id="${adminRequest}"]`).getByRole('button').first().click()
     await expect(page.getByLabel('Request name',{exact:true})).toHaveValue('Admins');await expect(page.getByLabel('Request location')).toContainText('/ Admin')
     expect(received).toHaveLength(1)

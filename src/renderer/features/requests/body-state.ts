@@ -27,3 +27,11 @@ export function retainSelections(saved: EditableBody | undefined, draft: Editabl
     return row.kind === 'file' && old?.kind === 'file' && old.fileId ? { ...row, fileId: old.fileId } : row
   }) }
 }
+
+export function syncVariants<T extends { body?: EditableBody | undefined; bodyVariants?: { id: string; name: string; body: EditableBody }[] | undefined; selectedBodyVariantId?: string | undefined }>(draft: T): T {
+  if (!draft.bodyVariants?.length || !draft.body) return draft
+  return { ...draft, bodyVariants: draft.bodyVariants.map(v => v.id === draft.selectedBodyVariantId ? { ...v, body: copyBody(draft.body!) } : v) }
+}
+export function retainVariantSelections(saved: { id: string; name: string; body: EditableBody }[] | undefined, draft: { id: string; name: string; body: EditableBody }[] | undefined) {
+  return saved?.map(v => ({ ...v, body: retainSelections(v.body, draft?.find(old => old.id === v.id)?.body)! }))
+}

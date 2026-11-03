@@ -4,6 +4,8 @@ An offline desktop HTTP client for Linux and Windows, built with Electron, React
 
 Create, save and send HTTP requests; organize APIs in collections and nested folders; search requests; use workspaces, environments and variables. The 0.3.0 source includes a dark glass interface, automatic saving, collapsible Pretty JSON, isolated static HTML previews, distinct HTTP method colors and adjustable side-by-side request/response panels. One request editor is active at a time.
 
+Current unreleased source also adds named selectable request bodies, variable-name highlighting/completion, JSON blur formatting and diagnostics, exact-response copy and Postman Collection v2.1 JSON transfer. The downloads below remain the published 0.3.0 build. Postman scripts, OAuth and unsupported modes are not executed/imported; transfer dialogs explain omissions.
+
 Installed startup and local data operations require no account, cloud service or developer Node/npm. Sending requests requires access to the target API. Data stays on your computer; no automatic updates are provided.
 
 ## Download v0.3.0

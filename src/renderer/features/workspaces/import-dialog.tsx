@@ -19,10 +19,12 @@ export function WorkspaceImportDialog({ close, returnFocus }: { close: (name?: s
   })
   return <Dialog.Root open onOpenChange={({ open }) => { if (!open) void dismiss() }} initialFocusEl={() => cancel.current} finalFocusEl={returnFocus}>
     <Portal><Dialog.Backdrop /><Dialog.Positioner><Dialog.Content>
-      <Dialog.Header><Dialog.Title>Import workspace JSON</Dialog.Title></Dialog.Header>
+      <Dialog.Header><Dialog.Title>Import collection or workspace</Dialog.Title></Dialog.Header>
       <Dialog.Body maxH="60vh" overflowY="auto">
-        <Dialog.Description>Import Offline API Client format v1 or v2 as a new workspace. Existing workspaces and unsaved edits are kept. No request will be sent.</Dialog.Description>
+        <Dialog.Description>Import a Postman Collection v2.1 JSON or Offline API Client v1/v2 file as a new workspace. Existing workspaces and unsaved edits are kept. No request will be sent.</Dialog.Description>
         {preview ? <>
+          {preview.source === 'postman' && <Text mt="3" fontWeight="semibold">Postman Collection v2.1</Text>}
+          {preview.warnings?.map((warning,i) => <Text key={i} mt="3" fontSize="sm">{warning}</Text>)}
           <Text mt="3">Workspace: {preview.name}</Text>
           <Text>{preview.collections.length} collections; {preview.folders.length} folders; {preview.environments.length} environments; {preview.requests} requests; {preview.variables} variables.</Text>
           {preview.collections.length > 0 && <Text>Collections: {preview.collections.join(', ')}</Text>}

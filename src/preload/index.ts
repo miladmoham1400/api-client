@@ -1,7 +1,8 @@
+import { COPY_RESPONSE_CHANNEL, copyResponseInput, copyResponseResult } from '../shared/clipboard'
 import { searchResultSchema, type SearchInput } from '../shared/library-search'
 import { THEME_CHANNELS, themeGetInput, themeSetInput, themeResultSchema, type ThemePreference } from '../shared/theme'
 import { IMPORT_CHANNELS, importChooseInput, importTokenInput, importChooseResult, importCreatedResult, importCancelResult } from '../shared/import'
-import { EXPORT_CHANNEL, exportInputSchema, exportResultSchema } from '../shared/export'
+import { POSTMAN_EXPORT_CHANNEL, postmanExportInput, EXPORT_CHANNEL, exportInputSchema, exportResultSchema } from '../shared/export'
 import { CLOSE_CHANNELS, closeRequestedSchema, closeDecisionInput, closeDecisionResult } from '../shared/close'
 import { subscribeValidated } from './listeners'
 import { createFileApi } from './files'
@@ -72,6 +73,12 @@ async function themeCall(channel: (typeof THEME_CHANNELS)[keyof typeof THEME_CHA
 }
 const api: DesktopApi = Object.freeze({
   transfer: Object.freeze({
+    exportPostmanCollection: async (workspace: string, collection: string) => {
+      const input = postmanExportInput.safeParse([workspace, collection])
+      if (!input.success) return { ok: false as const, error: validationError(input.error, true) }
+      try { return exportResultSchema.parse(await ipcRenderer.invoke(POSTMAN_EXPORT_CHANNEL, ...input.data)) }
+      catch { return { ok: false as const, error: { code: 'EXPORT_WRITE_FAILED' as const, message: 'Collection export unavailable.', retryable: true } } }
+    },
     chooseImport: () => importCall(IMPORT_CHANNELS.choose, importChooseInput, importChooseResult, []),
     importWorkspace: (token: string) => importCall(IMPORT_CHANNELS.confirm, importTokenInput, importCreatedResult, [token]),
     cancelImport: (token: string) => importCall(IMPORT_CHANNELS.cancel, importTokenInput, importCancelResult, [token]),
@@ -158,6 +165,12 @@ const api: DesktopApi = Object.freeze({
     select: (id: string | null) => workspaceCall(WORKSPACE_CHANNELS.select, workspaceInputs.select, [id])
   }),
   app: Object.freeze({
+    copyResponse: async (text: string) => {
+      const input = copyResponseInput.safeParse([text])
+      if (!input.success) return { ok: false as const, error: validationError(input.error, true) }
+      try { return copyResponseResult.parse(await ipcRenderer.invoke(COPY_RESPONSE_CHANNEL, ...input.data)) }
+      catch { return { ok: false as const, error: { code: 'VALIDATION' as const, message: 'Response could not be copied.', retryable: true } } }
+    },
     getTheme: () => themeCall(THEME_CHANNELS.get, []),
     setTheme: (theme: ThemePreference) => themeCall(THEME_CHANNELS.set, [theme]),
     onCloseRequested: (callback: Parameters<DesktopApi['app']['onCloseRequested']>[0]) => subscribeValidated(closeRequestedSchema, listener => { ipcRenderer.on(CLOSE_CHANNELS.requested, listener) }, listener => { ipcRenderer.removeListener(CLOSE_CHANNELS.requested, listener) }, callback),

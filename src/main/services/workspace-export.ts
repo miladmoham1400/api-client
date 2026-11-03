@@ -1,3 +1,4 @@
+import { exportPostman } from './postman'
 import type Database from 'better-sqlite3'
 import { Repositories, RepositoryError } from '../db/repositories'
 import { uuidSchema } from '../../shared/primitives'
@@ -21,16 +22,18 @@ export class WorkspaceExportService {
         requests: r.listStoredRequests(workspace) })
     }).deferred()
   }
-  async export(workspace: string, choosePath: () => Promise<string | null>, authorized: () => boolean): Promise<ExportOutcome> {
+  async export(workspace: string, choosePath: () => Promise<string | null>, authorized: () => boolean, collection?: string): Promise<ExportOutcome> {
     if (this.running) throw new RepositoryError('VALIDATION')
     this.running = true
     try {
-      const dto = this.snapshot(workspace), json = `${JSON.stringify(dto, null, 2)}\n`
+      if (collection) this.repositories.getCollection(workspace, uuidSchema.parse(collection))
+      const snapshot = this.snapshot(workspace), dto = collection ? exportPostman(snapshot, uuidSchema.parse(collection)) : snapshot, json = `${JSON.stringify(dto, null, 2)}\n`
       if (Buffer.byteLength(json, 'utf8') > IMPORT_MAX_BYTES) throw new RepositoryError('VALIDATION')
       const destination = await choosePath()
       if (!authorized()) throw new RepositoryError('NOT_FOUND')
       if (destination === null) return { status: 'cancelled' }
       this.repositories.getWorkspace(workspace)
+      if (collection) this.repositories.getCollection(workspace, collection)
       await writeExportFile(destination, json, this.protectedRoots, authorized)
       return { status: 'saved' }
     } finally { this.running = false }

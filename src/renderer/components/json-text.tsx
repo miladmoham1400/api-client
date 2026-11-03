@@ -1,6 +1,7 @@
-import { useMemo, useRef, type ComponentProps } from 'react'
+import { TemplateTextarea } from './template-field'
+import { useMemo, type ComponentProps } from 'react'
 import { Box, Text, Textarea } from '@chakra-ui/react'
-import { jsonTokens, responseJsonTokens, type JsonToken } from './json-tokens'
+import { responseJsonTokens, type JsonToken } from './json-tokens'
 
 export function JsonResponse({ text }: { text: string }) {
   const { tokens, limited } = useMemo(() => responseJsonTokens(text), [text])
@@ -14,20 +15,4 @@ function TokenSpans({ tokens }: { tokens: JsonToken[] }) {
   return tokens.map((token, index) => <span key={index} className={`json-${token.kind}`}>{token.text}</span>)
 }
 
-export function JsonEditor(props: ComponentProps<typeof Textarea> & { value: string }) {
-  const backdrop = useRef<HTMLPreElement>(null)
-  const tokens = useMemo(() => jsonTokens(props.value), [props.value])
-  const highlighted = tokens.some(token => token.kind !== 'plain')
-  return <div className="json-editor">
-    <pre ref={backdrop} className="json-editor-backdrop" aria-hidden="true">{highlighted && <><TokenSpans tokens={tokens} />{'\n'}</>}</pre>
-    <Textarea {...props} className={`json-editor-input${highlighted ? ' json-editor-highlighted' : ''}`} spellCheck={false} autoCapitalize="off" autoCorrect="off" onKeyDown={event => {
-      props.onKeyDown?.(event)
-      if (event.defaultPrevented || event.key !== 'Tab' || event.ctrlKey || event.altKey || event.metaKey || event.shiftKey || event.nativeEvent.isComposing) return
-      event.preventDefault()
-      // Native editing preserves selection and dispatches the normal input event to React.
-      document.execCommand('insertText', false, '  ')
-    }} onScroll={event => {
-      if (backdrop.current) { backdrop.current.scrollTop = event.currentTarget.scrollTop; backdrop.current.scrollLeft = event.currentTarget.scrollLeft }
-    }} />
-  </div>
-}
+export function JsonEditor(props: ComponentProps<typeof Textarea> & { value: string }) { return <TemplateTextarea {...props} syntax="json" /> }

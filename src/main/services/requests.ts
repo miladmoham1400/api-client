@@ -31,7 +31,7 @@ export class RequestService {
     this.active(workspace)
     const selected = this.r.getState(workspace).selectedRequestId
     const request = selected ? this.r.getRequest(workspace, selected) : null
-    const editor = request ? { id: request.id, workspaceId: request.workspaceId, collectionId: request.collectionId, folderId: request.folderId, name: request.name, createdAt: request.createdAt, updatedAt: request.updatedAt, method: request.config.method, urlTemplate: request.config.urlTemplate, queryRows: request.config.queryRows, headerRows: request.config.headerRows, timeoutMs: request.config.timeoutMs, followRedirects: request.config.followRedirects, auth: this.authEditor(workspace, request.config.auth), credentialStorage: this.store?.capability() ?? 'session', body: request.config.body } : null
+    const editor = request ? { id: request.id, workspaceId: request.workspaceId, collectionId: request.collectionId, folderId: request.folderId, name: request.name, createdAt: request.createdAt, updatedAt: request.updatedAt, method: request.config.method, urlTemplate: request.config.urlTemplate, queryRows: request.config.queryRows, headerRows: request.config.headerRows, timeoutMs: request.config.timeoutMs, followRedirects: request.config.followRedirects, auth: this.authEditor(workspace, request.config.auth), credentialStorage: this.store?.capability() ?? 'session', body: request.config.body, ...(request.config.bodyVariants ? { bodyVariants: request.config.bodyVariants, selectedBodyVariantId: request.config.selectedBodyVariantId } : {}) } : null
     return requestSnapshotSchema.parse({ workspaceId: workspace, requests: this.r.listRequests(workspace), editor })
   }
   private authEditor(w: string, auth: StoredAuth) {
@@ -75,13 +75,16 @@ export class RequestService {
     }))
   }
   private fields(draft: RequestDraft) {
-    return { ...(draft.body === undefined ? {} : { body: storedBodySchema.parse(draft.body.kind === 'multipart' ? { ...draft.body, rows: draft.body.rows.map(row => row.kind === 'file' ? { id: row.id, kind: row.kind, key: row.key, enabled: row.enabled, ...(row.fileName === undefined ? {} : { fileName: row.fileName }), ...(row.fileSize === undefined ? {} : { fileSize: row.fileSize }) } : row) } : draft.body) }), ...(draft.queryRows === undefined ? {} : { queryRows: draft.queryRows }), ...(draft.headerRows === undefined ? {} : { headerRows: draft.headerRows }), ...(draft.timeoutMs === undefined ? {} : { timeoutMs: draft.timeoutMs }), ...(draft.followRedirects === undefined ? {} : { followRedirects: draft.followRedirects }) }
+    const cleanBody = (body: NonNullable<RequestDraft['body']>) => storedBodySchema.parse(body.kind === 'multipart' ? { ...body, rows: body.rows.map(row => row.kind === 'file' ? { id: row.id, key: row.key, kind: row.kind, enabled: row.enabled, ...(row.fileName === undefined ? {} : { fileName: row.fileName }), ...(row.fileSize === undefined ? {} : { fileSize: row.fileSize }) } : row) } : body)
+    const selected = draft.bodyVariants?.find(v => v.id === draft.selectedBodyVariantId)?.body ?? draft.body
+    return { ...(draft.bodyVariants ? { bodyVariants: draft.bodyVariants.map(v => ({ ...v, body: cleanBody(v.body) })), selectedBodyVariantId: draft.selectedBodyVariantId } : {}), ...(selected === undefined ? {} : { body: cleanBody(selected) }), ...(draft.queryRows === undefined ? {} : { queryRows: draft.queryRows }), ...(draft.headerRows === undefined ? {} : { headerRows: draft.headerRows }), ...(draft.timeoutMs === undefined ? {} : { timeoutMs: draft.timeoutMs }), ...(draft.followRedirects === undefined ? {} : { followRedirects: draft.followRedirects }) }
   }
   save(workspace: string, id: string, input: RequestDraft) {
     id = uuidSchema.parse(id); const draft = requestDraftSchema.parse(input)
     return this.authTransaction(draft.auth, () => this.mutate(workspace, () => {
       const previous = this.r.getRequest(workspace, id)
-      this.r.saveRequest(workspace, id, draft.name, { ...previous.config, method: draft.method, urlTemplate: draft.urlTemplate, ...this.fields(draft), auth: draft.auth ? this.storeAuth(workspace, draft.auth, previous.config.auth) : previous.config.auth })
+      const mergedDraft = draft.body !== undefined && draft.bodyVariants === undefined && previous.config.bodyVariants?.length ? { ...draft, bodyVariants: previous.config.bodyVariants.map(v => v.id === previous.config.selectedBodyVariantId ? { ...v, body: draft.body! } : v), selectedBodyVariantId: previous.config.selectedBodyVariantId } : draft
+      this.r.saveRequest(workspace, id, draft.name, { ...previous.config, method: draft.method, urlTemplate: draft.urlTemplate, ...this.fields(mergedDraft), auth: draft.auth ? this.storeAuth(workspace, draft.auth, previous.config.auth) : previous.config.auth })
       this.select(workspace, id)
     }))
   }

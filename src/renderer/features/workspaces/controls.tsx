@@ -52,7 +52,7 @@ export function WorkspaceControls({ controller, placement, guard, locked = false
           {snapshot?.workspaces.map(workspace => <option key={workspace.id} value={workspace.id}>{workspace.name}</option>)}
         </NativeSelect.Field><NativeSelect.Indicator />
       </NativeSelect.Root>
-      <Button ref={importButton} aria-label="Import workspace JSON" title="Import workspace JSON" className="toolbar-icon" size="sm" variant="ghost" disabled={!snapshot || busy || locked} onClick={() => { setImportStatus(null); setImportOpen(true) }}><Icon name="import" /></Button>
+      <Button ref={importButton} aria-label="Import collection or workspace" title="Import Postman collection or workspace JSON" size="sm" variant="ghost" disabled={!snapshot || busy || locked} onClick={() => { setImportStatus(null); setImportOpen(true) }}><Icon name="import" size={14} />Import</Button>
       <Menu.Root><Menu.Trigger asChild><Button ref={menu} disabled={!selected || busy || locked} size="sm" variant="ghost" title="Workspace menu" className="toolbar-icon" aria-label="Workspace menu"><Icon name="settings" /></Button></Menu.Trigger>
         <Portal><Menu.Positioner><Menu.Content>
           <Menu.Item value="export" onClick={() => { if (selected) { setExportStatus(null); setExportTarget({ id: selected.id, name: selected.name }) } }}>Export workspace JSON</Menu.Item>

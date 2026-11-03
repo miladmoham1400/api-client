@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { LIMITS, httpMethodSchema, limitedText, mediaTypeSchema, textBodySchema, timeoutSchema, uniqueIds, uuidSchema } from './primitives'
+import { LIMITS, httpMethodSchema, limitedText, mediaTypeSchema, textBodySchema, timeoutSchema, uniqueIds, uuidSchema, nameSchema } from './primitives'
 
 export const textRowSchema = z.strictObject({
   id: uuidSchema, key: limitedText(), value: limitedText(), enabled: z.boolean()
@@ -64,15 +64,25 @@ export const exportAuthSchema = z.discriminatedUnion('mode', [
   z.strictObject({ mode: z.literal('bearer'), tokenTemplate: credentialTemplateSchema, requiresCredentials: z.boolean() }),
   z.strictObject({ mode: z.literal('basic'), usernameTemplate: credentialTemplateSchema, passwordTemplate: credentialTemplateSchema, requiresCredentials: z.boolean() })
 ])
+export function variantFields<S extends z.ZodType>(body: S) {
+  return { bodyVariants: uniqueIds(z.strictObject({ id: uuidSchema, name: nameSchema, body }), 20).optional(), selectedBodyVariantId: uuidSchema.optional() }
+}
+export const runtimeVariantFields = variantFields(runtimeBodySchema)
+export const storedVariantFields = variantFields(storedBodySchema)
+export const exportVariantFields = variantFields(exportBodySchema)
+export function validateVariants(value: { bodyVariants?: { id: string; body: unknown }[] | undefined; selectedBodyVariantId?: string | undefined }, ctx: z.RefinementCtx) {
+  if (value.bodyVariants?.length ? !value.bodyVariants.some(v => v.id === value.selectedBodyVariantId) : value.selectedBodyVariantId !== undefined) ctx.addIssue({ code: 'custom', message: 'Select an existing body variant', path: ['selectedBodyVariantId'] })
+  if (value.bodyVariants && new TextEncoder().encode(JSON.stringify(value.bodyVariants)).length > 10 * 1024 * 1024) ctx.addIssue({ code: 'custom', message: 'Body variants exceed 10 MiB', path: ['bodyVariants'] })
+}
 const configFields = {
   configVersion: z.literal(1), method: httpMethodSchema, urlTemplate: limitedText(),
   queryRows: textRowsSchema, headerRows: textRowsSchema,
   timeoutMs: timeoutSchema, followRedirects: z.boolean()
 }
-export const runtimeRequestConfigSchema = z.strictObject({ ...configFields, body: runtimeBodySchema, auth: runtimeAuthSchema })
-export const storedRequestConfigSchema = z.strictObject({ ...configFields, body: storedBodySchema, auth: storedAuthSchema })
+export const runtimeRequestConfigSchema = z.strictObject({ ...configFields, ...runtimeVariantFields, body: runtimeBodySchema, auth: runtimeAuthSchema }).superRefine(validateVariants)
+export const storedRequestConfigSchema = z.strictObject({ ...configFields, ...storedVariantFields, body: storedBodySchema, auth: storedAuthSchema }).superRefine(validateVariants)
 const credentialHeader = /^(?:authorization|proxy-authorization|cookie)$/i
-export const exportRequestConfigSchema = z.strictObject({ ...configFields, body: exportBodySchema, auth: exportAuthSchema }).superRefine((config, ctx) => {
+export const exportRequestConfigSchema = z.strictObject({ ...configFields, ...exportVariantFields, body: exportBodySchema, auth: exportAuthSchema }).superRefine(validateVariants).superRefine((config, ctx) => {
   config.headerRows.forEach((row, index) => {
     if (credentialHeader.test(row.key.trim()) && (row.enabled || row.value !== '')) {
       ctx.addIssue({ code: 'custom', message: 'Credential header must be empty and disabled', path: ['headerRows', index] })

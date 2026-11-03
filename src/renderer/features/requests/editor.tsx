@@ -1,3 +1,4 @@
+import { TemplateInput } from '../../components/template-field'
 import { Icon } from '../../components/icon'
 import { httpMethodPalette } from '../../theme/http-method'
 import { useEffect, useRef } from 'react'
@@ -25,13 +26,14 @@ export function RequestEditor({ controller: c }: { controller: RequestController
       <Text className="save-indicator" data-pending={c.dirty || c.saving ? "true" : "false"} role="status" fontSize="sm">{c.saving ? 'Saving…' : c.busy ? 'Loading…' : c.draft ? c.dirty ? 'Unsaved changes' : 'Saved' : 'Select or create a request'}</Text>
     </Flex>
     {c.error && <Text role="alert" mb="3">{c.error}</Text>}
+    {c.bodyIssue && <Text id="body-syntax-error" role="alert" color="red.fg" fontSize="xs" mb="2">{c.bodyIssue}</Text>}
     {c.draft && <Text className="request-breadcrumb" aria-label="Request location" fontSize="sm" color="fg.muted" mb="2" overflowWrap="anywhere">{c.path}</Text>}
     {c.draft && <Box mb="3"><label htmlFor="request-name">Request name</label><Input id="request-name" value={c.draft.name} aria-invalid={!!c.validation.name} aria-describedby={c.validation.name ? "request-name-error" : undefined} disabled={c.busy} onChange={event => { if (c.draft) c.setDraft({ ...c.draft, name: event.target.value }) }} />{c.validation.name && <Text id="request-name-error" role="alert" color="red.fg">name: {c.validation.name}</Text>}</Box>}
     <Flex className="request-address" gap="2" mb="3" flexWrap="wrap">
       <NativeSelect.Root colorPalette={httpMethodPalette(c.draft?.method)} width="110px" flexShrink="0" disabled={!c.draft || c.busy}><NativeSelect.Field color="colorPalette.fg" bg="colorPalette.subtle" fontWeight="semibold" aria-label="HTTP method" value={c.draft?.method ?? ''} onChange={event => { if (c.draft) c.setDraft({ ...c.draft, method: httpMethodSchema.parse(event.target.value) }) }}>
         {!c.draft && <option value="">Method</option>}{httpMethodSchema.options.map(method => <option key={method} value={method} style={{ color: `var(--chakra-colors-${httpMethodPalette(method)}-fg)`, backgroundColor: 'var(--chakra-colors-bg)' }}>{method}</option>)}
       </NativeSelect.Field><NativeSelect.Indicator /></NativeSelect.Root>
-      <Input flex="1" minW="140px" aria-label="Request URL" placeholder="Request URL" aria-invalid={!!c.validation.urlTemplate} aria-describedby={c.validation.urlTemplate ? "request-url-error" : undefined} value={c.draft?.urlTemplate ?? ''} disabled={!c.draft || c.busy} onChange={event => { if (c.draft) c.setDraft({ ...c.draft, urlTemplate: event.target.value }) }} />
+      <TemplateInput flex="1" minW="140px" aria-label="Request URL" placeholder="Request URL" aria-invalid={!!c.validation.urlTemplate} aria-describedby={c.validation.urlTemplate ? "request-url-error" : undefined} value={c.draft?.urlTemplate ?? ''} disabled={!c.draft || c.busy} onChange={event => { if (c.draft) c.setDraft({ ...c.draft, urlTemplate: event.target.value }) }} />
       <Button className="send-button" disabled={!c.canSend || c.busy} onClick={() => { void c.send() }}><Icon name="send" size={15} />Send</Button><Button className="cancel-button" aria-label={c.cancelling ? "Cancelling…" : "Cancel"} title="Cancel request" disabled={!c.canCancel} variant="outline" onClick={() => { void c.cancel() }}><Icon name="stop" size={14} /></Button>
     </Flex>
     {c.executionStatus && <Text role="status" mb="3">{c.executionStatus}</Text>}

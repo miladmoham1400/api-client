@@ -8,3 +8,7 @@ export const exportOutcomeSchema = z.strictObject({ status: z.enum(['saved', 'ca
 export const exportResultSchema = resultSchema(exportOutcomeSchema)
 export type ExportOutcome = z.infer<typeof exportOutcomeSchema>
 export interface ExportApi { readonly exportWorkspace: (workspace: string) => Promise<Result<ExportOutcome>> }
+
+export const POSTMAN_EXPORT_CHANNEL = 'transfer:export-postman-collection'
+export const postmanExportInput = z.tuple([uuidSchema, uuidSchema])
+export interface PostmanExportApi { readonly exportPostmanCollection: (workspace: string, collection: string) => Promise<Result<ExportOutcome>> }

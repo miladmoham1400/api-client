@@ -54,8 +54,6 @@ test('glass workbench remains usable in both themes, small windows and dialogs; 
     await page.getByLabel('JSON source text', { exact: true }).fill('{\n  "email": "alex@example.test",\n  "remember": true\n}')
     await page.getByRole('button', { name: 'Send', exact: true }).click()
     await expect(response.getByLabel('Response metrics')).toContainText('200')
-    await response.getByRole('button', { name: 'Toggle data', exact: true }).click()
-    await response.getByRole('button', { name: 'Toggle meta', exact: true }).click()
     await expect(response).toContainText('Alex Morgan')
     for (const theme of ['dark', 'light'] as const) {
       await page.getByLabel('Theme', { exact: true }).selectOption(theme)

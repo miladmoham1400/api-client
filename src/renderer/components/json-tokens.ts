@@ -2,14 +2,14 @@ export const JSON_HIGHLIGHT_LIMIT = 64 * 1024
 export const JSON_TOKEN_LIMIT = 4096
 export const RESPONSE_HIGHLIGHT_LIMIT = 1024 * 1024
 export const RESPONSE_TOKEN_LIMIT = 32768
-export type JsonToken = { text: string; kind: 'plain' | 'key' | 'string' | 'number' | 'boolean' | 'null' | 'punctuation' }
+export type JsonToken = { text: string; kind: 'variable' | 'plain' | 'key' | 'string' | 'number' | 'boolean' | 'null' | 'punctuation' }
 export type JsonHighlight = { tokens: JsonToken[]; limited: boolean }
 
 // Lexical presentation only: never normalize whitespace or numeric spelling.
 // Bound scanning and DOM size, retaining a colored prefix when a response is large.
 function tokenize(source: string, characterLimit: number, tokenLimit: number): JsonHighlight {
   const input = source.slice(0, characterLimit)
-  const pattern = /"(?:[^"\\]|\\[\s\S])*"|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?|\b(?:true|false|null)\b|[{}[\],:]/g
+  const pattern = /"(?:[^"\\]|\\[\s\S])*"|\{\{\s*[A-Za-z_][A-Za-z0-9_]{0,63}\s*\}\}|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?|\b(?:true|false|null)\b|[{}[\],:]/g
   const tokens: JsonToken[] = []
   const colon = /\s*:/y
   let offset = 0
@@ -22,7 +22,7 @@ function tokenize(source: string, characterLimit: number, tokenLimit: number): J
     }
     if (start > offset) tokens.push({ text: source.slice(offset, start), kind: 'plain' })
     colon.lastIndex = start + value.length
-    const kind: JsonToken['kind'] = value.startsWith('"') ? (colon.test(input) ? 'key' : 'string')
+    const kind: JsonToken['kind'] = value.startsWith('{{') ? 'variable' : value.startsWith('"') ? (colon.test(input) ? 'key' : 'string')
       : value === 'null' ? 'null' : value === 'true' || value === 'false' ? 'boolean' : /^-?\d/.test(value) ? 'number' : 'punctuation'
     tokens.push({ text: value, kind })
     offset = start + value.length

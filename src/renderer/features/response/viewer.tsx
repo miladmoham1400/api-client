@@ -20,6 +20,7 @@ export function ResponseViewer({ controller: c }: { controller: RequestControlle
 }
 
 function HttpView({ response: r }: { response: Extract<NonNullable<RequestController['executionResult']>, { statusCode: number }> }) {
+  const [copyState, setCopyState] = useState('')
   const [mode, setMode] = useState<'raw' | 'pretty' | 'html'>('pretty')
   const raw = r.body.kind === 'text' ? r.body.text : ''
   const pretty = useMemo(() => prettyJson(raw), [raw])
@@ -31,6 +32,8 @@ function HttpView({ response: r }: { response: Extract<NonNullable<RequestContro
       <Badge colorPalette={r.statusCode >= 400 ? 'red' : r.statusCode >= 300 ? 'yellow' : 'green'} title="HTTP status">{r.statusCode} {r.statusMessage}</Badge>
       <Badge colorPalette="blue" title="Duration">{r.durationMs.toFixed(1)} ms</Badge>
       <Badge colorPalette="purple" title="Decoded body size">{r.bodySizeBytes.toLocaleString()} B</Badge>
+      {r.body.kind === 'text' && <Button size="xs" variant="ghost" ml="auto" aria-label="Copy response" title="Copy raw response" onClick={() => { void window.offlineApi.app.copyResponse(raw).then(result => setCopyState(result.ok ? 'Copied' : 'Copy failed')).catch(() => setCopyState('Copy failed')) }}><Icon name="copy" size={13} /></Button>}
+      {copyState && <Text role="status" fontSize="xs">{copyState}</Text>}
     </Flex>
     <Tabs.Root defaultValue="body" size="sm">
       <Tabs.List aria-label="Response views"><Tabs.Trigger value="body">Body</Tabs.Trigger><Tabs.Trigger value="headers">Headers</Tabs.Trigger><Tabs.Trigger value="details">Details</Tabs.Trigger></Tabs.List>
@@ -38,7 +41,7 @@ function HttpView({ response: r }: { response: Extract<NonNullable<RequestContro
         {r.body.kind === 'binary' ? <Box><Text>Binary response · {r.body.sizeBytes} bytes</Text><Text overflowWrap="anywhere">Content-Type: {type}</Text><Text>{r.body.reason}</Text></Box> : <>
           <Flex className="response-modes" gap="1" mb="2">{(['pretty', 'raw', ...(html ? ['html'] as const : [])] as const).map(value => <Button key={value} size="xs" variant={mode === value ? 'solid' : 'ghost'} aria-pressed={mode === value} onClick={() => setMode(value)}>{value === 'html' ? 'HTML' : value === 'raw' ? 'Raw' : 'Pretty'}</Button>)}</Flex>
           {mode === 'html' ? <HtmlPreview text={raw} /> : mode === 'pretty' && pretty.ok ? <Box aria-label="Response body JSON" fontFamily="mono" fontSize="sm" overflowWrap="anywhere">
-            <JSONTree data={data} hideRoot labelRenderer={(path, _type, expanded, expandable) => expandable ? <button type="button" aria-label={`Toggle ${String(path[0])}`} aria-expanded={expanded} style={{ cursor: 'pointer', font: 'inherit', color: 'inherit' }}>{String(path[0])}:</button> : <span>{String(path[0])}:</span>} shouldExpandNodeInitially={(_path, _data, level) => level < 1} collectionLimit={50} invertTheme={false} theme={{
+            <JSONTree data={data} hideRoot labelRenderer={(path, _type, expanded, expandable) => expandable ? <button type="button" aria-label={`Toggle ${String(path[0])}`} aria-expanded={expanded} style={{ cursor: 'pointer', font: 'inherit', color: 'inherit' }}>{String(path[0])}:</button> : <span>{String(path[0])}:</span>} shouldExpandNodeInitially={(_path, _data, level) => raw.length < 32 * 1024 && level < 32} collectionLimit={raw.length < 32 * 1024 ? 1000 : 50} invertTheme={false} theme={{
               base00: 'var(--chakra-colors-bg)', base01: 'var(--chakra-colors-bg-subtle)', base02: 'var(--chakra-colors-border)', base03: 'var(--chakra-colors-fg-muted)',
               base04: 'var(--chakra-colors-fg-muted)', base05: 'var(--chakra-colors-fg)', base06: 'var(--chakra-colors-fg)', base07: 'var(--chakra-colors-fg)',
               base08: 'var(--chakra-colors-red-fg)', base09: 'var(--chakra-colors-orange-fg)', base0A: 'var(--chakra-colors-yellow-fg)', base0B: 'var(--chakra-colors-green-fg)',

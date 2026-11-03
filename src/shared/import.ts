@@ -7,6 +7,7 @@ export const importChooseInput = z.tuple([])
 export const importTokenInput = z.tuple([uuidSchema])
 const count = z.number().int().nonnegative()
 export const importPreviewSchema = z.strictObject({
+  source: z.enum(['postman', 'native']).optional(), warnings: z.array(z.string().max(1000)).max(20).optional(),
   token: uuidSchema, name: nameSchema, collections: z.array(nameSchema), folders: z.array(nameSchema), environments: z.array(nameSchema),
   requests: count, variables: count, missingVariables: count, missingCredentials: count, missingFiles: count
 })
@@ -25,7 +26,7 @@ export interface ImportApi {
 // Import applies the same saved-request method/body rule as explicit create/save.
 const methodBodyRule = (workspace: z.infer<typeof exportWorkspaceSchema>, ctx: z.RefinementCtx) => {
   workspace.requests.forEach((request, index) => {
-    if (['GET', 'HEAD'].includes(request.config.method) && request.config.body.kind !== 'none') {
+    if (['GET', 'HEAD'].includes(request.config.method) && (request.config.bodyVariants?.find(v => v.id === request.config.selectedBodyVariantId)?.body ?? request.config.body).kind !== 'none') {
       ctx.addIssue({ code: 'custom', message: 'GET and HEAD cannot have a body', path: ['requests', index, 'config', 'body'] })
     }
   })

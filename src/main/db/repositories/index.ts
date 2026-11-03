@@ -186,7 +186,9 @@ export class Repositories {
         ? { kind: 'secret', secretId: this.createSecret(w.id, 'session', null).id } : { kind: 'template', template }
       for (const request of source.requests) {
         const config = request.config, auth = config.auth
-        const stored: StoredRequestConfig = { configVersion: 1, method: config.method, urlTemplate: config.urlTemplate,
+        const remapBody = (body: typeof config.body) => body.kind === 'multipart' ? { kind: body.kind, rows: body.rows.map(r => r.kind === 'text' ? { ...row(r), kind: r.kind } : { id: randomUUID(), key: r.key, kind: r.kind, enabled: r.enabled, ...(r.fileName === undefined ? {} : { fileName: r.fileName }), ...(r.fileSize === undefined ? {} : { fileSize: r.fileSize }) }) } : body.kind === 'urlencoded' ? { kind: body.kind, rows: body.rows.map(row) } : { ...body }
+        const variantIds = new Map(config.bodyVariants?.map(v => [v.id, randomUUID()]) ?? [])
+        const stored: StoredRequestConfig = { ...(config.bodyVariants ? { bodyVariants: config.bodyVariants.map(v => ({ id: variantIds.get(v.id)!, name: v.name, body: remapBody(v.body) })), selectedBodyVariantId: variantIds.get(config.selectedBodyVariantId!) } : {}), configVersion: 1, method: config.method, urlTemplate: config.urlTemplate,
           queryRows: config.queryRows.map(row), headerRows: config.headerRows.map(row), timeoutMs: config.timeoutMs, followRedirects: config.followRedirects,
           auth: auth.mode === 'none' ? { mode: 'none' } : auth.mode === 'bearer' ? { mode: 'bearer', token: credential(auth.tokenTemplate, auth.requiresCredentials) }
             : { mode: 'basic', username: credential(auth.usernameTemplate, auth.requiresCredentials), password: credential(auth.passwordTemplate, auth.requiresCredentials) },
@@ -194,6 +196,7 @@ export class Repositories {
             : { id: randomUUID(), key: r.key, kind: 'file', enabled: r.enabled, ...(r.fileName === undefined ? {} : { fileName: r.fileName }), ...(r.fileSize === undefined ? {} : { fileSize: r.fileSize }) }) }
             : config.body.kind === 'urlencoded' ? { kind: 'urlencoded', rows: config.body.rows.map(row) } : { ...config.body }
         }
+        if (stored.bodyVariants?.length) stored.body = stored.bodyVariants.find(v => v.id === stored.selectedBodyVariantId)!.body
         this.insertRequest(w.id, request.name, request.collectionId === null ? null : collections.get(request.collectionId)!, stored, 'folderId' in request && request.folderId !== null ? folders.get(request.folderId)! : null)
       }
       // createWorkspace supplies None/no request; app selection and existing workspaces stay unchanged.

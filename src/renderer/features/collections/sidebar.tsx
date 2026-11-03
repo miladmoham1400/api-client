@@ -1,3 +1,4 @@
+import { PostmanExportDialog } from './export-dialog'
 import { Icon } from '../../components/icon'
 import { httpMethodPalette } from '../../theme/http-method'
 import { LibrarySearch } from '../library/search'
@@ -14,6 +15,7 @@ type Editing = {kind:'create-collection'} | {kind:'create-folder';destination:Re
 const TREE_PAGE_SIZE=50
 const root:RequestDestination={collectionId:null,folderId:null}
 export function CollectionSidebar({workspaceId,requestController,guard}:{guard:GuardTransition;workspaceId:string|null;requestController:RequestController}) {
+  const [exporting,setExporting] = useState<{id:string;name:string}|null>(null)
   const [snapshot,setSnapshot]=useState<LibrarySnapshot|null>(null), [expansion,setExpansion]=useState<WorkspaceTreeState|null>(null)
   const [busy,setBusy]=useState(false), [error,setError]=useState<string|null>(null), [editing,setEditing]=useState<Editing|null>(null)
   const [name,setName]=useState(''), [fieldError,setFieldError]=useState<string|null>(null), [destination,setDestination]=useState('')
@@ -168,6 +170,7 @@ export function CollectionSidebar({workspaceId,requestController,guard}:{guard:G
             <Menu.Root><Menu.Trigger asChild><Button ref={el => { if(el) triggers.current.set(node.id,el); else triggers.current.delete(node.id) }} variant="ghost" size="xs" disabled={locked} aria-label={`Actions for ${node.kind}: ${node.label}`}>⋯</Button></Menu.Trigger>
               <Portal><Menu.Positioner><Menu.Content>
                 {node.kind!=='request' && <><Menu.Item value="request" onClick={() => { void newRequest(node.destination) }}>New request</Menu.Item><Menu.Item value="folder" onClick={() => open({kind:'create-folder',destination:node.destination})}>New folder</Menu.Item></>}
+                {node.kind==='collection' && <Menu.Item value="export-postman" onClick={() => { returnId.current=node.id; setExporting({id:node.id,name:node.name}) }}>Export to Postman</Menu.Item>}
                 <Menu.Item value="rename" onClick={() => { if(node.kind==='request') void guard(async () => { const ok=await current.current.open(node.id); if(ok) current.current.focusName(); return ok }); else open({kind:'rename',node}) }}>Rename {node.kind}</Menu.Item>
                 {node.kind!=='collection' && <Menu.Item value="move" onClick={() => open({kind:'move',node})}>Move {node.kind}</Menu.Item>}
                 {node.kind==='request' && <Menu.Item value="duplicate" onClick={() => { void guard(() => current.current.duplicate(node.id)) }}>Duplicate request</Menu.Item>}
@@ -185,6 +188,7 @@ export function CollectionSidebar({workspaceId,requestController,guard}:{guard:G
       {!searching && !visible.length && <Text fontSize="sm" color="fg.muted">No collections or saved requests</Text>}
     </>}
     <Button className="create-request" data-create-request disabled={!snapshot || locked} variant="outline" size="sm" onClick={() => { void newRequest(root) }}><Icon name="plus" size={14} />Create Request</Button>
+    {exporting && workspaceId && <PostmanExportDialog workspace={workspaceId} collection={exporting} controller={requestController} close={() => setExporting(null)} returnFocus={() => triggers.current.get(exporting.id)??null} />}
     <Dialog.Root open={editing!==null} onOpenChange={({open}) => { if(!open && !busy) setEditing(null) }} initialFocusEl={() => editing?.kind==='delete' ? cancel.current : editing?.kind==='move' ? select.current : input.current} finalFocusEl={() => returnId.current ? triggers.current.get(returnId.current)??create.current : create.current}>
       <Portal><Dialog.Backdrop/><Dialog.Positioner><Dialog.Content>
         <Dialog.Header><Dialog.Title>{title}</Dialog.Title></Dialog.Header>

@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type SetStateAction } from 'react'
 import type { RequestDestination } from '../../../shared/api-library'
 import type { RequestDraft, RequestSnapshot } from '../../../shared/requests'
 import { requestDraftSchema } from '../../../shared/requests'
-import { initialBodyDrafts, switchBody, persistedBody, retainSelections } from './body-state'
+import { initialBodyDrafts, switchBody, persistedBody, retainSelections, syncVariants, retainVariantSelections } from './body-state'
 import type { EditableBody } from '../../../shared/requests'
 import { copyDraft, fieldErrors, getRows, replaceRows, type RowGroup } from './fields-state'
 import type { Result } from '../../../shared/results'
@@ -13,7 +13,8 @@ export function useRequests(workspace: string | null) {
   const currentWorkspace = loadedWorkspace === workspace
   const [saved, setSaved] = useState<RequestSnapshot['editor']>(null)
   const latestSaved=useRef(saved); latestSaved.current=saved
-  const [draft, setDraft] = useState<RequestDraft | null>(null)
+  const [draft, rawSetDraft] = useState<RequestDraft | null>(null)
+  const setDraft = useCallback((value: SetStateAction<RequestDraft | null>) => rawSetDraft(previous => { const next = typeof value === 'function' ? value(previous) : value; return next ? syncVariants(next) : null }), [])
   const [path,setPath]=useState('Workspace root')
   const [destination,setDestination] = useState<RequestDestination>({collectionId:null,folderId:null})
   const [busy, setBusy] = useState(false)
@@ -21,6 +22,7 @@ export function useRequests(workspace: string | null) {
   const saveFlight = useRef<Promise<boolean> | null>(null)
   const latestSave = useRef<() => Promise<boolean>>(async () => false)
   const latestDraft = useRef(draft); latestDraft.current = draft
+  const [bodyIssue, setBodyIssue] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [validation, setValidation] = useState<Record<string, string>>({})
   const [revision, setRevision] = useState(0)
@@ -33,7 +35,7 @@ export function useRequests(workspace: string | null) {
   }, [])
   const comparison = (value: Parameters<typeof copyDraft>[0]) => {
     const copy = copyDraft(value)
-    return JSON.stringify({ ...copy, ...(copy.body ? { body: persistedBody(copy.body) } : {}) })
+    return JSON.stringify({ ...copy, ...(copy.bodyVariants ? { bodyVariants: copy.bodyVariants.map(v => ({ ...v, body: persistedBody(v.body) })) } : {}), ...(copy.body ? { body: persistedBody(copy.body) } : {}) })
   }
   const pendingNameFocus=useRef(false)
   const pendingFocus = useRef<Element | null>(null)
@@ -51,7 +53,7 @@ export function useRequests(workspace: string | null) {
   const dirty = currentWorkspace && draft !== null && (!saved || comparison(draft) !== comparison(saved))
   const apply = useCallback(async (operation: () => Promise<Result<RequestSnapshot>>, refresh = false, preserveBody = false) => {
     if (running.current) return false
-    running.current = true; setBusy(true); setError(null); setValidation({})
+    running.current = true; setBusy(true); setError(null); setBodyIssue(null); setValidation({})
     const current = ++generation.current
     try {
       const result = await operation()
@@ -98,7 +100,7 @@ export function useRequests(workspace: string | null) {
         setDestination({ collectionId: editor.collectionId, folderId: editor.folderId })
         // A slow save must never replace text entered while its IPC call was pending.
         if (latestDraft.current === value) {
-          const next = { ...copyDraft(editor), body: retainSelections(editor.body ?? undefined, value.body) }
+          const next = { ...copyDraft(editor), body: retainSelections(editor.body ?? undefined, value.body), ...(editor.bodyVariants ? { bodyVariants: retainVariantSelections(editor.bodyVariants, value.bodyVariants) } : {}) }
           latestDraft.current = next; setDraft(next)
         }
         setRevision(value => value + 1)
@@ -181,11 +183,21 @@ export function useRequests(workspace: string | null) {
     finally { if (current === generation.current) { running.current = false; setBusy(false) } }
   }
   return {
+    selectBodyVariant: (id: string) => { if (!draft || busy) return; const current = syncVariants(draft), selected = current.bodyVariants?.find(v => v.id === id); if (!selected) return; bodyCache.current = initialBodyDrafts(selected.body); setDraft({ ...current, body: selected.body, selectedBodyVariantId: id }); setValidation({}); setError(null) },
+    addBodyVariant: async () => { if (!workspace || !draft || busy || (draft.bodyVariants?.length ?? 1) >= 20) return; const stamp = generation.current; const result = await window.offlineApi.requests.newRow(workspace); if (!result.ok || stamp !== generation.current) return; setDraft(previous => { if (!previous) return previous; const current = syncVariants(previous), variants = current.bodyVariants?.length ? current.bodyVariants : [{ id: crypto.randomUUID(), name: 'Body 1', body: current.body ?? { kind: 'none' as const } }]; const body = persistedBody(current.body ?? { kind: 'none' }); return { ...current, body, bodyVariants: [...variants, { id: result.data.id, name: `Body ${variants.length + 1}`, body }], selectedBodyVariantId: result.data.id } }); setError(null) },
+    removeBodyVariant: () => {
+      if (!draft || busy || !draft.bodyVariants || draft.bodyVariants.length < 2) return
+      const variants = draft.bodyVariants.filter(v => v.id !== draft.selectedBodyVariantId), first = variants[0]!
+      const files = (body: EditableBody) => body.kind === 'multipart' ? body.rows.flatMap(r => r.kind === 'file' && r.fileId ? [r.fileId] : []) : []
+      const kept = new Set(variants.flatMap(v => files(v.body))), removed = draft.bodyVariants.find(v => v.id === draft.selectedBodyVariantId)
+      for (const id of removed ? files(removed.body) : []) if (!kept.has(id)) { selections.current.delete(id); if (workspace) void window.offlineApi.files.releaseUpload(workspace, id).catch(() => {}) }
+      setBodyIssue(null); bodyCache.current = initialBodyDrafts(first.body); setDraft({ ...draft, bodyVariants: variants, selectedBodyVariantId: first.id, body: first.body })
+    },
     focusName: () => { pendingNameFocus.current=true; setFocusVersion(value => value+1) },
-    path, setPath, destination, chooseFile, changeMultipart,
+    bodyIssue, setBodyIssue, path, setPath, destination, chooseFile, changeMultipart,
     ...execution,
     saving, saved: currentWorkspace ? saved : null, draft: currentWorkspace ? draft : null, busy: currentWorkspace ? busy : workspace !== null, dirty, error: currentWorkspace ? error : null, revision, validation, addRow, changeBody: (kind: EditableBody['kind']) => { if (!draft || busy) return; const result = switchBody(bodyCache.current, draft.body, kind); bodyCache.current = result.cache; setDraft({ ...draft, body: result.body }); setValidation({}); setError(null) }, setDraft: (value: RequestDraft) => { setDraft(value); setValidation({}); setError(null) }, save,
-    create: (target: RequestDestination = {collectionId:null,folderId:null}) => { if (!workspace || running.current) return false; releaseSelections(); setDestination(target); bodyCache.current = initialBodyDrafts(); latestSaved.current=null; setSaved(null); setDraft(copyDraft({ name: 'New request', method: 'GET', urlTemplate: '', body: { kind: 'none' }, auth: { mode: 'none' } })); setError(null); setValidation({}); return true },
+    create: (target: RequestDestination = {collectionId:null,folderId:null}) => { if (!workspace || running.current) return false; releaseSelections(); setDestination(target); bodyCache.current = initialBodyDrafts(); latestSaved.current=null; setSaved(null); setDraft(copyDraft({ name: 'New request', method: 'GET', urlTemplate: '', body: { kind: 'none' }, auth: { mode: 'none' } })); setError(null); setBodyIssue(null); setValidation({}); return true },
     syncPlacement: (rows: readonly { id:string; destination:RequestDestination }[]) => {
       const selected=latestSaved.current
       if(selected) {
@@ -194,7 +206,7 @@ export function useRequests(workspace: string | null) {
         else { releaseSelections(); latestSaved.current=null; setSaved(null); setDraft(null); bodyCache.current=initialBodyDrafts() }
       }
     },
-    discard: () => { if (!busy) { releaseSelections(); bodyCache.current = initialBodyDrafts(latestSaved.current?.body ?? undefined); setDraft(latestSaved.current ? copyDraft(latestSaved.current) : null); setError(null); setValidation({}) } },
+    discard: () => { if (!busy) { releaseSelections(); bodyCache.current = initialBodyDrafts(latestSaved.current?.body ?? undefined); setDraft(latestSaved.current ? copyDraft(latestSaved.current) : null); setError(null); setBodyIssue(null); setValidation({}) } },
     open: (id: string) => workspace ? apply(() => window.offlineApi.requests.get(workspace, id)) : Promise.resolve(false),
     duplicate: (id = saved?.id) => workspace && id ? apply(() => window.offlineApi.requests.duplicate(workspace, id), true) : Promise.resolve(false),
     delete: () => workspace && saved ? apply(() => window.offlineApi.requests.delete(workspace, saved.id), true) : Promise.resolve(false)

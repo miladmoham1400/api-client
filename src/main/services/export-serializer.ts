@@ -53,7 +53,7 @@ export function serializeWorkspace(snapshot: ExportSnapshot, exportedAt = new Da
         configVersion: 1, method: value.config.method, urlTemplate: value.config.urlTemplate,
         queryRows: value.config.queryRows.map(row), headerRows: value.config.headerRows.map(value => /^(authorization|proxy-authorization|cookie)$/i.test(value.key.trim())
           ? { id: value.id, key: value.key, value: '', enabled: false } : row(value)),
-        body: body(value.config.body), auth: auth(value.config.auth), timeoutMs: value.config.timeoutMs, followRedirects: value.config.followRedirects
+        ...(value.config.bodyVariants ? { bodyVariants: value.config.bodyVariants.map(v => ({ id: v.id, name: v.name, body: body(v.body) })), selectedBodyVariantId: value.config.selectedBodyVariantId } : {}), body: body(value.config.body), auth: auth(value.config.auth), timeoutMs: value.config.timeoutMs, followRedirects: value.config.followRedirects
       } }))
     }
   })

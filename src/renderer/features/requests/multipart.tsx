@@ -1,4 +1,5 @@
-import { Box, Button, Flex, Input, NativeSelect, Text, VStack } from '@chakra-ui/react'
+import { TemplateInput } from '../../components/template-field'
+import { Box, Button, Flex, NativeSelect, Text, VStack } from '@chakra-ui/react'
 import { LIMITS } from '../../../shared/primitives'
 import type { RequestController } from './controller'
 
@@ -21,8 +22,8 @@ export function MultipartEditor({ controller: c }: { controller: RequestControll
           <Button size="xs" variant="outline" aria-label={`Remove multipart ${index + 1}`} disabled={c.busy} onClick={() => c.changeMultipart(rows.filter(item => item.id !== row.id))}>Remove</Button>
         </Flex>
         <Flex gap="2" align="center" flexWrap="wrap">
-          <Input aria-label={`Multipart ${index + 1} key`} placeholder="Key" value={row.key} disabled={c.busy} aria-invalid={!!c.validation[`${path}.key`]} aria-describedby={c.validation[`${path}.key`] ? `${path}.key-error` : undefined} onChange={event => update(event.target.value, row.enabled)} />
-          {row.kind === 'text' ? <Input aria-label={`Multipart ${index + 1} value`} placeholder="Value" value={row.value} disabled={c.busy} aria-invalid={!!c.validation[`${path}.value`]} aria-describedby={c.validation[`${path}.value`] ? `${path}.value-error` : undefined} onChange={event => c.changeMultipart(rows.map(item => item.id === row.id && item.kind === 'text' ? { ...item, value: event.target.value } : item))} /> : <>
+          <TemplateInput aria-label={`Multipart ${index + 1} key`} placeholder="Key" value={row.key} disabled={c.busy} aria-invalid={!!c.validation[`${path}.key`]} aria-describedby={c.validation[`${path}.key`] ? `${path}.key-error` : undefined} onChange={event => update(event.target.value, row.enabled)} />
+          {row.kind === 'text' ? <TemplateInput aria-label={`Multipart ${index + 1} value`} placeholder="Value" value={row.value} disabled={c.busy} aria-invalid={!!c.validation[`${path}.value`]} aria-describedby={c.validation[`${path}.value`] ? `${path}.value-error` : undefined} onChange={event => c.changeMultipart(rows.map(item => item.id === row.id && item.kind === 'text' ? { ...item, value: event.target.value } : item))} /> : <>
             <Button size="sm" disabled={c.busy} aria-label={`Choose multipart ${index + 1} file`} aria-describedby={c.validation[`${path}.fileId`] ? `${path}.fileId-error` : undefined} onClick={() => { void c.chooseFile(row.id) }}>{row.fileId ? 'Replace file' : 'Choose file'}</Button>
             <Text fontSize="sm">{row.fileName ?? 'No file selected'}{row.fileSize === undefined ? '' : ` (${row.fileSize.toLocaleString()} bytes)`}{!row.fileId && row.fileName ? ' — select again' : ''}</Text>
           </>}

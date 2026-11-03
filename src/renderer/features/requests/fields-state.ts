@@ -7,7 +7,7 @@ import { formatFieldPath } from '../../../shared/primitives'
 
 export type RowGroup = 'queryRows' | 'headerRows' | 'body.rows'
 export function copyDraft(source: Omit<RequestDraft, 'body' | 'auth'> & { body?: RequestDraft['body'] | null; auth?: AuthDraft | AuthEditor | undefined }): RequestDraft {
-  return { ...(source.auth ? { auth: authDraft(source.auth) } : {}), ...(source.body === undefined || source.body === null ? {} : { body: copyBody(source.body) }), name: source.name, method: source.method, urlTemplate: source.urlTemplate, queryRows: (source.queryRows ?? []).map(row => ({ ...row })), headerRows: (source.headerRows ?? []).map(row => ({ ...row })), timeoutMs: source.timeoutMs ?? 30000, followRedirects: source.followRedirects ?? false }
+  return { ...(source.bodyVariants ? { bodyVariants: source.bodyVariants.map(v => ({ ...v, body: copyBody(v.body) })), selectedBodyVariantId: source.selectedBodyVariantId } : {}), ...(source.auth ? { auth: authDraft(source.auth) } : {}), ...(source.body === undefined || source.body === null ? {} : { body: copyBody(source.body) }), name: source.name, method: source.method, urlTemplate: source.urlTemplate, queryRows: (source.queryRows ?? []).map(row => ({ ...row })), headerRows: (source.headerRows ?? []).map(row => ({ ...row })), timeoutMs: source.timeoutMs ?? 30000, followRedirects: source.followRedirects ?? false }
 }
 export function getRows(draft: RequestDraft | null, group: RowGroup): TextRow[] {
   return group === 'body.rows' ? draft?.body?.kind === 'urlencoded' ? draft.body.rows : [] : draft?.[group] ?? []

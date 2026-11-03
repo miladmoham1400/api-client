@@ -133,8 +133,6 @@ test('side-by-side default, divider, JSON Tab/collapse, raw fallback and static 
     const tree = response.getByLabel('Response body JSON')
     await page.screenshot({ path: '/tmp/api-client-polish-json.png', animations: 'disabled' })
     await expect(tree).toContainText('items')
-    await tree.locator('label').filter({ hasText: /^items:/ }).click()
-    await tree.locator('label').filter({ hasText: /^0:/ }).click()
     await expect(tree).toContainText('first')
     await tree.locator('label').filter({ hasText: /^0:/ }).click()
     await expect(tree).not.toContainText('first')
