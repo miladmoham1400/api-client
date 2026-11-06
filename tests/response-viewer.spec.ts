@@ -137,3 +137,45 @@ test('response viewer safely presents HTTP/error/binary states, snapshots, stale
     await expect(restarted.getByLabel('Response body text')).toHaveCount(0)
   } finally { await shutdown(application); await fixture.close(); rmSync(directory, { recursive: true, force: true }) }
 })
+
+test('Pretty JSON opens every supported node and array item, with manual collapse and fresh-response reset', async () => {
+  test.setTimeout(60000)
+  let deep: unknown = { marker: 'deep-leaf' }
+  for (let i = 0; i < 40; i++) deep = { branch: deep }
+  const raw = JSON.stringify({ data: Array.from({ length: 1101 }, (_, id) => ({ id, marker: `item-${id}` })), deep, padding: 'x'.repeat(12000) })
+  expect(raw.length).toBeGreaterThan(32 * 1024)
+  expect(raw.length).toBeLessThan(64 * 1024)
+  let calls = 0
+  const fixture = await startFixture(false, (_req, res) => { calls++; res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(raw) })
+  const directory = mkdtempSync(join(tmpdir(), 'expanded-response-'))
+  const env = { ...Object.fromEntries(Object.entries(process.env).filter((e): e is [string, string] => e[1] !== undefined && !['ELECTRON_RUN_AS_NODE', 'ELECTRON_RENDERER_URL'].includes(e[0]))), XDG_CONFIG_HOME: directory, APPDATA: directory }
+  const app = await launchDesktop({ args: ['.'], chromiumSandbox: true, env })
+  try {
+    const page = await app.firstWindow()
+    await page.evaluate(async url => {
+      const api = window.offlineApi, w = await api.workspaces.create('Expanded response')
+      if (!w.ok || !w.data.selectedWorkspaceId) throw new Error('No workspace')
+      await api.requests.create(w.data.selectedWorkspaceId, { name: 'Nested JSON', method: 'GET', urlTemplate: url, collectionId: null })
+    }, fixture.url)
+    await page.reload()
+    const send = page.getByRole('button', { name: 'Send', exact: true })
+    const response = page.getByRole('region', { name: 'Response', exact: true })
+    const tree = response.getByLabel('Response body JSON', { exact: true })
+    await send.click()
+    await expect(tree).toContainText('item-1100')
+    await expect(tree).toContainText('deep-leaf')
+    await expect(tree.locator('button[aria-expanded="false"]')).toHaveCount(0)
+    const data = tree.getByRole('button', { name: 'Toggle data', exact: true })
+    await data.click()
+    await expect(data).toHaveAttribute('aria-expanded', 'false')
+    await expect(tree).not.toContainText('item-1100')
+    await data.click()
+    await expect(tree).toContainText('item-1100')
+    await data.click()
+    await send.click()
+    await expect(tree.getByRole('button', { name: 'Toggle data', exact: true })).toHaveAttribute('aria-expanded', 'true')
+    await expect(tree).toContainText('item-1100')
+    await expect(tree).toContainText('deep-leaf')
+    expect(calls).toBe(2)
+  } finally { await shutdown(app); await fixture.close(); rmSync(directory, { recursive: true, force: true }) }
+})

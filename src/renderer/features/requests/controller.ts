@@ -8,6 +8,10 @@ import { copyDraft, fieldErrors, getRows, replaceRows, type RowGroup } from './f
 import type { Result } from '../../../shared/results'
 import { useExecution } from './execution'
 
+function fileIds(bodies: readonly (EditableBody | undefined)[]) {
+  return [...new Set(bodies.flatMap(body => body?.kind === 'multipart' ? body.rows.flatMap(row => row.kind === 'file' && row.fileId ? [row.fileId] : []) : []))]
+}
+
 export function useRequests(workspace: string | null) {
   const [loadedWorkspace, setLoadedWorkspace] = useState(workspace)
   const currentWorkspace = loadedWorkspace === workspace
@@ -27,6 +31,11 @@ export function useRequests(workspace: string | null) {
   const [validation, setValidation] = useState<Record<string, string>>({})
   const [revision, setRevision] = useState(0)
   const execution = useExecution(workspace, currentWorkspace ? draft : null, currentWorkspace ? saved?.id ?? null : null)
+  const { switchPresentation, bindPresentation, forgetPresentation } = execution
+  const [openRequests, setOpenRequests] = useState<{ id: string; name: string; method: RequestDraft['method'] }[]>([])
+  const remember = useCallback((editor: NonNullable<RequestSnapshot['editor']>) => {
+    setOpenRequests(tabs => tabs.some(tab => tab.id === editor.id) ? tabs.map(tab => tab.id === editor.id ? { id: editor.id, name: editor.name, method: editor.method } : tab) : [...tabs, { id: editor.id, name: editor.name, method: editor.method }])
+  }, [])
   const bodyCache = useRef(initialBodyDrafts())
   const selections = useRef(new Map<string, string>())
   const releaseSelections = useCallback(() => {
@@ -34,6 +43,34 @@ export function useRequests(workspace: string | null) {
     selections.current.clear()
   }, [])
   const acknowledgedAuth = useRef<{ id: string; auth: RequestDraft['auth'] } | null>(null)
+  const sessions = useRef(new Map<string, { updatedAt: string; draft: RequestDraft; cache: ReturnType<typeof initialBodyDrafts>; files: string[] }>())
+  const releaseFileIds = useCallback((ids: readonly string[]) => {
+    for (const id of ids) {
+      const owner = selections.current.get(id)
+      if (owner) void window.offlineApi.files.releaseUpload(owner, id).catch(() => {})
+      selections.current.delete(id)
+    }
+  }, [])
+  const releaseFiles = useCallback((bodies: readonly (EditableBody | undefined)[]) => releaseFileIds(fileIds(bodies)), [releaseFileIds])
+  const forgetSession = useCallback((id: string) => {
+    const cached = sessions.current.get(id)
+    if (cached) releaseFileIds(cached.files)
+    sessions.current.delete(id); forgetPresentation(id)
+  }, [forgetPresentation, releaseFileIds])
+  const parkSession = useCallback(() => {
+    const editor = latestSaved.current, value = latestDraft.current
+    if (!editor || !value) return
+    const clean = copyDraft(editor)
+    const auth = acknowledgedAuth.current
+    if (auth?.id === editor.id) clean.auth = auth.auth
+    clean.body = retainSelections(clean.body, value.body)
+    clean.bodyVariants = retainVariantSelections(clean.bodyVariants, value.bodyVariants)
+    sessions.current.set(editor.id, { updatedAt: editor.updatedAt, draft: clean, cache: bodyCache.current, files: [...new Set([...(sessions.current.get(editor.id)?.files ?? []), ...fileIds([value.body, ...Object.values(bodyCache.current), ...(value.bodyVariants?.map(v => v.body) ?? [])])])] })
+  }, [])
+  const pruneSessions = useCallback((ids: ReadonlySet<string>) => {
+    setOpenRequests(tabs => tabs.filter(tab => ids.has(tab.id)))
+    for (const id of sessions.current.keys()) if (!ids.has(id)) forgetSession(id)
+  }, [forgetSession])
   const comparison = (value: Parameters<typeof copyDraft>[0]) => {
     const copy = copyDraft(value)
     const acknowledged = acknowledgedAuth.current
@@ -63,8 +100,16 @@ export function useRequests(workspace: string | null) {
       if (current !== generation.current) return false
       if (result.ok && result.data.workspaceId === workspace) {
         const editor = result.data.editor
-        acknowledgedAuth.current = null; latestSaved.current=editor; setSaved(editor); if(editor) setDestination({collectionId:editor.collectionId,folderId:editor.folderId}); setDraft(previous => editor ? { ...copyDraft(editor), ...(preserveBody ? { body: retainSelections(editor.body ?? undefined, previous?.body) } : {}) } : null)
-        if (!preserveBody) { releaseSelections(); bodyCache.current = initialBodyDrafts(editor?.body ?? undefined) }
+        parkSession()
+        pruneSessions(new Set(result.data.requests.map(row => row.id)))
+        let cached = editor ? sessions.current.get(editor.id) : undefined
+        if (editor && cached && cached.updatedAt !== editor.updatedAt) { forgetSession(editor.id); cached = undefined }
+        acknowledgedAuth.current = editor && cached ? { id: editor.id, auth: cached.draft.auth } : null
+        switchPresentation(editor?.id ?? null)
+        latestSaved.current=editor; setSaved(editor)
+        if (editor) { setDestination({collectionId:editor.collectionId,folderId:editor.folderId}); remember(editor) }
+        setDraft(previous => editor ? { ...copyDraft(editor), ...(cached ? { auth: cached.draft.auth, body: retainSelections(editor.body ?? undefined, cached.draft.body), ...(editor.bodyVariants ? { bodyVariants: retainVariantSelections(editor.bodyVariants, cached.draft.bodyVariants) } : {}) } : preserveBody ? { body: retainSelections(editor.body ?? undefined, previous?.body) } : {}) } : null)
+        bodyCache.current = cached?.cache ?? initialBodyDrafts(editor?.body ?? undefined)
         if (refresh) setRevision(value => value + 1)
         return true
       }
@@ -73,11 +118,11 @@ export function useRequests(workspace: string | null) {
       return false
     } catch { if (current === generation.current) setError('Request operation unavailable. Your draft has been kept.'); return false }
     finally { if (current === generation.current) { running.current = false; setBusy(false) } }
-  }, [workspace, releaseSelections])
+  }, [workspace, parkSession, pruneSessions, forgetSession, switchPresentation, remember])
   useEffect(() => {
-    acknowledgedAuth.current = null; setLoadedWorkspace(workspace); setDestination({collectionId:null,folderId:null}); latestSaved.current=null; setSaved(null); setDraft(null); setError(null); setValidation({}); setBusy(false)
+    sessions.current.clear(); setOpenRequests([]); acknowledgedAuth.current = null; setLoadedWorkspace(workspace); setDestination({collectionId:null,folderId:null}); latestSaved.current=null; setSaved(null); setDraft(null); setError(null); setValidation({}); setBusy(false)
     if (workspace) void apply(() => window.offlineApi.requests.list(workspace))
-    return () => { generation.current++; running.current = false; releaseSelections() }
+    return () => { generation.current++; running.current = false; releaseSelections(); sessions.current.clear() }
   }, [apply, workspace, releaseSelections])
   const save = useCallback(async (): Promise<boolean> => {
     if (saveFlight.current) {
@@ -99,6 +144,7 @@ export function useRequests(workspace: string | null) {
           setError('Automatic save failed. Your edits have been kept. Press Ctrl+S to retry.'); return false
         }
         const editor = result.data.editor
+        remember(editor); bindPresentation(editor.id)
         acknowledgedAuth.current = { id: editor.id, auth: value.auth }
         latestSaved.current = editor; setSaved(editor)
         setDestination({ collectionId: editor.collectionId, folderId: editor.folderId })
@@ -115,7 +161,7 @@ export function useRequests(workspace: string | null) {
     saveFlight.current = operation
     const ok = await operation
     return ok ? latestSave.current() : false
-  }, [currentWorkspace, workspace, draft, saved, destination])
+  }, [currentWorkspace, workspace, draft, saved, destination, remember, bindPresentation])
   latestSave.current = save
   useEffect(() => {
     if (!dirty || busy || saving || error || !draft || !requestDraftSchema.safeParse(draft).success) return
@@ -198,19 +244,32 @@ export function useRequests(workspace: string | null) {
       setBodyIssue(null); bodyCache.current = initialBodyDrafts(first.body); setDraft({ ...draft, bodyVariants: variants, selectedBodyVariantId: first.id, body: first.body })
     },
     focusName: () => { pendingNameFocus.current=true; setFocusVersion(value => value+1) },
+    openRequests: currentWorkspace ? openRequests : [],
+    closeTab: async (requestedId: string | null) => {
+      if (busy || running.current) return false
+      const id = requestedId ?? latestSaved.current?.id ?? null
+      const tabs = openRequests, index = tabs.findIndex(tab => tab.id === id)
+      if (requestedId === null || latestSaved.current?.id === id) {
+        const next = index < 0 ? tabs.filter(tab => tab.id !== id).at(-1) : tabs[index + 1] ?? tabs[index - 1]
+        if (next && workspace) { if (!await apply(() => window.offlineApi.requests.get(workspace, next.id))) return false }
+        else { if (!latestSaved.current) releaseFiles([latestDraft.current?.body, ...Object.values(bodyCache.current), ...(latestDraft.current?.bodyVariants?.map(v => v.body) ?? [])]); parkSession(); switchPresentation(null); latestSaved.current = null; acknowledgedAuth.current = null; setSaved(null); setDraft(null); bodyCache.current = initialBodyDrafts(); setError(null); setValidation({}); setBodyIssue(null) }
+      }
+      if (id) forgetSession(id); setOpenRequests(current => current.filter(tab => tab.id !== id)); return true
+    },
     bodyIssue, setBodyIssue, path, setPath, destination, chooseFile, changeMultipart,
     ...execution,
     saving, saved: currentWorkspace ? saved : null, draft: currentWorkspace ? draft : null, busy: currentWorkspace ? busy : workspace !== null, dirty, error: currentWorkspace ? error : null, revision, validation, addRow, changeBody: (kind: EditableBody['kind']) => { if (!draft || busy) return; const result = switchBody(bodyCache.current, draft.body, kind); bodyCache.current = result.cache; setDraft({ ...draft, body: result.body }); setValidation({}); setError(null) }, setDraft: (value: RequestDraft) => { setDraft(value); setValidation({}); setError(null) }, save,
-    create: (target: RequestDestination = {collectionId:null,folderId:null}) => { if (!workspace || running.current) return false; acknowledgedAuth.current = null; releaseSelections(); setDestination(target); bodyCache.current = initialBodyDrafts(); latestSaved.current=null; setSaved(null); setDraft(copyDraft({ name: 'New request', method: 'GET', urlTemplate: '', body: { kind: 'none' }, auth: { mode: 'none' } })); setError(null); setBodyIssue(null); setValidation({}); return true },
+    create: (target: RequestDestination = {collectionId:null,folderId:null}) => { if (!workspace || running.current) return false; if (!latestSaved.current) releaseFiles([latestDraft.current?.body, ...Object.values(bodyCache.current), ...(latestDraft.current?.bodyVariants?.map(v => v.body) ?? [])]); parkSession(); switchPresentation(null); acknowledgedAuth.current = null; setDestination(target); bodyCache.current = initialBodyDrafts(); latestSaved.current=null; setSaved(null); setDraft(copyDraft({ name: 'New request', method: 'GET', urlTemplate: '', body: { kind: 'none' }, auth: { mode: 'none' } })); setError(null); setBodyIssue(null); setValidation({}); return true },
     syncPlacement: (rows: readonly { id:string; destination:RequestDestination }[]) => {
+      pruneSessions(new Set(rows.map(row => row.id)))
       const selected=latestSaved.current
       if(selected) {
         const row=rows.find(r => r.id===selected.id)
         if(row) { latestSaved.current={...selected,...row.destination}; setSaved(latestSaved.current); setDestination(row.destination) }
-        else { releaseSelections(); latestSaved.current=null; setSaved(null); setDraft(null); bodyCache.current=initialBodyDrafts() }
+        else { parkSession(); forgetSession(selected.id); switchPresentation(null); latestSaved.current=null; setSaved(null); setDraft(null); bodyCache.current=initialBodyDrafts() }
       }
     },
-    discard: () => { if (!busy) { acknowledgedAuth.current = null; releaseSelections(); bodyCache.current = initialBodyDrafts(latestSaved.current?.body ?? undefined); setDraft(latestSaved.current ? copyDraft(latestSaved.current) : null); setError(null); setBodyIssue(null); setValidation({}) } },
+    discard: () => { if (!busy) { parkSession(); if (latestSaved.current) forgetSession(latestSaved.current.id); else releaseFiles([latestDraft.current?.body, ...Object.values(bodyCache.current), ...(latestDraft.current?.bodyVariants?.map(v => v.body) ?? [])]); acknowledgedAuth.current = null; bodyCache.current = initialBodyDrafts(latestSaved.current?.body ?? undefined); setDraft(latestSaved.current ? copyDraft(latestSaved.current) : null); setError(null); setBodyIssue(null); setValidation({}) } },
     open: (id: string) => workspace ? apply(() => window.offlineApi.requests.get(workspace, id)) : Promise.resolve(false),
     duplicate: (id = saved?.id) => workspace && id ? apply(() => window.offlineApi.requests.duplicate(workspace, id), true) : Promise.resolve(false),
     delete: () => workspace && saved ? apply(() => window.offlineApi.requests.delete(workspace, saved.id), true) : Promise.resolve(false)

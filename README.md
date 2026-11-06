@@ -38,6 +38,10 @@ Use **Import** for Postman Collection **v2.1 JSON** or native workspace JSON. Im
 
 Use a folder menu → **Duplicate folder** to copy its complete saved subtree, including nested requests and empty folders. Typed Bearer values remain readable after autosave in the active editor and support variable completion; stored credentials remain protected on navigation/restart. Successful transfers close their dialog and import cancellation stays silent.
 
+## Request tabs (current source)
+
+Open requests appear in tabs above the editor and response. Select a tab to return to that API, then Send; closing a tab keeps the saved request. Switching flushes valid edits and guards active requests. Tabs and response snapshots stay in the current workspace session. Body/Response corners now match. These source changes are not included in the 0.4.1 downloads above.
+
 ## Development
 
 Use Node **22.18.0** and npm **11.6.2**, as pinned in the repository. Initial dependency downloads require internet or prepared caches.
@@ -61,7 +65,7 @@ SQLite must be rebuilt for the runtime being tested: unit tests use developer No
 
 ## Build installers
 
-Build each installer on its target OS; independently verify the installed application before publishing.
+Build each installer on its target OS; independently verify the installed application before publishing. Current source uses a runtime-only payload and maximum installer compression; `npm run test:package` verifies payload filters and native binary selection. Local Linux comparison reduced deb from 113.3 to 88.0 MB and AppImage from 144.6 to 99.0 MB. These optimized builds are not yet in the 0.4.1 downloads above; new Windows sizes still require a native build.
 
 ```sh
 # Linux x64: dist/linux/

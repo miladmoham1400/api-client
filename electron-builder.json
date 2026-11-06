@@ -5,12 +5,21 @@
     "output": "dist/linux"
   },
   "files": [
-    "out/**/*",
-    "package.json"
+    {
+      "from": ".",
+      "filter": [
+        "!**/*",
+        "out/**/*",
+        "node_modules/**/{LICENSE*,LICENCE*,License*,Licence*,license*,licence*,COPYING*,Copying*,copying*,NOTICE*,Notice*,notice*,COPYRIGHT*,Copyright*,copyright*}",
+        "node_modules/**/package.json",
+        "node_modules/better-sqlite3/lib/**/*.js",
+        "node_modules/better-sqlite3/prebuilds/*.node"
+      ]
+    }
   ],
   "asar": true,
   "asarUnpack": [
-    "node_modules/better-sqlite3/**/*"
+    "node_modules/better-sqlite3/**/*.node"
   ],
   "npmRebuild": true,
   "nativeRebuilder": "sequential",
@@ -34,9 +43,26 @@
     "category": "Development",
     "executableName": "offline-api-client",
     "artifactName": "${name}-${version}-${arch}.${ext}",
-    "syncDesktopName": true
+    "syncDesktopName": true,
+    "files": [
+      "package.json",
+      "!node_modules/better-sqlite3/prebuilds/!(linux-${arch}).node"
+    ]
   },
   "deb": {
-    "maintainer": "Milad <milad1400@gmail.com>"
-  }
+    "maintainer": "Milad <milad1400@gmail.com>",
+    "compression": "xz",
+    "fpm": [
+      "--deb-compression-level",
+      "9"
+    ]
+  },
+  "compression": "maximum",
+  "electronLanguages": [
+    "en-US"
+  ],
+  "appImage": {
+    "compression": "xz"
+  },
+  "afterPack": "./scripts/check-package.mjs"
 }

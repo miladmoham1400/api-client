@@ -6,14 +6,26 @@
   "forceCodeSigning": false,
   "win": {
     "icon": "build/icon.ico",
-    "target": [{ "target": "nsis", "arch": ["x64"] }],
+    "target": [
+      {
+        "target": "nsis",
+        "arch": [
+          "x64"
+        ]
+      }
+    ],
     "artifactName": "${name}-${version}-${arch}-setup.${ext}",
-    "signExecutable": false
+    "signExecutable": false,
+    "files": [
+      "package.json",
+      "!node_modules/better-sqlite3/prebuilds/!(win32-${arch}).node"
+    ]
   },
   "nsis": {
     "oneClick": true,
     "perMachine": false,
     "deleteAppDataOnUninstall": false,
-    "runAfterFinish": false
+    "runAfterFinish": false,
+    "differentialPackage": false
   }
 }

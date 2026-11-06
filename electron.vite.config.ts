@@ -2,8 +2,8 @@ import { defineConfig } from 'electron-vite'
 import react from '@vitejs/plugin-react'
 
 export default defineConfig({
-  main: {},
-  preload: { build: { externalizeDeps: false } },
+  main: { build: { externalizeDeps: { exclude: ['zod', 'form-data-encoder'] }, minify: true, sourcemap: false } },
+  preload: { build: { externalizeDeps: false, minify: true, sourcemap: false } },
   renderer: {
     plugins: [
       react(),

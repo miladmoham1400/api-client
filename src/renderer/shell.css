@@ -156,7 +156,7 @@ body { font-size: 13px; -webkit-font-smoothing: antialiased; }
 .panels-toolbar button { min-height: 24px; height: 24px; min-width: 26px; padding: 4px; color: var(--glass-muted); }
 .glass-panel {
   border: 1px solid var(--glass-edge);
-  border-radius: 14px;
+  border-radius: var(--workbench-radius);
   background: var(--glass-bg);
   backdrop-filter: blur(22px);
   box-shadow: var(--glass-shadow);
@@ -209,7 +209,7 @@ body { font-size: 13px; -webkit-font-smoothing: antialiased; }
 .app-shell [data-scope="tabs"][data-part="trigger"][data-selected] { color: var(--glass-accent); --indicator-color: var(--glass-accent); }
 .app-shell [data-scope="tabs"][data-part="trigger"]::before { border-color: var(--glass-accent); }
 .app-shell [data-scope="tabs"][data-part="content"] { padding-top: 18px; }
-.app-shell .json-editor { margin-top: 2px; border-radius: 10px; }
+.app-shell .json-editor { margin-top: 2px; border-radius: var(--workbench-radius); overflow: hidden; }
 .app-shell .json-editor .json-editor-input { min-height: 240px; font-size: 12px; background: transparent; border-color: var(--glass-edge); line-height: 1.8; }
 .app-shell .json-editor-backdrop { font-size: 12px; line-height: 1.8; }
 .app-shell details { font-size: 11px; color: var(--glass-muted); line-height: 1.7; }
@@ -324,3 +324,22 @@ kbd { font: inherit; font-size: 9px; padding: 3px 5px; border: 1px solid var(--g
 }
 .app-shell .has-line-numbers .json-editor-input, .has-line-numbers .json-editor-backdrop { padding-left: 56px; white-space: pre; overflow-wrap: normal; }
 @media (forced-colors: active) { .app-tooltip { background: Canvas; color: CanvasText; border-color: CanvasText; } }
+
+/* One corner token for the paired panels and the Body source box. */
+:root { --workbench-radius: 14px; }
+.json-response { border-radius: var(--workbench-radius); }
+.app-shell .json-editor .json-editor-input { border-radius: var(--workbench-radius); }
+.request-tabs { display: flex; flex-shrink: 0; min-width: 0; gap: 4px; overflow-x: auto; padding: 2px 1px 9px; scrollbar-width: thin; }
+.request-tabs:empty { display: none; }
+.request-tab { display: flex; align-items: center; flex-shrink: 0; max-width: 240px; height: 36px; border: 1px solid var(--glass-edge); border-radius: 9px; background: var(--glass-input); color: var(--glass-muted); }
+.request-tab[data-active="true"] { color: var(--chakra-colors-fg); background: var(--glass-accent-soft); border-color: var(--glass-accent); box-shadow: inset 0 -2px var(--glass-accent); }
+.request-tab > [role="tab"] { display: flex; align-items: center; gap: 8px; min-width: 0; height: 100%; padding: 0 8px 0 11px; font-size: 11px; text-align: left; }
+.request-tab-name { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.request-tab-method { flex-shrink: 0; font: 650 9px/1.4 ui-monospace, monospace; }
+.request-tab-pending { flex-shrink: 0; width: 5px; height: 5px; border-radius: 50%; background: var(--glass-accent); }
+.request-tab .request-tab-close { flex-shrink: 0; width: 24px; height: 24px; margin-right: 4px; font-size: 17px; line-height: 1; color: var(--glass-muted); }
+.request-tab:hover { background-color: var(--glass-hover); }
+/* Override the app-wide inset hover border on both inner tab buttons. */
+.app-shell .request-tab > button:not(:disabled):hover { box-shadow: none; }
+.request-tab > :focus-visible { outline-offset: -3px; }
+@media (forced-colors: active) { .request-tab { border-color: ButtonText; } .request-tab[data-active="true"] { border-color: Highlight; } }

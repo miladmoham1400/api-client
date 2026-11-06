@@ -12,6 +12,10 @@ export function useExecution(workspace: string | null, draft: RequestDraft | nul
   const [sentSnapshot, setSentSnapshot] = useState<{ name: string; method: string; urlTemplate: string; environment: string } | null>(null)
   // Ephemeral draft comparison only: never persisted, logged or sent back through IPC.
   const sentDraft = useRef<string | null>(null)
+  const presentation = { executionField, executionResult, completedExecutionId, sentSnapshot, sentDraft: sentDraft.current, status, error }
+  const latestPresentation = useRef(presentation); latestPresentation.current = presentation
+  const presentations = useRef(new Map<string, typeof presentation>())
+  const presentationKey = useRef<string | null>(null)
   const active = useRef<string | null>(null), pending = useRef(false), mounted = useRef(false), generation = useRef(0)
   const cancellationRequested = useRef(false)
   const cancellationRunning = useRef(false)
@@ -59,7 +63,28 @@ export function useExecution(workspace: string | null, draft: RequestDraft | nul
       active.current = null; pending.current = false; early.current = null
     }
   }, [complete, settleCancellation])
+  const switchPresentation = useCallback((key: string | null) => {
+    if (presentationKey.current === key) return
+    if (presentationKey.current) { presentations.current.delete(presentationKey.current); presentations.current.set(presentationKey.current, latestPresentation.current) }
+    const next = key ? presentations.current.get(key) : undefined
+    presentationKey.current = key
+    // Responses and sent snapshots stay session-only, with bounded retained memory.
+    let bytes = 0, retained = 0
+    for (const [id, value] of [...presentations.current].reverse()) {
+      bytes += (value.sentDraft?.length ?? 0) * 2 + (value.executionResult && 'statusCode' in value.executionResult && value.executionResult.body.kind === 'text' ? value.executionResult.body.text.length * 2 : 0)
+      retained++
+      if (bytes > 32 * 1024 * 1024 || retained > 8) presentations.current.delete(id)
+    }
+    generation.current++; early.current = null
+    sentDraft.current = next?.sentDraft ?? null
+    setSentSnapshot(next?.sentSnapshot ?? null); setExecutionResult(next?.executionResult ?? null)
+    setCompletedExecutionId(next?.completedExecutionId ?? null); setStatus(next?.status ?? null)
+    setError(next?.error ?? null); setExecutionField(next?.executionField ?? null)
+  }, [])
+  const bindPresentation = useCallback((key: string) => { presentationKey.current = key }, [])
+  const forgetPresentation = useCallback((key: string) => { presentations.current.delete(key) }, [])
   useEffect(() => {
+    presentations.current.clear(); presentationKey.current = null
     generation.current++; settleCancellation(false)
     sentDraft.current = null; setSentSnapshot(null); setExecutionResult(null); setCompletedExecutionId(null)
     if (active.current) void window.offlineApi.execution.cancel(active.current).catch(() => {})
@@ -90,6 +115,6 @@ export function useExecution(workspace: string | null, draft: RequestDraft | nul
       if (mounted.current && current === generation.current) { pending.current = false; settleCancellation(true); setSending(false); setStatus(null); setError('Request execution is unavailable. Try again.') }
     }
   }, [ready, workspace, draft, requestId, complete, cancel, settleCancellation])
-  return { executionField, executionResult, completedExecutionId, sentSnapshot, draftChangedSinceSend: sentDraft.current !== null && JSON.stringify(draft) !== sentDraft.current, sending, cancelling, executionStatus: status, executionError: error, canSend: ready && !!workspace && !!draft?.urlTemplate.trim() && !sending,
+  return { switchPresentation, bindPresentation, forgetPresentation, executionField, executionResult, completedExecutionId, sentSnapshot, draftChangedSinceSend: sentDraft.current !== null && JSON.stringify(draft) !== sentDraft.current, sending, cancelling, executionStatus: status, executionError: error, canSend: ready && !!workspace && !!draft?.urlTemplate.trim() && !sending,
     canCancel: executionId !== null && !cancelling, send, cancel, cancelForTransition, isSending: () => pending.current || active.current !== null }
 }

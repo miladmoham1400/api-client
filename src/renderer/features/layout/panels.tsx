@@ -1,3 +1,5 @@
+import { RequestTabs } from '../requests/tabs'
+import type { GuardTransition } from '../navigation/transition'
 import { useRef, useState } from 'react'
 import { Button, Flex } from '@chakra-ui/react'
 import type { RequestController } from '../requests/controller'
@@ -7,7 +9,7 @@ import { ResponseViewer } from '../response/viewer'
 type Layout = 'stacked' | 'side'
 const clamp = (ratio: number) => Math.max(20, Math.min(80, ratio))
 
-export function RequestResponsePanels({ controller, workspace }: { controller: RequestController; workspace: string | null }) {
+export function RequestResponsePanels({ controller, workspace, guard }: { controller: RequestController; workspace: string | null; guard: GuardTransition }) {
   const [layout, setLayout] = useState<Layout>('side')
   const [ratios, setRatios] = useState({ stacked: 55, side: 50 })
   const [dragging, setDragging] = useState(false)
@@ -28,7 +30,8 @@ export function RequestResponsePanels({ controller, workspace }: { controller: R
         <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><rect x="2" y="2" width="14" height="14" rx="2" />{side ? <path d="M9 2v14" /> : <path d="M2 9h14" />}</svg>
       </Button>
     </Flex>
-    <div ref={split} className={`request-response-split ${side ? 'split-side' : 'split-stacked'}${dragging ? ' split-dragging' : ''}`} style={side ? { gridTemplateColumns: tracks, gridTemplateRows: 'minmax(0, 1fr)' } : { gridTemplateRows: tracks, gridTemplateColumns: 'minmax(0, 1fr)' }}>
+    <RequestTabs controller={controller} guard={guard} />
+    <div role="tabpanel" id="request-tab-content" aria-labelledby={controller.saved ? `request-tab-${controller.saved.id}` : undefined} ref={split} className={`request-response-split ${side ? 'split-side' : 'split-stacked'}${dragging ? ' split-dragging' : ''}`} style={side ? { gridTemplateColumns: tracks, gridTemplateRows: 'minmax(0, 1fr)' } : { gridTemplateRows: tracks, gridTemplateColumns: 'minmax(0, 1fr)' }}>
       <div id="request-panel" className="split-pane"><RequestEditor key={workspace ?? 'none'} controller={controller} /></div>
       <div role="separator" tabIndex={0} className="panel-divider" aria-label="Resize request and response panels" aria-orientation={side ? 'vertical' : 'horizontal'} aria-controls="request-panel response-panel" aria-valuemin={20} aria-valuemax={80} aria-valuenow={Math.round(ratio)} aria-valuetext={`Request ${Math.round(ratio)}%, response ${Math.round(100 - ratio)}%`} data-tooltip="Drag to resize. Arrow keys adjust; Home/End move to the limits."
         onPointerDown={event => { if (event.button !== 0) return; event.preventDefault(); event.currentTarget.focus(); event.currentTarget.setPointerCapture(event.pointerId); setDragging(true) }}

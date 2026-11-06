@@ -82,7 +82,7 @@ function Desktop({ workspaces, closeGuard }: { workspaces: WorkspaceController; 
         <WorkspaceControls controller={workspaces} locked={requests.busy} guard={navigation.guard} placement="sidebar" />
         <CollectionSidebar key={workspaces.snapshot?.selectedWorkspaceId ?? "none"} workspaceId={workspaces.snapshot?.selectedWorkspaceId ?? null} requestController={requests} guard={navigation.guard} />
       </VStack>
-      <RequestResponsePanels controller={requests} workspace={workspaces.snapshot?.selectedWorkspaceId ?? null} />
+      <RequestResponsePanels guard={navigation.guard} controller={requests} workspace={workspaces.snapshot?.selectedWorkspaceId ?? null} />
     </Flex>
     {navigation.dialog}
     <Flex as="footer" className="app-footer" justify="space-between" align="center"><Text><span className="local-dot" />Local storage ready</Text><Text>LOCAL FIRST <span className="footer-divider">/</span> PRIVATE BY DESIGN</Text></Flex>

@@ -58,7 +58,11 @@ test('search result selection respects active Stay/Cancel and automatic save flu
     await page.getByLabel('Request name',{exact:true}).fill('API Saved before selection')
     await page.locator(`[data-search-id="${seed.second}"]`).click();await active.getByRole('button',{name:'Cancel request',exact:true}).click()
     await expect(page.getByRole('dialog',{name:'Unsaved request changes',exact:true})).not.toBeVisible()
-    await expect(page.getByLabel('Request name',{exact:true})).toHaveValue('API Other');await expect(page.getByRole('status').filter({hasText:/^Request cancelled$/})).toBeVisible()
+    await expect(page.getByLabel('Request name',{exact:true})).toHaveValue('API Other')
+    await expect(page.getByRole('status').filter({hasText:/^Request cancelled$/})).not.toBeVisible()
+    // Cancellation belongs to the originating request tab, not the newly selected request.
+    await page.getByRole('tablist',{name:'Open requests',exact:true}).getByRole('tab',{name:'GET API Saved before selection',exact:true}).click()
+    await expect(page.getByRole('status').filter({hasText:/^Request cancelled$/})).toBeVisible()
     expect(received).toEqual(['/hold'])
     expect(await page.evaluate(async data=>{const requests=await window.offlineApi.requests.list(data.w);return requests.ok && requests.data.requests.find(r=>r.id===data.first)?.name},seed)).toBe('API Saved before selection')
   }finally{await shutdown(app);await fixture.close();rmSync(directory,{recursive:true,force:true})}
