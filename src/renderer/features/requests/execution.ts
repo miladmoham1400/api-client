@@ -52,14 +52,36 @@ export function useExecution(workspace: string | null, draft: RequestDraft | nul
   const complete = useCallback((event: ExecutionCompleted) => {
     if (!mounted.current || event.executionId !== active.current) return
     const test = pendingTest.current
-    if (test?.expected != null) setResponseTest({ bodyName: test.bodyName, result: 'statusCode' in event.result && event.result.body.kind === 'text' ? compareResponseJson(test.expected, event.result.body.text) : { outcome: 'unavailable', message: 'No JSON response received.' } })
+    const completed: typeof presentation = {
+      ...latestPresentation.current,
+      executionResult: event.result,
+      completedExecutionId: event.executionId,
+      responseTest: null,
+      executionField: null,
+      status: null,
+      error: null
+    }
+    if (test?.expected != null) completed.responseTest = {
+      bodyName: test.bodyName,
+      result: 'statusCode' in event.result && event.result.body.kind === 'text'
+        ? compareResponseJson(test.expected, event.result.body.text)
+        : { outcome: 'unavailable', message: 'No JSON response received.' }
+    }
+    if ('statusCode' in event.result) completed.status = 'Request completed'
+    else if (event.result.code === 'CANCELLED') completed.status = 'Request cancelled'
+    else {
+      completed.executionField = event.result.field ?? null
+      completed.error = `${event.result.code}: ${event.result.message}${event.result.field ? ` (${event.result.field})` : ''}`
+    }
+    // Navigation may resume before React commits these updates. Park the final snapshot first.
+    latestPresentation.current = completed
     pendingTest.current = null
-    setExecutionResult(event.result); setCompletedExecutionId(event.executionId)
-    active.current = null; pending.current = false; early.current = null; settleCancellation(true)
+    setResponseTest(completed.responseTest)
+    setExecutionResult(completed.executionResult); setCompletedExecutionId(completed.completedExecutionId)
+    setStatus(completed.status); setError(completed.error); setExecutionField(completed.executionField)
+    active.current = null; pending.current = false; early.current = null
     setExecutionId(null); setSending(false); setCancelling(false)
-    if ('statusCode' in event.result) { setStatus('Request completed'); setError(null) }
-    else if (event.result.code === 'CANCELLED') { setStatus('Request cancelled'); setError(null) }
-    else { setExecutionField(event.result.field ?? null); setStatus(null); setError(`${event.result.code}: ${event.result.message}${event.result.field ? ` (${event.result.field})` : ''}`) }
+    settleCancellation(true)
   }, [settleCancellation])
   useEffect(() => {
     mounted.current = true
