@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { readdir, readFile, rm } from 'node:fs/promises'
-import { basename, join } from 'node:path'
+import { basename, join, normalize } from 'node:path'
 import asar from '@electron/asar'
 
 const legal = /^(licen[cs]e|copying|notice|copyright)/i
@@ -15,17 +15,21 @@ export async function afterPack(context) {
   // The real app.asar replaces Electron's stock sample application.
   await rm(join(resources, 'default_app.asar'), { force: true })
   const archive = join(resources, 'app.asar')
-  const files = asar.listPackage(archive).map(file => file.replace(/\\/g, '/').replace(/^\//, '')).filter(file => !asar.statFile(archive, file).files)
+  // ASAR lists absolute names; lookups need relative paths with host separators.
+  const files = asar.listPackage(archive)
+    .map(file => file.slice(1))
+    .filter(file => !asar.statFile(archive, file).files)
+    .map(file => file.replace(/\\/g, '/'))
   const native = `node_modules/better-sqlite3/prebuilds/${platform}-x64.node`
   assert.deepEqual(files.filter(file => file.endsWith('.node')), [native], 'Only the target SQLite binary may ship')
-  assert.equal(asar.statFile(archive, native).unpacked, true, 'SQLite must be unpacked for native loading')
+  assert.equal(asar.statFile(archive, normalize(native)).unpacked, true, 'SQLite must be unpacked for native loading')
   for (const file of files) {
     assert.ok(file === 'package.json' || file.startsWith('out/') ||
       (file.startsWith('node_modules/') && (basename(file) === 'package.json' || legal.test(basename(file)))) ||
       /^node_modules\/better-sqlite3\/lib\/.+\.js$/.test(file) || file === native,
     `Unexpected packaged runtime file: ${file}`)
   }
-  const main = asar.extractFile(archive, 'out/main/index.js').toString()
+  const main = asar.extractFile(archive, join('out', 'main', 'index.js')).toString()
   for (const bundled of ['zod', 'form-data-encoder', 'jsonc-parser']) {
     assert.ok(!main.includes(`require("${bundled}")`) && !main.includes(`require('${bundled}')`), `${bundled} must be bundled into main`)
   }
