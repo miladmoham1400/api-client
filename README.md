@@ -42,6 +42,12 @@ Use a folder menu → **Duplicate folder** to copy its complete saved subtree, i
 
 Open requests appear in tabs above the editor and response. Select a tab to return to that API, then Send; closing a tab keeps the saved request. Switching flushes valid edits and guards active requests. Tabs and response snapshots stay in the current workspace session. Body/Response corners now match. These source changes are not included in the 0.4.1 downloads above.
 
+## Body response tests (current source)
+
+In **Body → Response test**, enter literal **Expected response JSON** and click **Save expected JSON** for the selected Body variant. Each Send checks that captured expectation and shows **Test passed**, **Response changed**, or **Test unavailable**. Differences show field/array paths and expected/received values. Object-key order and whitespace are ignored; array order and types are significant. Expectations persist locally and duplicate with requests. Default exports omit them.
+
+Each JSON input is limited to 256 KiB, 20,000 syntax-tree nodes and depth 128. The first 100 differences use readable paths such as `data.scores_headers`. Each value starts collapsed and expands to complete, colored pretty JSON with readable Unicode text. Non-JSON, binary, transport failures and over-limit responses show unavailable. These changes are in current source.
+
 ## Development
 
 Use Node **22.18.0** and npm **11.6.2**, as pinned in the repository. Initial dependency downloads require internet or prepared caches.

@@ -41,7 +41,7 @@ test('JSON colors preserve editing, wire bytes and safe raw/pretty text across t
       await page.getByLabel('Theme', { exact: true }).selectOption(theme)
       await expect(page.locator('html')).toHaveClass(theme)
       await expect(editor).toHaveValue(edited)
-      const colors = await page.locator('.json-editor-backdrop').evaluate(element => ['key', 'string', 'number', 'boolean', 'null'].map(kind => {
+      const colors = await page.locator('.json-editor').filter({ has: editor }).locator('.json-editor-backdrop').evaluate(element => ['key', 'string', 'number', 'boolean', 'null'].map(kind => {
         const token = element.querySelector('.json-' + kind)
         if (!token) throw new Error('Missing token')
         return getComputedStyle(token).color
@@ -66,7 +66,7 @@ test('JSON colors preserve editing, wire bytes and safe raw/pretty text across t
     // Source lines stay numbered; horizontal/vertical scrolling and native resizing align both layers.
     await editor.fill(JSON.stringify({ text: 'word '.repeat(2000), ...Object.fromEntries(Array.from({ length: 80 }, (_, i) => [`line${i}`, i])) }, null, 2))
     await editor.evaluate(element => { element.style.height = '160px'; element.scrollTop = element.scrollHeight; element.scrollLeft = element.scrollWidth; element.dispatchEvent(new Event('scroll', { bubbles: true })) })
-    const metrics = await page.locator('.json-editor').evaluate(element => {
+    const metrics = await page.locator('.json-editor').filter({ has: editor }).evaluate(element => {
       const input = element.querySelector('textarea'), pre = element.querySelector('.json-editor-backdrop')
       if (!input || !pre) throw new Error('Missing editor layers')
       return { inputScroll: input.scrollTop, preScroll: pre.scrollTop, inputLeft: input.scrollLeft, preLeft: pre.scrollLeft, inputHeight: input.scrollHeight, preHeight: pre.scrollHeight }

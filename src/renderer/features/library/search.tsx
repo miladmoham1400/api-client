@@ -1,6 +1,7 @@
+import { GlassSelect as NativeSelect } from '../../components/glass-select'
 import { httpMethodPalette } from '../../theme/http-method'
 import { useEffect, useRef, useState } from 'react'
-import { Badge, Box, Button, Input, NativeSelect, Text } from '@chakra-ui/react'
+import { Badge, Box, Button, Input, Text } from '@chakra-ui/react'
 import type { SearchPage } from '../../../shared/library-search'
 import type { LibrarySnapshot } from '../../../shared/library-view'
 

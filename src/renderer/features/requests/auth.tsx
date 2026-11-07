@@ -1,5 +1,6 @@
+import { GlassSelect as NativeSelect } from '../../components/glass-select'
 import { TemplateInput } from '../../components/template-field'
-import { Box, NativeSelect, Text, VStack } from '@chakra-ui/react'
+import { Box, Text, VStack } from '@chakra-ui/react'
 import type { AuthDraft } from '../../../shared/auth-editor'
 import type { RequestController } from './controller'
 export function AuthEditor({ controller: c }: { controller: RequestController }) {

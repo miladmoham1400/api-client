@@ -1,9 +1,10 @@
+import { GlassSelect as NativeSelect } from '../../components/glass-select'
 import { Icon } from '../../components/icon'
 import { WorkspaceImportDialog } from './import-dialog'
 import { WorkspaceExportDialog } from './export-dialog'
 import type { GuardTransition } from '../navigation/transition'
 import { useRef, useState } from 'react'
-import { Box, Button, Dialog, Input, Menu, NativeSelect, Portal, Text } from '@chakra-ui/react'
+import { Box, Button, Dialog, Input, Menu, Portal, Text } from '@chakra-ui/react'
 import { nameSchema } from '../../../shared/primitives'
 import type { WorkspaceController } from './use-workspaces'
 

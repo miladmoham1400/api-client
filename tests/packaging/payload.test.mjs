@@ -48,6 +48,7 @@ test('audit rejects foreign native binaries and packed rather than unpacked SQLi
 })
 test('audit rejects external main JS dependencies and extra Chromium locales', async () => {
   await assert.rejects(afterPack(await fixture('linux', { 'out/main/index.js': 'require("zod")' })), /zod must be bundled/)
+  await assert.rejects(afterPack(await fixture('linux', { 'out/main/index.js': 'require("jsonc-parser")' })), /jsonc-parser must be bundled/)
   const context = await fixture('linux'); await writeFile(join(context.appOutDir, 'locales/fr.pak'), '')
   await assert.rejects(afterPack(context), /Unexpected Chromium locale payload/)
 })

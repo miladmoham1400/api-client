@@ -208,6 +208,20 @@ body { font-size: 13px; -webkit-font-smoothing: antialiased; }
 .app-shell [data-scope="tabs"][data-part="trigger"] { padding: 12px 0; font-size: 11px; font-weight: 500; color: var(--glass-muted); border-radius: 0; }
 .app-shell [data-scope="tabs"][data-part="trigger"][data-selected] { color: var(--glass-accent); --indicator-color: var(--glass-accent); }
 .app-shell [data-scope="tabs"][data-part="trigger"]::before { border-color: var(--glass-accent); }
+/* Give every editor tab a stable padded hit area before hover begins. */
+.app-shell .editor-tabs [data-part="list"] { gap: 4px; padding: 4px 0 6px; }
+.app-shell .editor-tabs button[data-part="trigger"] {
+  min-width: 0;
+  height: 34px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 18px;
+  --indicator-offset-y: -7px;
+  transition: background-color .14s ease, color .14s ease;
+}
+.app-shell .editor-tabs button[data-part="trigger"]:not(:disabled):hover { box-shadow: none; color: var(--glass-accent); background-color: var(--glass-accent-soft); }
+@media (forced-colors: active) { .app-shell .editor-tabs button[data-part="trigger"]:not(:disabled):hover { background: Highlight; color: HighlightText; } }
 .app-shell [data-scope="tabs"][data-part="content"] { padding-top: 18px; }
 .app-shell .json-editor { margin-top: 2px; border-radius: var(--workbench-radius); overflow: hidden; }
 .app-shell .json-editor .json-editor-input { min-height: 240px; font-size: 12px; background: transparent; border-color: var(--glass-edge); line-height: 1.8; }
@@ -343,3 +357,115 @@ kbd { font: inherit; font-size: 9px; padding: 3px 5px; border: 1px solid var(--g
 .app-shell .request-tab > button:not(:disabled):hover { box-shadow: none; }
 .request-tab > :focus-visible { outline-offset: -3px; }
 @media (forced-colors: active) { .request-tab { border-color: ButtonText; } .request-tab[data-active="true"] { border-color: Highlight; } }
+
+/* Style the browser's top-layer picker alongside Chakra's existing select fields. */
+@supports (appearance: base-select) {
+  .chakra-native-select__root { min-width: 0; }
+  .glass-select-button { display: flex; align-items: center; width: 100%; height: 100%; min-width: 0; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: start; }
+  .glass-select-value { display: block; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .app-shell button.glass-select-button:not(:disabled):hover { box-shadow: none; }
+
+  select.chakra-native-select__field, select.chakra-native-select__field::picker(select) { appearance: base-select; }
+  select.chakra-native-select__field {
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    position: relative;
+    display: block;
+    height: 36px;
+    padding-block: 0;
+    padding-inline: 12px 34px;
+    line-height: 34px;
+    text-align: start;
+    color: var(--glass-text);
+    cursor: pointer;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    border-radius: 10px;
+    background-image: linear-gradient(135deg, var(--glass-highlight), transparent 65%);
+  }
+  select.chakra-native-select__field:not(:disabled):hover { border-color: color-mix(in srgb, var(--glass-accent) 40%, var(--glass-edge)); }
+  select.chakra-native-select__field:open { border-color: var(--glass-accent); box-shadow: 0 0 0 3px var(--glass-accent-soft); }
+  select.chakra-native-select__field:is([aria-invalid="true"], [data-invalid]) { border-color: var(--chakra-colors-red-fg); }
+  select.chakra-native-select__field:disabled { cursor: not-allowed; opacity: .45; }
+  select.chakra-native-select__field::picker-icon {
+    content: '';
+    position: absolute;
+    inset-inline-end: 14px;
+    top: 50%;
+    width: 7px;
+    height: 7px;
+    margin: -5px 0 0;
+    border-right: 1.5px solid currentColor;
+    border-bottom: 1.5px solid currentColor;
+    color: var(--glass-muted);
+    rotate: 45deg;
+    transition: rotate .16s;
+  }
+  select.chakra-native-select__field:open::picker-icon { rotate: 225deg; color: var(--glass-accent); }
+  .chakra-native-select__indicator { display: none; }
+  .request-address > .chakra-native-select__root:first-child { width: 92px; }
+  .request-address select.chakra-native-select__field { color: var(--chakra-colors-color-palette-fg); padding-inline: 10px 28px; }
+  select.chakra-native-select__field::picker(select) {
+    margin-block: 7px;
+    padding: 6px;
+    min-width: max(150px, anchor-size(width));
+    max-width: min(460px, calc(100vw - 24px));
+    max-height: min(320px, 55vh);
+    overflow: auto;
+    border: 1px solid var(--glass-edge);
+    border-radius: 13px;
+    color: var(--glass-text);
+    background: linear-gradient(145deg, var(--glass-highlight), transparent 55%), color-mix(in srgb, var(--chakra-colors-bg-panel) 95%, transparent);
+    backdrop-filter: blur(22px);
+    box-shadow: 0 16px 44px #0004, inset 0 1px 0 var(--glass-highlight);
+    scrollbar-width: thin;
+  }
+  select.chakra-native-select__field option {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-height: 34px;
+    margin: 2px 0;
+    padding: 8px 10px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--glass-text);
+    font: 450 12px/1.5 var(--chakra-fonts-body);
+    white-space: normal;
+    overflow-wrap: anywhere;
+    cursor: pointer;
+  }
+  select.chakra-native-select__field option:checked { background: var(--glass-accent-soft); border-color: color-mix(in srgb, var(--glass-accent) 20%, transparent); font-weight: 600; }
+  select.chakra-native-select__field option:is(:hover, :focus-visible) { background: var(--glass-hover); outline: 1px solid var(--glass-edge); outline-offset: -1px; }
+  select.chakra-native-select__field option::checkmark { order: 1; margin-inline-start: auto; color: var(--glass-accent); font-size: 13px; }
+  select.chakra-native-select__field option:disabled { opacity: .45; cursor: not-allowed; }
+  @media (prefers-reduced-motion: reduce) { select.chakra-native-select__field::picker-icon { transition: none; } }
+  @media (prefers-reduced-transparency: reduce) { select.chakra-native-select__field::picker(select) { background: var(--chakra-colors-bg-panel); backdrop-filter: none; } }
+  @media (forced-colors: active) {
+    select.chakra-native-select__field, select.chakra-native-select__field::picker(select) { forced-color-adjust: none; background: Canvas; color: CanvasText; border-color: ButtonText; box-shadow: none; backdrop-filter: none; }
+    .request-address select.chakra-native-select__field { color: CanvasText; }
+    select.chakra-native-select__field option { forced-color-adjust: none; background: Canvas; color: CanvasText !important; }
+    select.chakra-native-select__field option:checked { background: Highlight; color: HighlightText !important; border-color: Highlight; }
+    select.chakra-native-select__field option:is(:hover, :focus-visible) { outline-color: Highlight; }
+    select.chakra-native-select__field option::checkmark, select.chakra-native-select__field::picker-icon { color: currentColor; }
+  }
+}
+
+/* Context menus use the same material and row states as the selection picker. */
+[data-scope="menu"][data-part="content"] {
+  padding: 6px;
+  min-width: 180px;
+  border-radius: 13px;
+  background: linear-gradient(145deg, var(--glass-highlight), transparent 55%), color-mix(in srgb, var(--chakra-colors-bg-panel) 95%, transparent);
+  backdrop-filter: blur(22px);
+  box-shadow: 0 16px 44px #0004, inset 0 1px 0 var(--glass-highlight);
+}
+[data-scope="menu"][data-part="item"] { min-height: 34px; margin-block: 2px; border-radius: 8px; }
+[data-scope="menu"][data-part="item"][data-highlighted] { box-shadow: inset 0 0 0 1px var(--glass-edge); }
+@media (prefers-reduced-transparency: reduce) { [data-scope="menu"][data-part="content"] { background: var(--chakra-colors-bg-panel); backdrop-filter: none; } }
+@media (forced-colors: active) {
+  [data-scope="menu"][data-part="content"] { background: Canvas; color: CanvasText; border-color: ButtonText; box-shadow: none; backdrop-filter: none; }
+  [data-scope="menu"][data-part="item"][data-highlighted] { background: Highlight; color: HighlightText; }
+}

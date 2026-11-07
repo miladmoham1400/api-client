@@ -3,15 +3,15 @@ import { authDraftSchema, authEditorSchema } from './auth-editor'
 import { z } from 'zod'
 import { requestSummarySchema } from './entities'
 import { httpMethodSchema, limitedText, nameSchema, uuidSchema, timeoutSchema } from './primitives'
-import { textRowsSchema, textRowSchema, runtimeBodySchema, runtimeVariantFields, validateVariants } from './request-config'
+import { textRowsSchema, textRowSchema, runtimeBodySchema, runtimeVariantFields, expectedResponseSchema, validateVariants } from './request-config'
 import { resultSchema, type Result } from './results'
 
 export const editableBodySchema = runtimeBodySchema
 export type EditableBody = z.infer<typeof editableBodySchema>
 const fields = { queryRows: textRowsSchema, headerRows: textRowsSchema, timeoutMs: timeoutSchema, followRedirects: z.boolean() }
-export const requestDraftSchema = z.strictObject({ name: nameSchema, method: httpMethodSchema, urlTemplate: limitedText(), ...runtimeVariantFields, queryRows: fields.queryRows.optional(), headerRows: fields.headerRows.optional(), timeoutMs: fields.timeoutMs.optional(), followRedirects: fields.followRedirects.optional(), body: editableBodySchema.optional(), auth: authDraftSchema.optional() }).superRefine(validateVariants).refine(data => (data.bodyVariants?.find(v => v.id === data.selectedBodyVariantId)?.body ?? data.body)?.kind === 'none' || (!data.body && !data.bodyVariants?.length) || !['GET', 'HEAD'].includes(data.method), { path: ['body'], message: 'GET and HEAD cannot have a body' })
+export const requestDraftSchema = z.strictObject({ name: nameSchema, method: httpMethodSchema, urlTemplate: limitedText(), ...runtimeVariantFields, expectedResponse: expectedResponseSchema, queryRows: fields.queryRows.optional(), headerRows: fields.headerRows.optional(), timeoutMs: fields.timeoutMs.optional(), followRedirects: fields.followRedirects.optional(), body: editableBodySchema.optional(), auth: authDraftSchema.optional() }).superRefine(validateVariants).refine(data => (data.bodyVariants?.find(v => v.id === data.selectedBodyVariantId)?.body ?? data.body)?.kind === 'none' || (!data.body && !data.bodyVariants?.length) || !['GET', 'HEAD'].includes(data.method), { path: ['body'], message: 'GET and HEAD cannot have a body' })
 export const requestCreateSchema = requestDraftSchema.safeExtend({ collectionId: uuidSchema.nullable(), folderId: uuidSchema.nullable().default(null) }).refine(data => data.folderId === null || data.collectionId !== null, { path: ['folderId'], message: 'Folder requires a collection' })
-export const requestEditorSchema = requestSummarySchema.safeExtend({ method: httpMethodSchema, urlTemplate: limitedText(), ...fields, ...runtimeVariantFields, body: editableBodySchema.nullable(), auth: authEditorSchema, credentialStorage: z.enum(['secure', 'session']) })
+export const requestEditorSchema = requestSummarySchema.safeExtend({ method: httpMethodSchema, urlTemplate: limitedText(), ...fields, ...runtimeVariantFields, expectedResponse: expectedResponseSchema, body: editableBodySchema.nullable(), auth: authEditorSchema, credentialStorage: z.enum(['secure', 'session']) })
 export const requestSnapshotSchema = z.strictObject({ workspaceId: uuidSchema, requests: z.array(requestSummarySchema), editor: requestEditorSchema.nullable() }).superRefine((data, ctx) => {
   const ids = new Set(data.requests.map(item => item.id))
   if (ids.size !== data.requests.length || data.requests.some(item => item.workspaceId !== data.workspaceId) || (data.editor && (data.editor.workspaceId !== data.workspaceId || !ids.has(data.editor.id)))) ctx.addIssue({ code: 'custom', message: 'Invalid request snapshot' })

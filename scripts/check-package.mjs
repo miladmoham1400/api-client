@@ -26,7 +26,7 @@ export async function afterPack(context) {
     `Unexpected packaged runtime file: ${file}`)
   }
   const main = asar.extractFile(archive, 'out/main/index.js').toString()
-  for (const bundled of ['zod', 'form-data-encoder']) {
+  for (const bundled of ['zod', 'form-data-encoder', 'jsonc-parser']) {
     assert.ok(!main.includes(`require("${bundled}")`) && !main.includes(`require('${bundled}')`), `${bundled} must be bundled into main`)
   }
   const locales = await readdir(join(context.appOutDir, 'locales'))

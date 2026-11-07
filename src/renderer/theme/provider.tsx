@@ -1,5 +1,6 @@
+import { GlassSelect as NativeSelect } from '../components/glass-select'
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
-import { Box, ChakraProvider, NativeSelect, Text } from '@chakra-ui/react'
+import { Box, ChakraProvider, Text } from '@chakra-ui/react'
 import { glassSystem } from './system'
 import { themeSchema, type ThemePreference } from '../../shared/theme'
 const ThemeContext = createContext<{ preference: ThemePreference; busy: boolean; error: string | null; change: (value: ThemePreference) => Promise<void> } | null>(null)
@@ -8,6 +9,14 @@ const ThemeContext = createContext<{ preference: ThemePreference; busy: boolean;
 export function LocalProvider({ children }: { children: ReactNode }) {
   const [preference, setPreference] = useState<ThemePreference>('dark'), [busy, setBusy] = useState(true), [error, setError] = useState<string | null>(null)
   const running = useRef(false)
+  useEffect(() => {
+    // Escape dismisses the top-layer picker before the surrounding Chakra dialog.
+    const closePicker = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && document.querySelector('select.chakra-native-select__field:open')) event.stopPropagation()
+    }
+    window.addEventListener('keydown', closePicker, true)
+    return () => window.removeEventListener('keydown', closePicker, true)
+  }, [])
   useEffect(() => {
     let active = true
     void window.offlineApi.app.getTheme().then(result => {

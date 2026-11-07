@@ -1,15 +1,20 @@
+import { selectedResponseExpectation } from '../../../shared/response-test'
 import { useMemo, useState } from 'react'
 import { Badge, Box, Button, Flex, Tabs, Text } from '@chakra-ui/react'
 import { Icon } from '../../components/icon'
 import { JSONTree } from 'react-json-tree'
 import type { RequestController } from '../requests/controller'
 import { prettyJson } from './format'
+import { ResponseTestView } from './test-result'
 import { HtmlPreview } from './html-preview'
 
 export function ResponseViewer({ controller: c }: { controller: RequestController }) {
   const result = c.executionResult
+  const hasExpectation = !!(c.draft && selectedResponseExpectation(c.draft).expected?.trim())
   return <Box className="response-panel glass-panel" as="section" aria-label="Response" tabIndex={0} borderWidth="1px" p="3" h="100%" minH="0" minW="0" overflow="auto">
+    {c.draft && !hasExpectation && <Text aria-label="Response test guidance" fontSize="xs" color="fg.muted" mb="3">Save expected response JSON in Body → Response test to validate this API response automatically on each send.</Text>}
     {!result && <Box className="response-empty"><span className="empty-icon"><Icon name="response" size={28} /></span><Text className="empty-title">{c.sending ? "Sending request" : "Your response, right here"}</Text><Text color="fg.muted" fontSize="sm">{c.sending ? 'Waiting for response…' : c.executionError ? 'Request could not be started. No HTTP response.' : 'Send a request to view its response.'}</Text><span className="shortcut-hint"><kbd>Ctrl</kbd> + <kbd>Enter</kbd> to send</span></Box>}
+    {hasExpectation && c.responseTest && <ResponseTestView key={`test-${c.completedExecutionId}`} test={c.responseTest} />}
     {result && ('statusCode' in result ? <HttpView key={c.completedExecutionId} response={result} /> : <Text>{result.code === 'CANCELLED' ? 'Cancelled. No HTTP response.' : 'Transport failed. No HTTP response.'}</Text>)}
     {c.sentSnapshot && <Box as="details" mt="3" fontSize="xs" color="fg.muted" overflowWrap="anywhere">
       <summary>{c.draftChangedSinceSend ? 'Request details · edited since send' : 'Request details'}</summary>

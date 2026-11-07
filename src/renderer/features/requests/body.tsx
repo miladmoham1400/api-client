@@ -1,7 +1,9 @@
+import { GlassSelect as NativeSelect } from '../../components/glass-select'
+import { ResponseTestEditor } from './response-test-editor'
 import { TemplateTextarea } from '../../components/template-field'
 import { formatJsonBody } from './json-format'
 import { MultipartEditor } from './multipart'
-import { Box, Button, Flex, Input, NativeSelect, Text, VStack } from '@chakra-ui/react'
+import { Box, Button, Flex, Input, Text, VStack } from '@chakra-ui/react'
 import { RowsEditor } from './fields'
 import { utf8ByteLength } from '../../../shared/primitives'
 import type { RequestController } from './controller'
@@ -37,5 +39,6 @@ export function BodyEditor({ controller: c }: { controller: RequestController })
       {body.kind === 'raw' && <Box><label htmlFor="body-media-type">Raw media type</label><Input id="body-media-type" value={body.mediaType} disabled={c.busy} aria-invalid={!!c.validation['body.mediaType']} aria-describedby={c.validation['body.mediaType'] ? 'body.mediaType-error' : undefined} onChange={event => { if (c.draft) c.setDraft({ ...c.draft, body: { ...body, mediaType: event.target.value } }) }} />{error('body.mediaType')}</Box>}
     </>}
     {error('body')}
+    <ResponseTestEditor controller={c} />
   </VStack>
 }

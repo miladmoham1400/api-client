@@ -1,5 +1,6 @@
+import { GlassSelect as NativeSelect } from '../../components/glass-select'
 import { useEffect, useRef, useState } from 'react'
-import { Button, Dialog, NativeSelect, Portal, Text } from '@chakra-ui/react'
+import { Button, Dialog, Portal, Text } from '@chakra-ui/react'
 import { Icon } from '../../components/icon'
 import type { RequestController } from '../requests/controller'
 

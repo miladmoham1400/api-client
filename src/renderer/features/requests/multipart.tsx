@@ -1,5 +1,6 @@
+import { GlassSelect as NativeSelect } from '../../components/glass-select'
 import { TemplateInput } from '../../components/template-field'
-import { Box, Button, Flex, NativeSelect, Text, VStack } from '@chakra-ui/react'
+import { Box, Button, Flex, Text, VStack } from '@chakra-ui/react'
 import { LIMITS } from '../../../shared/primitives'
 import type { RequestController } from './controller'
 

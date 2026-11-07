@@ -1,5 +1,6 @@
+import { GlassSelect as NativeSelect } from '../../components/glass-select'
 import { useEffect, useRef, useState } from 'react'
-import { Box, Button, Dialog, Flex, Input, NativeSelect, Portal, Text, VStack } from '@chakra-ui/react'
+import { Box, Button, Dialog, Flex, Input, Portal, Text, VStack } from '@chakra-ui/react'
 import type { EnvironmentSnapshot, VariableSnapshot } from '../../../shared/variable-management'
 import { nameSchema, variableKeySchema, limitedText } from '../../../shared/primitives'
 import type { Result } from '../../../shared/results'
