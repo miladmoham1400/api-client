@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ComponentProps, type KeyboardEvent, type ReactNode } from 'react'
 import { Input, Textarea } from '@chakra-ui/react'
 import { jsonTokens, type JsonToken } from './json-tokens'
+import { editJsonTextarea } from './json-editing'
+import type { EditorState } from '@codemirror/state'
 
 const Names = createContext<readonly string[]>([])
 export function VariableNamesProvider({ workspace, children }: { workspace: string | null; children: ReactNode }) {
@@ -68,8 +70,9 @@ export function TemplateInput(props: ComponentProps<typeof Input>) {
     {c.menu}
   </div>
 }
-export function TemplateTextarea({ syntax = 'text', ...props }: ComponentProps<typeof Textarea> & { value: string; syntax?: 'text' | 'json' }) {
+export function TemplateTextarea({ syntax = 'text', jsonEditing = false, ...props }: ComponentProps<typeof Textarea> & { value: string; syntax?: 'text' | 'json'; jsonEditing?: boolean }) {
   const c = useCompletion(props.value), backdrop = useRef<HTMLPreElement>(null), gutter = useRef<HTMLPreElement>(null)
+  const editingState = useRef<EditorState | null>(null)
   const tokens = useMemo(() => syntax === 'json' ? jsonTokens(props.value) : [{ text: props.value, kind: 'plain' as const }], [props.value, syntax])
   const highlighted = tokens.some(t => t.kind !== 'plain') || (props.value.length <= 65536 && props.value.includes('{{'))
   const syncScroll = (input: HTMLTextAreaElement) => {
@@ -86,6 +89,10 @@ export function TemplateTextarea({ syntax = 'text', ...props }: ComponentProps<t
     <pre ref={backdrop} className="json-editor-backdrop" aria-hidden="true">{highlighted && <><ColoredTokens tokens={tokens} />{'\n'}</>}</pre>
     <Textarea {...props} wrap={syntax === 'json' ? 'off' : props.wrap} ref={node => { c.element.current = node }} className={`json-editor-input${highlighted ? ' json-editor-highlighted' : ''}`} spellCheck={false} autoCapitalize="off" autoCorrect="off" onFocus={e => { c.focus(); props.onFocus?.(e) }} onBlur={e => { c.blur(); props.onBlur?.(e) }} onSelect={e => { c.updateCursor(); props.onSelect?.(e) }} onKeyDown={e => {
       c.keyDown(e); if (!e.defaultPrevented) props.onKeyDown?.(e)
+      if (!e.defaultPrevented && jsonEditing) {
+        editingState.current = editJsonTextarea(e, editingState.current)
+        if (e.defaultPrevented) c.updateCursor()
+      }
       if (!e.defaultPrevented && syntax === 'json' && e.key === 'Tab' && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey && !e.nativeEvent.isComposing) { e.preventDefault(); document.execCommand('insertText', false, '  ') }
     }} onScroll={e => { syncScroll(e.currentTarget); props.onScroll?.(e) }} />
     {c.menu}

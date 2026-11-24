@@ -4,16 +4,17 @@ import { Icon } from '../../components/icon'
 import { httpMethodPalette } from '../../theme/http-method'
 import { LibrarySearch } from '../library/search'
 import type { GuardTransition } from '../navigation/transition'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from 'react'
 import { Badge, Box, Button, Dialog, Flex, Heading, Input, Menu, Portal, Text } from '@chakra-ui/react'
 import type { LibrarySnapshot } from '../../../shared/library-view'
-import type { RequestDestination, WorkspaceTreeState } from '../../../shared/api-library'
+import { LIBRARY_LIMITS, type RequestDestination, type WorkspaceTreeState } from '../../../shared/api-library'
 import type { RequestController } from '../requests/controller'
 import { nameSchema } from '../../../shared/primitives'
 import { ancestors, descendants, libraryNodes, pathLabel, visibleNodes, type Node } from '../library/model'
 
 type Editing = {kind:'create-collection'} | {kind:'create-folder';destination:RequestDestination} | {kind:'rename'|'move'|'delete';node:Node}
 const TREE_PAGE_SIZE=50
+const LIBRARY_DRAG_TYPE='application/x-offline-api-client-library-item'
 const root:RequestDestination={collectionId:null,folderId:null}
 export function CollectionSidebar({workspaceId,requestController,guard}:{guard:GuardTransition;workspaceId:string|null;requestController:RequestController}) {
   const [exporting,setExporting] = useState<{id:string;name:string}|null>(null)
@@ -27,6 +28,8 @@ export function CollectionSidebar({workspaceId,requestController,guard}:{guard:G
   const create=useRef<HTMLButtonElement>(null), input=useRef<HTMLInputElement>(null), cancel=useRef<HTMLButtonElement>(null), select=useRef<HTMLSelectElement>(null), returnId=useRef<string|null>(null)
   const [searching,setSearching]=useState(false),[treePage,setTreePage]=useState(0)
   const [focusId,setFocusId]=useState<string|null>(null)
+  const dragged=useRef<{id:string;excluded:Set<string>;maxParentLevel:number}|null>(null)
+  const [dropTargetId,setDropTargetId]=useState<string|null>(null)
   const nodes=useMemo(() => snapshot ? libraryNodes(snapshot) : [],[snapshot])
   const visible=useMemo(() => expansion ? visibleNodes(nodes,expansion) : [],[nodes,expansion])
   const pageStart=Math.min(treePage,Math.max(0,Math.floor((visible.length-1)/TREE_PAGE_SIZE)*TREE_PAGE_SIZE))
@@ -138,6 +141,47 @@ export function CollectionSidebar({workspaceId,requestController,guard}:{guard:G
   const direct=edited ? nodes.filter(n => n.parent===edited.id) : []
   const title=editing?.kind==='create-collection' ? 'Create collection' : editing?.kind==='create-folder' ? 'Create folder' : editing ? `${editing.kind[0]!.toUpperCase()+editing.kind.slice(1)} ${edited?.kind}` : ''
   const locked=busy || requestController.busy
+  const canDrag=!locked && !editing && !exporting
+  function finishDrag() {
+    dragged.current=null
+    setDropTargetId(null)
+  }
+  function startDrag(event:DragEvent<HTMLButtonElement>,node:Node) {
+    const childFolders=node.kind==='folder' ? descendants(nodes,node.id).filter(child => child.kind==='folder') : []
+    const subtreeDepth=Math.max(0,...childFolders.map(child => child.level-node.level))
+    dragged.current={
+      id:node.id,
+      excluded:new Set([node.id,...childFolders.map(child => child.id)]),
+      maxParentLevel:LIBRARY_LIMITS.folderDepth-subtreeDepth
+    }
+    event.dataTransfer.effectAllowed='move'
+    event.dataTransfer.setData(LIBRARY_DRAG_TYPE,'move')
+  }
+  function sourceForDrop(event:DragEvent<HTMLDivElement>,target:Node) {
+    const drag=dragged.current
+    if(!canDrag || !drag || !event.dataTransfer.types.includes(LIBRARY_DRAG_TYPE) || drag.excluded.has(target.id)) return
+    const source=nodes.find(node => node.id===drag.id)
+    if(!source || source.parent===target.id) return
+    if(source.kind==='request' && target.kind==='folder') return source
+    if(source.kind==='folder' && target.level<=drag.maxParentLevel) return source
+  }
+  function dragOverContainer(event:DragEvent<HTMLDivElement>,target:Node) {
+    if(!sourceForDrop(event,target)) return
+    event.preventDefault()
+    event.dataTransfer.dropEffect='move'
+    setDropTargetId(target.id)
+  }
+  function dropOnContainer(event:DragEvent<HTMLDivElement>,target:Node) {
+    const source=sourceForDrop(event,target)
+    finishDrag()
+    const {collectionId,folderId}=target.destination
+    if(!source || !workspaceId || !collectionId) return
+    event.preventDefault()
+    const api=window.offlineApi
+    void guard(() => mutate(() => source.kind==='folder'
+      ? api.folders.move(workspaceId,source.id,collectionId,folderId)
+      : api.requests.move(workspaceId,source.id,collectionId,folderId)),true)
+  }
   const expanded=new Set([...(expansion?.expandedCollectionIds??[]),...(expansion?.expandedFolderIds??[])])
   return <>
     <Heading className="sidebar-label library-label" size="sm">Collections</Heading>
@@ -152,6 +196,13 @@ export function CollectionSidebar({workspaceId,requestController,guard}:{guard:G
       <Box flexShrink={0} role="tree" aria-label="API library" aria-busy={busy}>
         {rendered.map((node,localIndex) => { const index=pageStart+localIndex; return <Box key={node.id} role={node.kind==='request' ? 'group' : undefined} aria-label={node.kind==='request' ? `Request: ${node.name}` : undefined}>
           <Flex data-library-id={node.id} ref={element => { if(element) rowsRef.current.set(node.id,element); else rowsRef.current.delete(node.id) }} role="treeitem" aria-label={`${node.kind==='request' ? node.method+' request' : node.kind}: ${node.label}`} aria-level={node.level} aria-expanded={node.kind==='request' ? undefined : expanded.has(node.id)} aria-selected={node.kind==='request' ? node.id===requestController.saved?.id : undefined} tabIndex={(focusId && rendered.some(n => n.id===focusId) ? focusId===node.id : index===pageStart) ? 0 : -1} onFocus={event => { if(event.target===event.currentTarget) setFocusId(node.id) }} pl={`${Math.min(node.level-1,4)*8}px`} gap="1" align="center" borderRadius="sm" bg={node.id===requestController.saved?.id ? 'bg.emphasized' : undefined}
+            outline={dropTargetId===node.id ? '2px solid' : undefined} outlineColor={dropTargetId===node.id ? 'blue.fg' : undefined} outlineOffset="-2px"
+            onDragOver={node.kind!=='request' ? event => dragOverContainer(event,node) : undefined}
+            onDragLeave={node.kind!=='request' ? event => {
+              if(event.relatedTarget instanceof globalThis.Node && event.currentTarget.contains(event.relatedTarget)) return
+              setDropTargetId(id => id===node.id ? null : id)
+            } : undefined}
+            onDrop={node.kind!=='request' ? event => dropOnContainer(event,node) : undefined}
             onKeyDown={event => {
               if(event.target!==event.currentTarget) return
               const key=event.key
@@ -164,7 +215,11 @@ export function CollectionSidebar({workspaceId,requestController,guard}:{guard:G
               if(key==='ArrowLeft') { if(node.kind!=='request' && expanded.has(node.id)) toggle(node); else if(node.parent) focus(node.parent) }
               if(key==='Enter' && !locked) void choose(node)
             }}>
-            <Button data-tooltip={node.label} aria-label={node.label} tabIndex={-1} variant="ghost" size="sm" minW="0" flex="1" justifyContent="start" whiteSpace="normal" h="auto" py="2" fontSize="xs" disabled={locked} onClick={() => { focus(node.id); void choose(node) }}>
+            <Button data-tooltip={node.label} aria-label={node.label} tabIndex={-1} variant="ghost" size="sm" minW="0" flex="1" justifyContent="start" whiteSpace="normal" h="auto" py="2" fontSize="xs" disabled={locked}
+              draggable={node.kind!=='collection' && canDrag} cursor={node.kind!=='collection' && canDrag ? 'grab' : undefined}
+              onDragStart={node.kind!=='collection' && canDrag ? event => startDrag(event,node) : undefined}
+              onDragEnd={node.kind!=='collection' ? finishDrag : undefined}
+              onClick={() => { focus(node.id); void choose(node) }}>
               {node.kind==='request' ? <Badge className="method-badge" data-method={node.method} colorPalette={httpMethodPalette(node.method)} fontSize="xs">{node.method}</Badge> : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="M3 7V5a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v3" />{expanded.has(node.id) ? <path d="M3 8h18l-3 12H3L1 10a2 2 0 0 1 2-2Z" /> : <path d="M3 8h18v12H3Z" />}</svg>}
               <Text overflowWrap="anywhere" textAlign="left">{node.label}</Text>
             </Button>

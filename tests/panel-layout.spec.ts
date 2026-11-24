@@ -8,10 +8,14 @@ import { startFixture } from './fixtures/http'
 
 test('layout toggle and pointer/keyboard resizing preserve drafts, inactive body modes and Pretty response', async () => {
   let sends = 0
+  const payloads: string[] = []
   const fixture = await startFixture(false, (request, response) => {
     sends++
-    request.resume()
+    let payload = ''
+    request.setEncoding('utf8')
+    request.on('data', (chunk: string) => { payload += chunk })
     request.on('end', () => {
+      payloads.push(payload)
       response.writeHead(200, { 'Content-Type': 'application/json' })
       if (request.url === '/hold') { response.write('waiting'); return }
       response.end('{"message":"سلام","active":true}')
@@ -44,6 +48,8 @@ test('layout toggle and pointer/keyboard resizing preserve drafts, inactive body
     const pretty = await page.getByLabel('Response body JSON', { exact: true }).textContent()
     const toggle = page.getByRole('button', { name: 'Side-by-side layout', exact: true })
     const separator = page.getByRole('separator', { name: 'Resize request and response panels', exact: true })
+    const sidebarSeparator = page.getByRole('separator', { name: 'Resize workspace and request explorer', exact: true })
+    const sidebar = page.getByRole('complementary', { name: 'Collections and requests', exact: true })
     const editor = page.getByRole('region', { name: 'Request editor', exact: true })
     const bounds = async () => ({ request: (await editor.boundingBox())!, response: (await response.boundingBox())! })
     await expect(toggle).toHaveAttribute('aria-pressed', 'true')
@@ -97,6 +103,21 @@ test('layout toggle and pointer/keyboard resizing preserve drafts, inactive body
     const workspace = await page.getByLabel('Workspace', { exact: true }).inputValue()
     await expect.poll(async () => { const result = await page.evaluate(id => window.offlineApi.requests.list(id), workspace); return result.ok ? result.data.requests.length : 0 }).toBe(1)
     await page.setViewportSize({ width: 1000, height: 700 })
+    const initialSidebar = (await sidebar.boundingBox())!.width
+    grip = (await sidebarSeparator.boundingBox())!
+    await page.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2)
+    await page.mouse.down()
+    await page.mouse.move(grip.x + grip.width / 2 + 90, grip.y + grip.height / 2, { steps: 5 })
+    await page.mouse.up()
+    await expect.poll(async () => (await sidebar.boundingBox())!.width).toBeGreaterThan(initialSidebar + 80)
+    await sidebarSeparator.press('Home')
+    await expect(sidebarSeparator).toHaveAttribute('aria-valuenow', '210')
+    await sidebarSeparator.press('ArrowRight')
+    await expect(sidebarSeparator).toHaveAttribute('aria-valuenow', '218')
+    await sidebarSeparator.press('End')
+    await expect.poll(async () => (await sidebar.boundingBox())!.width).toBe(440)
+    await expect(page.getByLabel('Raw body text', { exact: true })).toHaveValue('Inactive raw draft')
+    await expect(response.getByRole('button', { name: 'Pretty', exact: true })).toHaveAttribute('aria-pressed', 'true')
     for (let i = 0; i < 2; i++) {
       await toggle.click()
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
@@ -105,14 +126,46 @@ test('layout toggle and pointer/keyboard resizing preserve drafts, inactive body
       expect(panes.request.height).toBeGreaterThan(0); expect(panes.response.height).toBeGreaterThan(0)
     }
     expect(sends).toBe(1)
-    await page.getByLabel('Request URL', { exact: true }).fill(fixture.url + '/hold')
-    await page.getByRole('button', { name: 'Send', exact: true }).click()
+    const url = page.getByLabel('Request URL', { exact: true })
+    const send = editor.getByRole('button', { name: 'Send', exact: true })
+    const cancel = response.getByRole('button', { name: 'Cancel', exact: true })
+    await url.fill(fixture.url + '/hold')
+    await editor.getByRole('button', { name: '+ Body variant', exact: true }).click()
+    await page.getByLabel('Raw body text', { exact: true }).fill('Alternate body')
+    await page.getByLabel('Body variant', { exact: true }).selectOption({ label: 'Body 1' })
+    await editor.locator('summary').filter({ hasText: /^Response test/ }).click()
+    const address = editor.locator('.request-address')
+    const leftInset = async () => (await address.boundingBox())!.x - (await editor.boundingBox())!.x
+    await editor.evaluate(element => { element.scrollTop = 0 })
+    await expect.poll(leftInset).toBeGreaterThan(10)
+    await editor.evaluate(element => { element.scrollTop = element.scrollHeight })
+    await expect.poll(() => editor.evaluate(element => element.scrollTop)).toBeGreaterThan(100)
+    await expect.poll(leftInset).toBeCloseTo(1, 0)
+    const editorBox = (await editor.boundingBox())!
+    const addressBox = (await address.boundingBox())!
+    expect(addressBox.y - editorBox.y).toBeCloseTo(1, 0)
+    expect(addressBox.x - editorBox.x).toBeCloseTo(1, 0)
+    const scrollportRight = await editor.evaluate(element => element.getBoundingClientRect().left + element.clientLeft + element.clientWidth)
+    expect(addressBox.x + addressBox.width).toBeCloseTo(scrollportRight, 0)
+    const beforeSend = (await send.boundingBox())!
+    expect((await url.boundingBox())!.y).toBe(beforeSend.y)
+    await send.click()
     await expect.poll(() => sends).toBe(2)
+    await expect(send).toHaveAttribute('aria-busy', 'true')
+    await expect(cancel).toBeEnabled()
+    await expect(editor.getByRole('button', { name: 'Cancel', exact: true })).toHaveCount(0)
+    const whileSending = (await send.boundingBox())!
+    expect(whileSending).toEqual(beforeSend)
+    await expect.poll(() => payloads[1]).toBe('Inactive raw draft')
     await toggle.click(); await toggle.click()
-    await expect(editor.getByRole('button', { name: 'Cancel', exact: true })).toBeEnabled()
+    await expect(cancel).toBeEnabled()
     await expect(page.getByLabel('Raw body text', { exact: true })).toHaveValue('Inactive raw draft')
-    await editor.getByRole('button', { name: 'Cancel', exact: true }).click()
+    await cancel.click()
     await expect(response).toContainText('Cancelled. No HTTP response.')
+    await expect(send).toBeEnabled()
+    await expect(cancel).toHaveCount(0)
+    await editor.evaluate(element => { element.scrollTop = 0 })
+    await expect.poll(leftInset).toBeGreaterThan(10)
     expect(sends).toBe(2)
   } finally { await shutdown(app); await fixture.close(); rmSync(directory, { recursive: true, force: true }) }
 })

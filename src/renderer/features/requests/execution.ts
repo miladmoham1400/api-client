@@ -3,6 +3,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { RequestDraft } from '../../../shared/requests'
 import type { ExecutionCompleted } from '../../../shared/results'
 
+export type ResponseMode = 'raw' | 'pretty' | 'html'
+
 /** Own one subscription and one send attempt; response presentation belongs to the response feature. */
 export function useExecution(workspace: string | null, draft: RequestDraft | null, requestId: string | null) {
   const [ready, setReady] = useState(false), [sending, setSending] = useState(false), [executionId, setExecutionId] = useState<string | null>(null)
@@ -19,6 +21,8 @@ export function useExecution(workspace: string | null, draft: RequestDraft | nul
   const latestPresentation = useRef(presentation); latestPresentation.current = presentation
   const presentations = useRef(new Map<string, typeof presentation>())
   const presentationKey = useRef<string | null>(null)
+  const responseModes = useRef(new Map<string | null, ResponseMode>())
+  const [responseMode, setResponseMode] = useState<ResponseMode>('pretty')
   const active = useRef<string | null>(null), pending = useRef(false), mounted = useRef(false), generation = useRef(0)
   const cancellationRequested = useRef(false)
   const cancellationRunning = useRef(false)
@@ -97,10 +101,12 @@ export function useExecution(workspace: string | null, draft: RequestDraft | nul
     }
   }, [complete, settleCancellation])
   const switchPresentation = useCallback((key: string | null) => {
-    if (presentationKey.current === key) return
+    if (key !== null && presentationKey.current === key) return
     if (presentationKey.current) { presentations.current.delete(presentationKey.current); presentations.current.set(presentationKey.current, latestPresentation.current) }
     const next = key ? presentations.current.get(key) : undefined
     presentationKey.current = key
+    responseModes.current.delete(null)
+    setResponseMode(responseModes.current.get(key) ?? 'pretty')
     // Responses and sent snapshots stay session-only, with bounded retained memory.
     let bytes = 0, retained = 0
     for (const [id, value] of [...presentations.current].reverse()) {
@@ -115,11 +121,21 @@ export function useExecution(workspace: string | null, draft: RequestDraft | nul
     setCompletedExecutionId(next?.completedExecutionId ?? null); setStatus(next?.status ?? null)
     setError(next?.error ?? null); setExecutionField(next?.executionField ?? null)
   }, [])
-  const bindPresentation = useCallback((key: string) => { presentationKey.current = key }, [])
+  const bindPresentation = useCallback((key: string) => {
+    const draftMode = responseModes.current.get(null)
+    if (draftMode) responseModes.current.set(key, draftMode)
+    responseModes.current.delete(null)
+    presentationKey.current = key
+  }, [])
+  function chooseResponseMode(mode: ResponseMode) {
+    responseModes.current.set(presentationKey.current, mode)
+    setResponseMode(mode)
+  }
   const forgetPresentation = useCallback((key: string) => { presentations.current.delete(key) }, [])
   useEffect(() => {
     pendingTest.current = null; setResponseTest(null)
     presentations.current.clear(); presentationKey.current = null
+    responseModes.current.delete(null); setResponseMode('pretty')
     generation.current++; settleCancellation(false)
     sentDraft.current = null; setSentSnapshot(null); setExecutionResult(null); setCompletedExecutionId(null)
     if (active.current) void window.offlineApi.execution.cancel(active.current).catch(() => {})
@@ -151,6 +167,6 @@ export function useExecution(workspace: string | null, draft: RequestDraft | nul
       if (mounted.current && current === generation.current) { unavailableTest(); pending.current = false; settleCancellation(true); setSending(false); setStatus(null); setError('Request execution is unavailable. Try again.') }
     }
   }, [ready, workspace, draft, requestId, complete, cancel, settleCancellation, unavailableTest])
-  return { responseTest, switchPresentation, bindPresentation, forgetPresentation, executionField, executionResult, completedExecutionId, sentSnapshot, draftChangedSinceSend: sentDraft.current !== null && JSON.stringify(draft) !== sentDraft.current, sending, cancelling, executionStatus: status, executionError: error, canSend: ready && !!workspace && !!draft?.urlTemplate.trim() && !sending,
+  return { responseTest, responseMode, chooseResponseMode, switchPresentation, bindPresentation, forgetPresentation, executionField, executionResult, completedExecutionId, sentSnapshot, draftChangedSinceSend: sentDraft.current !== null && JSON.stringify(draft) !== sentDraft.current, sending, cancelling, executionStatus: status, executionError: error, canSend: ready && !!workspace && !!draft?.urlTemplate.trim() && !sending,
     canCancel: executionId !== null && !cancelling, send, cancel, cancelForTransition, isSending: () => pending.current || active.current !== null }
 }

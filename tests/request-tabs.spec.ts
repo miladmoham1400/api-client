@@ -12,9 +12,9 @@ test('request tabs select exact saved APIs, retain bodies/auth/uploads and respo
   test.setTimeout(60000)
   const directory = mkdtempSync(join(tmpdir(), 'request-tabs-')), received: { url: string | undefined; body: string }[] = []
   const fixture = await startFixture(false, (req, res) => { let body = ''; req.setEncoding('utf8'); req.on('data', (chunk: string) => { body += chunk }); req.on('end', () => { received.push({ url: req.url, body }); res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ route: req.url })) }) })
-  const app = await launchDesktop({ args: ['.'], chromiumSandbox: true, env: environment(directory) })
+  let app = await launchDesktop({ args: ['.'], chromiumSandbox: true, env: environment(directory) })
   try {
-    const page = await app.firstWindow()
+    let page = await app.firstWindow()
     const ids = await page.evaluate(async url => {
       const api = window.offlineApi, created = await api.workspaces.create('Tabs')
       if (!created.ok || !created.data.selectedWorkspaceId) throw new Error('Workspace missing')
@@ -25,12 +25,20 @@ test('request tabs select exact saved APIs, retain bodies/auth/uploads and respo
       await api.requests.get(w, a.data.editor!.id)
       return { w, a: a.data.editor!.id, b: b.data.editor!.id }
     }, fixture.url)
-    await page.reload()
+    await shutdown(app)
+    app = await launchDesktop({ args: ['.'], chromiumSandbox: true, env: environment(directory) })
+    page = await app.firstWindow()
     const editor = page.getByRole('region', { name: 'Request editor', exact: true }), response = page.getByRole('region', { name: 'Response', exact: true })
     const tabs = page.getByRole('tablist', { name: 'Open requests', exact: true })
     await expect(tabs.getByRole('tab', { name: 'POST Alpha', exact: true })).toHaveAttribute('aria-selected', 'true')
     await page.getByRole('button', { name: 'Beta', exact: true }).click()
     await expect(tabs.getByRole('tab')).toHaveCount(2)
+    const toggle = page.getByRole('button', { name: 'Side-by-side layout', exact: true })
+    const toggleBox = (await toggle.boundingBox())!
+    const tabRow = (await tabs.boundingBox())!
+    expect(toggleBox.x).toBeGreaterThanOrEqual(tabRow.x + tabRow.width)
+    expect(toggleBox.y).toBeGreaterThanOrEqual(tabRow.y)
+    expect(toggleBox.y + toggleBox.height).toBeLessThanOrEqual(tabRow.y + tabRow.height)
     await tabs.getByRole('tab', { name: 'POST Alpha', exact: true }).click()
     await editor.getByRole('tab', { name: 'Body', exact: true }).click()
     await page.getByLabel('JSON source text', { exact: true }).fill('{"case":2}')
@@ -95,6 +103,20 @@ test('request tabs select exact saved APIs, retain bodies/auth/uploads and respo
     await page.getByRole('dialog', { name: 'Delete request', exact: true }).getByRole('button', { name: 'Delete request', exact: true }).click()
     await expect(tabs.getByRole('tab')).toHaveCount(1)
     await expect(tabs.getByRole('tab', { name: 'POST Alpha', exact: true })).toHaveAttribute('aria-selected', 'true')
+    await expect(page.getByText('REQUEST WORKBENCH', { exact: true })).toHaveCount(0)
+    await page.getByRole('button', { name: 'Create Request', exact: true }).click()
+    const longName = 'A long request name that is wider than the fixed tab and needs the full hover label'
+    await page.getByLabel('Request name', { exact: true }).fill(longName)
+    await page.getByLabel('Request URL', { exact: true }).fill(fixture.url + '/long')
+    const longTab = tabs.getByRole('tab', { name: `GET ${longName}`, exact: true })
+    await expect(longTab).toBeVisible()
+    const widths = await tabs.locator('.request-tab').evaluateAll(items => items.map(item => item.getBoundingClientRect().width))
+    expect(widths).toHaveLength(2)
+    expect(widths[0]).toBe(widths[1])
+    expect(await longTab.locator('.request-tab-name').evaluate(name => name.scrollWidth > name.clientWidth)).toBe(true)
+    await page.mouse.move(0, 0)
+    await longTab.hover()
+    await expect(page.getByRole('tooltip')).toHaveText(longName)
     // Switching workspace clears tabs and response snapshots, and never sends.
     await page.evaluate(() => window.offlineApi.workspaces.create('Other'))
     await page.reload()
@@ -111,9 +133,9 @@ test('tab navigation and closing guard invalid drafts and active sends, and work
     if (req.url === '/slow') { const timer = setTimeout(() => res.end('late'), 25000); res.on('close', () => clearTimeout(timer)) }
     else res.end('fast')
   })
-  const app = await launchDesktop({ args: ['.'], chromiumSandbox: true, env: environment(directory) })
+  let app = await launchDesktop({ args: ['.'], chromiumSandbox: true, env: environment(directory) })
   try {
-    const page = await app.firstWindow()
+    let page = await app.firstWindow()
     await page.evaluate(async url => {
       const api = window.offlineApi, result = await api.workspaces.create('Guard tabs')
       if (!result.ok || !result.data.selectedWorkspaceId) throw new Error('No workspace')
@@ -121,7 +143,9 @@ test('tab navigation and closing guard invalid drafts and active sends, and work
       await api.requests.create(w, { name: 'Slow', method: 'GET', urlTemplate: url + '/slow', collectionId: null })
       await api.requests.create(w, { name: 'Fast', method: 'GET', urlTemplate: url + '/fast', collectionId: null })
     }, fixture.url)
-    await page.reload()
+    await shutdown(app)
+    app = await launchDesktop({ args: ['.'], chromiumSandbox: true, env: environment(directory) })
+    page = await app.firstWindow()
     const tabs = page.getByRole('tablist', { name: 'Open requests', exact: true }), editor = page.getByRole('region', { name: 'Request editor', exact: true })
     await page.getByRole('button', { name: 'Slow', exact: true }).click()
     await expect(tabs.getByRole('tab')).toHaveCount(2)
@@ -149,7 +173,7 @@ test('tab navigation and closing guard invalid drafts and active sends, and work
     await page.keyboard.press('ArrowLeft')
     await expect(tabs.getByRole('tab', { name: 'GET Fast', exact: true })).toBeFocused()
     await page.keyboard.press('Delete') // closes focused inactive tab without cancelling the active send
-    await expect(editor.getByRole('button', { name: 'Cancel', exact: true })).toBeEnabled()
+    await expect(page.getByRole('region', { name: 'Response', exact: true }).getByRole('button', { name: 'Cancel', exact: true })).toBeEnabled()
     await expect(tabs.getByRole('tab')).toHaveCount(1)
     await tabs.getByRole('button', { name: 'Close GET Slow', exact: true }).click()
     await active.getByRole('button', { name: 'Cancel request', exact: true }).click()

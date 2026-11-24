@@ -18,6 +18,15 @@ test('named Body variants, JSON diagnostics, variable completion, expanded respo
   const editor=page.getByRole('region',{name:'Request editor',exact:true}), response=page.getByRole('region',{name:'Response',exact:true})
   await editor.getByRole('tab',{name:'Body',exact:true}).click()
   const body=page.getByLabel('JSON source text',{exact:true})
+  await body.fill('{"example":""}')
+  await body.evaluate((input:HTMLTextAreaElement) => {
+    const cursor=input.value.indexOf('""')+1
+    input.setSelectionRange(cursor,cursor)
+  })
+  await body.pressSequentially('{{ba')
+  await expect(page.getByRole('listbox',{name:'Variable suggestions'})).toBeVisible()
+  await body.press('Tab')
+  await expect(body).toHaveValue('{"example":"{{base_url}}"}')
   await body.fill('{"case":1,"large":9007199254740993}')
   await body.press('Tab');await body.press('Shift+Tab') // Tab inserts spaces; a later focus change formats.
   await page.getByLabel('Request name',{exact:true}).click()

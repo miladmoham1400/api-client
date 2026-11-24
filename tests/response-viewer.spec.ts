@@ -113,6 +113,7 @@ test('response viewer safely presents HTTP/error/binary states, snapshots, stale
     await application.evaluate(({ BrowserWindow }, event) => BrowserWindow.getAllWindows()[0]?.webContents.send('execution:completed', event), old)
     await expect(region).toContainText('Waiting for response')
     delayed?.end('{"captured":true}')
+    await region.getByRole('button', { name: 'Pretty', exact: true }).click()
     await expect(region.getByLabel('Response body JSON')).toContainText('captured')
     await region.getByRole('button', { name: 'Raw', exact: true }).click()
     await expect(body).toHaveText('{"captured":true}')
@@ -138,6 +139,66 @@ test('response viewer safely presents HTTP/error/binary states, snapshots, stale
   } finally { await shutdown(application); await fixture.close(); rmSync(directory, { recursive: true, force: true }) }
 })
 
+test('response mode stays with its request across sends and tab switches', async () => {
+  let html = true
+  let calls = 0
+  const fixture = await startFixture(false, (request, response) => {
+    calls++
+    const showHtml = request.url === '/first' && html
+    response.writeHead(200, { 'Content-Type': showHtml ? 'text/html' : 'application/json' })
+    response.end(showHtml ? `<html><body><h1>Preview ${calls}</h1></body></html>` : JSON.stringify({ calls }))
+  })
+  const directory = mkdtempSync(join(tmpdir(), 'response-modes-'))
+  const env = { ...process.env, XDG_CONFIG_HOME: directory, APPDATA: directory }
+  let app = await launchDesktop({ args: ['.'], chromiumSandbox: true, env })
+  try {
+    let page = await app.firstWindow()
+    await page.evaluate(async url => {
+      const api = window.offlineApi
+      const workspace = await api.workspaces.create('Response modes')
+      if (!workspace.ok || !workspace.data.selectedWorkspaceId) throw new Error('Missing workspace')
+      const id = workspace.data.selectedWorkspaceId
+      const first = await api.requests.create(id, { name: 'First API', method: 'GET', urlTemplate: url + '/first', collectionId: null })
+      const second = await api.requests.create(id, { name: 'Second API', method: 'GET', urlTemplate: url + '/second', collectionId: null })
+      if (!first.ok || !first.data.editor || !second.ok) throw new Error('Missing requests')
+      await api.requests.get(id, first.data.editor.id)
+    }, fixture.url)
+    await shutdown(app)
+    app = await launchDesktop({ args: ['.'], chromiumSandbox: true, env })
+    page = await app.firstWindow()
+    const region = page.getByRole('region', { name: 'Response', exact: true })
+    const send = page.getByRole('button', { name: 'Send', exact: true })
+    const mode = (name: string) => region.getByRole('button', { name, exact: true })
+    const preview = region.frameLocator('iframe[title="HTML response preview"]')
+
+    await send.click()
+    await expect(mode('Pretty')).toHaveAttribute('aria-pressed', 'true')
+    await mode('HTML').click()
+    await expect(preview.getByRole('heading', { name: 'Preview 1' })).toBeVisible()
+    await send.click()
+    await expect(preview.getByRole('heading', { name: 'Preview 2' })).toBeVisible()
+    await expect(mode('HTML')).toHaveAttribute('aria-pressed', 'true')
+
+    await page.getByRole('button', { name: 'Second API', exact: true }).click()
+    await send.click()
+    await expect(mode('Pretty')).toHaveAttribute('aria-pressed', 'true')
+    await mode('Raw').click()
+    await send.click()
+    await expect(region.getByLabel('Response body text')).toHaveText('{"calls":4}')
+    await expect(mode('Raw')).toHaveAttribute('aria-pressed', 'true')
+
+    await page.getByRole('tab', { name: 'GET First API', exact: true }).click()
+    await expect(mode('HTML')).toHaveAttribute('aria-pressed', 'true')
+    html = false
+    await send.click()
+    await expect(region.getByLabel('Response body JSON')).toContainText('5')
+    await expect(mode('HTML')).toHaveCount(0)
+    html = true
+    await send.click()
+    await expect(preview.getByRole('heading', { name: 'Preview 6' })).toBeVisible()
+  } finally { await shutdown(app); await fixture.close(); rmSync(directory, { recursive: true, force: true }) }
+})
+
 test('Pretty JSON opens every supported node and array item, with manual collapse and fresh-response reset', async () => {
   test.setTimeout(60000)
   let deep: unknown = { marker: 'deep-leaf' }
@@ -149,15 +210,17 @@ test('Pretty JSON opens every supported node and array item, with manual collaps
   const fixture = await startFixture(false, (_req, res) => { calls++; res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(raw) })
   const directory = mkdtempSync(join(tmpdir(), 'expanded-response-'))
   const env = { ...Object.fromEntries(Object.entries(process.env).filter((e): e is [string, string] => e[1] !== undefined && !['ELECTRON_RUN_AS_NODE', 'ELECTRON_RENDERER_URL'].includes(e[0]))), XDG_CONFIG_HOME: directory, APPDATA: directory }
-  const app = await launchDesktop({ args: ['.'], chromiumSandbox: true, env })
+  let app = await launchDesktop({ args: ['.'], chromiumSandbox: true, env })
   try {
-    const page = await app.firstWindow()
+    let page = await app.firstWindow()
     await page.evaluate(async url => {
       const api = window.offlineApi, w = await api.workspaces.create('Expanded response')
       if (!w.ok || !w.data.selectedWorkspaceId) throw new Error('No workspace')
       await api.requests.create(w.data.selectedWorkspaceId, { name: 'Nested JSON', method: 'GET', urlTemplate: url, collectionId: null })
     }, fixture.url)
-    await page.reload()
+    await shutdown(app)
+    app = await launchDesktop({ args: ['.'], chromiumSandbox: true, env })
+    page = await app.firstWindow()
     const send = page.getByRole('button', { name: 'Send', exact: true })
     const response = page.getByRole('region', { name: 'Response', exact: true })
     const tree = response.getByLabel('Response body JSON', { exact: true })

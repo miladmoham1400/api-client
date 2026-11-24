@@ -15,4 +15,4 @@ function TokenSpans({ tokens }: { tokens: JsonToken[] }) {
   return tokens.map((token, index) => <span key={index} className={`json-${token.kind}`}>{token.text}</span>)
 }
 
-export function JsonEditor(props: ComponentProps<typeof Textarea> & { value: string }) { return <TemplateTextarea {...props} syntax="json" /> }
+export function JsonEditor(props: ComponentProps<typeof Textarea> & { value: string; jsonEditing?: boolean }) { return <TemplateTextarea {...props} syntax="json" /> }

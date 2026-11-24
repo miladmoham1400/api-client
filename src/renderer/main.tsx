@@ -13,12 +13,15 @@ import { WorkspaceControls } from './features/workspaces/controls'
 import { useRequests } from './features/requests/controller'
 import { VariableControls } from './features/variables/controls'
 import { RequestResponsePanels } from './features/layout/panels'
+import { PanelDivider } from './features/layout/divider'
 import type { WorkspaceController } from './features/workspaces/use-workspaces'
 import { VariableNamesProvider } from './components/template-field'
 import { Icon } from './components/icon'
 import appIcon from '../../build/icons/64x64.png?url'
 
 type Startup = { status: 'loading' } | { status: 'error' } | { status: 'ready'; data: Bootstrap }
+const SIDEBAR_MIN_WIDTH = 210
+const SIDEBAR_MAX_WIDTH = 440
 
 function Shell() {
   const closeGuard = useRef<(() => Promise<boolean>) | null>(null)
@@ -54,6 +57,10 @@ function Shell() {
 }
 function Desktop({ workspaces, closeGuard }: { workspaces: WorkspaceController; closeGuard: React.RefObject<(() => Promise<boolean>) | null> }) {
   const closeButton = useRef<HTMLButtonElement>(null)
+  const workbench = useRef<HTMLDivElement>(null)
+  const [sidebarWidth, setSidebarWidth] = useState(236)
+  const [resizingSidebar, setResizingSidebar] = useState(false)
+  const resizeSidebar = (width: number) => setSidebarWidth(Math.max(SIDEBAR_MIN_WIDTH, Math.min(SIDEBAR_MAX_WIDTH, Math.round(width))))
   const requests = useRequests(workspaces.snapshot?.selectedWorkspaceId ?? null)
   const navigation = useNavigationGuard(requests)
   useEffect(() => { closeGuard.current = navigation.close; return () => { closeGuard.current = null } }, [closeGuard, navigation.close])
@@ -76,12 +83,19 @@ function Desktop({ workspaces, closeGuard }: { workspaces: WorkspaceController; 
         </Dialog.Content></Dialog.Positioner></Portal>
       </Dialog.Root>
     </Flex>
-    <Flex flex="1" minH="0">
-      <VStack as="aside" className="app-sidebar" aria-label="Collections and requests" tabIndex={0} align="stretch" gap="3" w="236px" minW="210px" p="4" overflow="auto" borderRightWidth="1px">
+    <Flex ref={workbench} className={resizingSidebar ? 'split-dragging' : undefined} flex="1" minH="0">
+      <VStack as="aside" id="workspace-sidebar" className="app-sidebar" aria-label="Collections and requests" tabIndex={0} align="stretch" gap="3" flexShrink={0} style={{ width: sidebarWidth }} p="4" overflow="auto" borderRightWidth="1px">
         <Heading className="sidebar-label" size="sm">Workspace</Heading>
         <WorkspaceControls controller={workspaces} locked={requests.busy} guard={navigation.guard} placement="sidebar" />
         <CollectionSidebar key={workspaces.snapshot?.selectedWorkspaceId ?? "none"} workspaceId={workspaces.snapshot?.selectedWorkspaceId ?? null} requestController={requests} guard={navigation.guard} />
       </VStack>
+      <PanelDivider orientation="vertical" label="Resize workspace and request explorer" controls="workspace-sidebar"
+        min={SIDEBAR_MIN_WIDTH} max={SIDEBAR_MAX_WIDTH} value={sidebarWidth} valueText={`${sidebarWidth} pixels`} step={8}
+        onResize={resizeSidebar} onDraggingChange={setResizingSidebar}
+        onDrag={x => {
+          const bounds = workbench.current?.getBoundingClientRect()
+          if (bounds) resizeSidebar(x - bounds.left - 6)
+        }} />
       <RequestResponsePanels guard={navigation.guard} controller={requests} workspace={workspaces.snapshot?.selectedWorkspaceId ?? null} />
     </Flex>
     {navigation.dialog}

@@ -24,15 +24,16 @@ export function RequestTabs({ controller: c, guard }: { controller: RequestContr
   }}>
     {c.openRequests.map((tab, index) => {
       const active = tab.id === c.saved?.id
+      const name = active ? c.draft?.name ?? tab.name : tab.name
       const label = `${tab.method} ${tab.name}${c.openRequests.filter(other => other.name === tab.name && other.method === tab.method).length > 1 ? ` · ${tab.id.slice(0, 8)}` : ''}`
       return <div key={tab.id} className="request-tab" data-active={active ? 'true' : 'false'}>
-        <button type="button" role="tab" data-request-id={tab.id} id={`request-tab-${tab.id}`} aria-label={label} aria-selected={active} aria-controls="request-tab-content" tabIndex={active || (!c.saved && index === 0) ? 0 : -1} disabled={c.busy} data-tooltip={label} onClick={() => select(tab.id)}>
-          <span className="request-tab-method" style={{ color: `var(--chakra-colors-${httpMethodPalette(tab.method)}-fg)` }}>{tab.method}</span><span className="request-tab-name">{active ? c.draft?.name ?? tab.name : tab.name}</span>
+        <button type="button" role="tab" data-request-id={tab.id} id={`request-tab-${tab.id}`} aria-label={label} aria-selected={active} aria-controls="request-tab-content" tabIndex={active || (!c.saved && index === 0) ? 0 : -1} disabled={c.busy} data-tooltip={name || tab.name} onClick={() => select(tab.id)}>
+          <span className="request-tab-method" style={{ color: `var(--chakra-colors-${httpMethodPalette(tab.method)}-fg)` }}>{tab.method}</span><span className="request-tab-name">{name}</span>
           {active && (c.dirty || c.saving) && <span className="request-tab-pending" aria-label="Unsaved changes" />}
         </button>
         <button type="button" className="request-tab-close" aria-label={`Close ${label}`} data-tooltip="Close tab" disabled={c.busy} onClick={() => close(tab.id)}>×</button>
       </div>
     })}
-    {!c.saved && c.draft && <div className="request-tab" data-active="true"><button type="button" role="tab" aria-selected="true" aria-controls="request-tab-content" tabIndex={0} disabled>New request<span className="request-tab-pending" /></button><button type="button" className="request-tab-close" aria-label="Close new request" data-tooltip="Close tab" disabled={c.busy} onClick={() => close(null)}>×</button></div>}
+    {!c.saved && c.draft && <div className="request-tab" data-active="true" data-tooltip={c.draft.name || 'New request'}><button type="button" role="tab" aria-selected="true" aria-controls="request-tab-content" tabIndex={0} disabled><span className="request-tab-name">{c.draft.name || 'New request'}</span><span className="request-tab-pending" /></button><button type="button" className="request-tab-close" aria-label="Close new request" data-tooltip="Close tab" disabled={c.busy} onClick={() => close(null)}>×</button></div>}
   </div>
 }

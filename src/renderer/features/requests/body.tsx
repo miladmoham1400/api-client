@@ -29,7 +29,7 @@ export function BodyEditor({ controller: c }: { controller: RequestController })
     {body?.kind === 'multipart' && <MultipartEditor controller={c} />}
     {body?.kind === 'urlencoded' && <><RowsEditor controller={c} group="body.rows" /><details><summary>Body details</summary><Text fontSize="sm">Enabled keys and values resolve variables at send time, then encode once. Content-Type defaults to application/x-www-form-urlencoded.</Text></details></>}
     {body && (body.kind === 'json' || body.kind === 'raw') && <>
-      <Box><label htmlFor="body-text">{body.kind === 'json' ? 'JSON source text' : 'Raw body text'}</label><Editor id="body-text" minH="140px" value={body.text} onBlur={() => {
+      <Box><label htmlFor="body-text">{body.kind === 'json' ? 'JSON source text' : 'Raw body text'}</label><Editor id="body-text" jsonEditing={body.kind === 'json'} minH="140px" value={body.text} onBlur={() => {
         if (body.kind !== 'json' || !c.draft) return
         const result = formatJsonBody(body.text); c.setBodyIssue(result.ok ? null : `JSON body problem · Line ${result.line}, column ${result.column}: ${result.message}`)
         if (result.ok && result.text !== body.text) c.setDraft({ ...c.draft, body: { ...body, text: result.text } })

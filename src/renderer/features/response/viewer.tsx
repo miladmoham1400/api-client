@@ -4,6 +4,7 @@ import { Badge, Box, Button, Flex, Tabs, Text } from '@chakra-ui/react'
 import { Icon } from '../../components/icon'
 import { JSONTree } from 'react-json-tree'
 import type { RequestController } from '../requests/controller'
+import type { ResponseMode } from '../requests/execution'
 import { prettyJson } from './format'
 import { ResponseTestView } from './test-result'
 import { HtmlPreview } from './html-preview'
@@ -12,10 +13,16 @@ export function ResponseViewer({ controller: c }: { controller: RequestControlle
   const result = c.executionResult
   const hasExpectation = !!(c.draft && selectedResponseExpectation(c.draft).expected?.trim())
   return <Box className="response-panel glass-panel" as="section" aria-label="Response" tabIndex={0} borderWidth="1px" p="3" h="100%" minH="0" minW="0" overflow="auto">
-    {c.draft && !hasExpectation && <Text aria-label="Response test guidance" fontSize="xs" color="fg.muted" mb="3">Save expected response JSON in Body → Response test to validate this API response automatically on each send.</Text>}
-    {!result && <Box className="response-empty"><span className="empty-icon"><Icon name="response" size={28} /></span><Text className="empty-title">{c.sending ? "Sending request" : "Your response, right here"}</Text><Text color="fg.muted" fontSize="sm">{c.sending ? 'Waiting for response…' : c.executionError ? 'Request could not be started. No HTTP response.' : 'Send a request to view its response.'}</Text><span className="shortcut-hint"><kbd>Ctrl</kbd> + <kbd>Enter</kbd> to send</span></Box>}
+    {c.sending && <Button size="xs" variant="outline" mb="3" disabled={!c.canCancel} onClick={() => { void c.cancel() }}>{c.cancelling ? 'Cancelling…' : 'Cancel'}</Button>}
+    {c.draft && !hasExpectation && (
+      <Flex role="note" aria-label="Response test guidance" align="start" gap="2" mb="3" px="3" py="2" borderWidth="1px" borderColor="blue.muted" borderRadius="md" bg="blue.subtle">
+        <Box color="blue.fg" flexShrink={0}><Icon name="info" size={16} /></Box>
+        <Text fontSize="xs">Enter expected response JSON in Body → Response test to validate this API response automatically on each send.</Text>
+      </Flex>
+    )}
+    {!result && <Box className="response-empty"><span className="empty-icon"><Icon name="response" size={28} /></span><Text className="empty-title">{c.sending ? "Sending request" : "Your response, right here"}</Text><Text color="fg.muted" fontSize="sm">{c.sending ? 'Waiting for response…' : c.executionError ? 'Request could not be started. No HTTP response.' : 'Send a request to view its response.'}</Text>{!c.sending && <span className="shortcut-hint"><kbd>Ctrl</kbd> + <kbd>Enter</kbd> to send</span>}</Box>}
     {hasExpectation && c.responseTest && <ResponseTestView key={`test-${c.completedExecutionId}`} test={c.responseTest} />}
-    {result && ('statusCode' in result ? <HttpView key={c.completedExecutionId} response={result} /> : <Text>{result.code === 'CANCELLED' ? 'Cancelled. No HTTP response.' : 'Transport failed. No HTTP response.'}</Text>)}
+    {result && ('statusCode' in result ? <HttpView key={c.completedExecutionId} response={result} preferredMode={c.responseMode} onModeChange={c.chooseResponseMode} /> : <Text>{result.code === 'CANCELLED' ? 'Cancelled. No HTTP response.' : 'Transport failed. No HTTP response.'}</Text>)}
     {c.sentSnapshot && <Box as="details" mt="3" fontSize="xs" color="fg.muted" overflowWrap="anywhere">
       <summary>{c.draftChangedSinceSend ? 'Request details · edited since send' : 'Request details'}</summary>
       <Text>{c.sentSnapshot.name} · {c.sentSnapshot.method} {c.sentSnapshot.urlTemplate}</Text>
@@ -24,14 +31,18 @@ export function ResponseViewer({ controller: c }: { controller: RequestControlle
   </Box>
 }
 
-function HttpView({ response: r }: { response: Extract<NonNullable<RequestController['executionResult']>, { statusCode: number }> }) {
+function HttpView({ response: r, preferredMode, onModeChange }: {
+  response: Extract<NonNullable<RequestController['executionResult']>, { statusCode: number }>
+  preferredMode: ResponseMode
+  onModeChange: (mode: ResponseMode) => void
+}) {
   const [copyState, setCopyState] = useState('')
-  const [mode, setMode] = useState<'raw' | 'pretty' | 'html'>('pretty')
   const raw = r.body.kind === 'text' ? r.body.text : ''
   const pretty = useMemo(() => prettyJson(raw), [raw])
   const data: unknown = useMemo(() => pretty.ok ? JSON.parse(raw) as unknown : null, [pretty, raw])
   const type = r.headers.find(header => header.name.toLowerCase() === 'content-type')?.value ?? 'Not provided'
   const html = /(?:text\/html|application\/xhtml\+xml)(?:\s*;|$)/i.test(type) || /^\s*(?:<!doctype html|<html[\s>])/i.test(raw)
+  const mode = preferredMode === 'html' && !html ? 'pretty' : preferredMode
   return <>
     <Flex gap="2" align="center" flexWrap="wrap" mb="2" aria-label="Response metrics">
       <Badge colorPalette={r.statusCode >= 400 ? 'red' : r.statusCode >= 300 ? 'yellow' : 'green'} data-tooltip="HTTP status">{r.statusCode} {r.statusMessage}</Badge>
@@ -44,7 +55,7 @@ function HttpView({ response: r }: { response: Extract<NonNullable<RequestContro
       <Tabs.List aria-label="Response views"><Tabs.Trigger value="body">Body</Tabs.Trigger><Tabs.Trigger value="headers">Headers</Tabs.Trigger><Tabs.Trigger value="details">Details</Tabs.Trigger></Tabs.List>
       <Tabs.Content value="body">
         {r.body.kind === 'binary' ? <Box><Text>Binary response · {r.body.sizeBytes} bytes</Text><Text overflowWrap="anywhere">Content-Type: {type}</Text><Text>{r.body.reason}</Text></Box> : <>
-          <Flex className="response-modes" gap="1" mb="2">{(['pretty', 'raw', ...(html ? ['html'] as const : [])] as const).map(value => <Button key={value} size="xs" variant={mode === value ? 'solid' : 'ghost'} aria-pressed={mode === value} onClick={() => setMode(value)}>{value === 'html' ? 'HTML' : value === 'raw' ? 'Raw' : 'Pretty'}</Button>)}</Flex>
+          <Flex className="response-modes" gap="1" mb="2">{(['pretty', 'raw', ...(html ? ['html'] as const : [])] as const).map(value => <Button key={value} size="xs" variant={mode === value ? 'solid' : 'ghost'} aria-pressed={mode === value} onClick={() => onModeChange(value)}>{value === 'html' ? 'HTML' : value === 'raw' ? 'Raw' : 'Pretty'}</Button>)}</Flex>
           {mode === 'html' ? <HtmlPreview text={raw} /> : mode === 'pretty' && pretty.ok ? <Box aria-label="Response body JSON" fontFamily="mono" fontSize="sm" overflowWrap="anywhere">
             <JSONTree data={data} hideRoot labelRenderer={(path, _type, expanded, expandable) => expandable ? <button type="button" aria-label={`Toggle ${String(path[0])}`} aria-expanded={expanded} style={{ cursor: 'pointer', font: 'inherit', color: 'inherit' }}>{String(path[0])}:</button> : <span>{String(path[0])}:</span>} shouldExpandNodeInitially={() => true} collectionLimit={0} invertTheme={false} theme={{
               base00: 'var(--chakra-colors-bg)', base01: 'var(--chakra-colors-bg-subtle)', base02: 'var(--chakra-colors-border)', base03: 'var(--chakra-colors-fg-muted)',

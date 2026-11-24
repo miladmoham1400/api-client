@@ -3,7 +3,7 @@ import { TemplateInput } from '../../components/template-field'
 import { Icon } from '../../components/icon'
 import { httpMethodPalette } from '../../theme/http-method'
 import { useEffect, useRef } from 'react'
-import { Box, Button, Flex, Heading, Input, Tabs, Text } from '@chakra-ui/react'
+import { Box, Button, Flex, Heading, Input, Spinner, Tabs, Text } from '@chakra-ui/react'
 import { httpMethodSchema } from '../../../shared/primitives'
 import { AuthEditor } from './auth'
 import { BodyEditor } from './body'
@@ -29,13 +29,18 @@ export function RequestEditor({ controller: c }: { controller: RequestController
     {c.error && <Text role="alert" mb="3">{c.error}</Text>}
     {c.draft && <Text className="request-breadcrumb" aria-label="Request location" fontSize="sm" color="fg.muted" mb="2" overflowWrap="anywhere">{c.path}</Text>}
     {c.draft && <Box mb="3"><label htmlFor="request-name">Request name</label><Input id="request-name" value={c.draft.name} aria-invalid={!!c.validation.name} aria-describedby={c.validation.name ? "request-name-error" : undefined} disabled={c.busy} onChange={event => { if (c.draft) c.setDraft({ ...c.draft, name: event.target.value }) }} />{c.validation.name && <Text id="request-name-error" role="alert" color="red.fg">name: {c.validation.name}</Text>}</Box>}
-    <Flex className="request-address" gap="2" mb="3" flexWrap="wrap">
-      <NativeSelect.Root colorPalette={httpMethodPalette(c.draft?.method)} width="110px" flexShrink="0" disabled={!c.draft || c.busy}><NativeSelect.Field color="colorPalette.fg" bg="colorPalette.subtle" fontWeight="semibold" aria-label="HTTP method" value={c.draft?.method ?? ''} onChange={event => { if (c.draft) c.setDraft({ ...c.draft, method: httpMethodSchema.parse(event.target.value) }) }}>
-        {!c.draft && <option value="">Method</option>}{httpMethodSchema.options.map(method => <option key={method} value={method} style={{ color: `var(--chakra-colors-${httpMethodPalette(method)}-fg)` }}>{method}</option>)}
-      </NativeSelect.Field><NativeSelect.Indicator /></NativeSelect.Root>
-      <TemplateInput flex="1" minW="140px" aria-label="Request URL" placeholder="Request URL" aria-invalid={!!c.validation.urlTemplate} aria-describedby={c.validation.urlTemplate ? "request-url-error" : undefined} value={c.draft?.urlTemplate ?? ''} disabled={!c.draft || c.busy} onChange={event => { if (c.draft) c.setDraft({ ...c.draft, urlTemplate: event.target.value }) }} />
-      <Button className="send-button" disabled={!c.canSend || c.busy} onClick={() => { void c.send() }}><Icon name="send" size={15} />Send</Button><Button className="cancel-button" aria-label={c.cancelling ? "Cancelling…" : "Cancel"} data-tooltip="Cancel request" disabled={!c.canCancel} variant="outline" onClick={() => { void c.cancel() }}><Icon name="stop" size={14} /></Button>
-    </Flex>
+    <Box className="request-address-bar">
+      <Flex className="request-address" gap="2">
+        <NativeSelect.Root colorPalette={httpMethodPalette(c.draft?.method)} width="110px" flexShrink="0" disabled={!c.draft || c.busy}><NativeSelect.Field color="colorPalette.fg" bg="colorPalette.subtle" fontWeight="semibold" aria-label="HTTP method" value={c.draft?.method ?? ''} onChange={event => { if (c.draft) c.setDraft({ ...c.draft, method: httpMethodSchema.parse(event.target.value) }) }}>
+          {!c.draft && <option value="">Method</option>}{httpMethodSchema.options.map(method => <option key={method} value={method} style={{ color: `var(--chakra-colors-${httpMethodPalette(method)}-fg)` }}>{method}</option>)}
+        </NativeSelect.Field><NativeSelect.Indicator /></NativeSelect.Root>
+        <TemplateInput flex="1" minW="140px" aria-label="Request URL" placeholder="Request URL" aria-invalid={!!c.validation.urlTemplate} aria-describedby={c.validation.urlTemplate ? "request-url-error" : undefined} value={c.draft?.urlTemplate ?? ''} disabled={!c.draft || c.busy} onChange={event => { if (c.draft) c.setDraft({ ...c.draft, urlTemplate: event.target.value }) }} />
+        <Button className="send-button" aria-busy={c.sending || undefined} disabled={!c.canSend || c.busy} onClick={() => { void c.send() }}>
+          {c.sending ? <Spinner boxSize="15px" borderWidth="2px" flexShrink={0} aria-hidden="true" /> : <Icon name="send" size={15} />}
+          Send
+        </Button>
+      </Flex>
+    </Box>
     {c.executionStatus && <Text role="status" mb="3">{c.executionStatus}</Text>}
     {c.executionError && <Text role="alert" mb="3">{c.executionError}</Text>}
     {c.validation.urlTemplate && <Text id="request-url-error" role="alert" color="red.fg">urlTemplate: {c.validation.urlTemplate}</Text>}
