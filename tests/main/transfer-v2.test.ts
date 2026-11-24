@@ -131,7 +131,8 @@ it('rejects oversized export before save dialog, preserving saved bytes, and rej
   for (let index = 0; index < 2; index++) f.r.createRequest(f.w.id, 'Large ' + index, null, { ...createDefaultRequestConfig(), auth: { mode: 'none' }, method: 'POST', body: { kind: 'raw', mediaType: 'text/plain', text } })
   const before = f.db.serialize(), choose = vi.fn(async () => join(f.directory, 'large.json'))
   await expect(f.exporter.export(f.w.id, choose, () => true)).rejects.toMatchObject({ code: 'VALIDATION' })
-  expect(choose).not.toHaveBeenCalled(); expect(f.db.serialize()).toEqual(before)
+  expect(choose).not.toHaveBeenCalled()
+  expect(f.db.serialize().equals(before)).toBe(true)
   expect(() => validateImport(Buffer.alloc(IMPORT_MAX_BYTES + 1))).toThrow('Local data operation failed')
 }, 120_000)
 it('round-trips 100 collections/1000 folders/1000 requests at depth 16 below 10 MiB without losing destinations', () => {
