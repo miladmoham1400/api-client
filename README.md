@@ -10,25 +10,27 @@ Version 0.4.1 adds themed tooltips, compact library rows, retained readable Bear
 
 Version 0.5.0 adds per-body expected JSON response tests, readable collapsed differences, request tabs, polished glass dropdowns/editor tabs and smaller installers.
 
+Version 0.6.0 adds drag-and-drop library organization, a resizable sidebar, CodeMirror JSON editing, automatic expected-response saves and per-request response views. The request address bar stays accessible while scrolling.
+
 Installed startup and local data operations require no account, cloud service or developer Node/npm. Sending requests requires access to the target API. Data stays on your computer; no automatic updates are provided.
 
-## Download v0.5.0
+## Download v0.6.0
 
 | Platform | Installer | Size |
 |---|---|---|
-| Ubuntu 24.04 x64 | [Download .deb](https://github.com/miladmoham1400/api-client/releases/download/v0.5.0/offline-api-client-0.5.0-amd64.deb) | 87.8 MB |
-| Windows x64 | [Download .exe](https://github.com/miladmoham1400/api-client/releases/download/v0.5.0/offline-api-client-0.5.0-x64-setup.exe) | 93.9 MB |
-| Linux x64 | [Download AppImage](https://github.com/miladmoham1400/api-client/releases/download/v0.5.0/offline-api-client-0.5.0-x86_64.AppImage) | 99.0 MB |
+| Ubuntu 24.04 x64 | [Download .deb](https://github.com/miladmoham1400/api-client/releases/download/v0.6.0/offline-api-client-0.6.0-amd64.deb) | 88.2 MB |
+| Windows x64 | [Download .exe](https://github.com/miladmoham1400/api-client/releases/download/v0.6.0/offline-api-client-0.6.0-x64-setup.exe) | 94.1 MB |
+| Linux x64 | [Download AppImage](https://github.com/miladmoham1400/api-client/releases/download/v0.6.0/offline-api-client-0.6.0-x86_64.AppImage) | 99.2 MB |
 
-Sizes use decimal MB. Verify downloads with [SHA256SUMS.txt](https://github.com/miladmoham1400/api-client/releases/download/v0.5.0/SHA256SUMS.txt). See [release notes and verification limits](https://github.com/miladmoham1400/api-client/releases/tag/v0.5.0).
+Sizes use decimal MB. Verify downloads with [SHA256SUMS.txt](https://github.com/miladmoham1400/api-client/releases/download/v0.6.0/SHA256SUMS.txt). See [release notes and verification limits](https://github.com/miladmoham1400/api-client/releases/tag/v0.6.0).
 
-These unsigned pre-release installers include per-body response tests, readable collapsed JSON differences, request tabs, fully expanded Pretty responses, glass dropdowns and balanced editor-tab hover, alongside the existing Body variants, Postman transfer, autosave and library features. [Native builds](https://github.com/miladmoham1400/api-client/actions/runs/42362637584) passed 401 Linux unit tests, 400 Windows unit tests (1 native permission fixture skipped), 7 payload audits per target and 26 installed-app tests on each OS. The [publisher](https://github.com/miladmoham1400/api-client/actions/runs/42363678248) verified source provenance and all three installer checksums before upload. Installed checks ran on Ubuntu 24.04 and Windows Server 2022; full Windows 11, network-isolated/manual chooser and uninstall/reinstall acceptance remains pending for these package bytes. Hosted installed checks target deb and exe. AppImage is built/checksummed; this workflow does not launch it.
+These unsigned pre-release installers passed 27 installed-app tests on each of Ubuntu 24.04 and Windows Server 2022. The publisher verified the source commit and all three installer checksums. Hosted installed checks cover the deb and exe. The AppImage was built and checksummed. [Native builds](https://github.com/miladmoham1400/api-client/actions/runs/45415835058) · [Verified publication](https://github.com/miladmoham1400/api-client/actions/runs/45417942647).
 
 ### Install and use
 
-- Ubuntu: download the `.deb`, then run `sudo apt install ./offline-api-client-0.5.0-amd64.deb` from its directory.
+- Ubuntu: download the `.deb`, then run `sudo apt install ./offline-api-client-0.6.0-amd64.deb` from its directory.
 - Windows: run the downloaded `.exe` installer. Windows may show an unsigned-app reputation prompt.
-- AppImage: make it executable with `chmod +x offline-api-client-0.5.0-x86_64.AppImage`. If FUSE is unavailable, run it with `--appimage-extract-and-run`.
+- AppImage: make it executable with `chmod +x offline-api-client-0.6.0-x86_64.AppImage`. If FUSE is unavailable, run it with `--appimage-extract-and-run`.
 
 Open the app, create a workspace and request, enter a method and URL, then select **Send**. Valid edits save automatically; **Ctrl+S** flushes or retries immediately. Requests send only when explicitly requested. Responses support text, collapsible JSON and an isolated static HTML preview. Response scripts and external assets remain blocked. Mark sensitive variables appropriately; if secure OS storage is unavailable, secrets remain session-only. Workspace exports omit credential values and local upload paths by default.
 
@@ -44,7 +46,7 @@ In the current source, drag a saved request onto a folder in the library to move
 
 ## Request tabs
 
-Open requests appear in tabs above the editor and response. Select a tab to return to that API, then Send; closing a tab keeps the saved request. Switching flushes valid edits and guards active requests. Tabs and response snapshots stay in the current workspace session. Body/Response corners now match. Included in the 0.5.0 downloads above.
+Open requests appear in tabs above the editor and response. Select a tab to return to that API, then Send; closing a tab keeps the saved request. Switching flushes valid edits and guards active requests. Tabs and response snapshots stay in the current workspace session. Body/Response corners now match.
 
 ## Body response tests
 
@@ -75,7 +77,7 @@ SQLite must be rebuilt for the runtime being tested: unit tests use developer No
 
 ## Build installers
 
-Build each installer on its target OS; independently verify the installed application before publishing. Packaging uses a runtime-only payload and maximum installer compression; `npm run test:package` verifies payload filters and native binary selection. Published 0.5.0 downloads are 87.8 MB for deb, 93.9 MB for Windows and 99.0 MB for AppImage, compared with 113.2 / 125.1 / 144.6 MB in 0.4.1.
+Build each installer on its target OS; independently verify the installed application before publishing. Packaging uses a runtime-only payload and maximum installer compression; `npm run test:package` verifies payload filters and native binary selection. Published 0.6.0 downloads are 88.2 MB for deb, 94.1 MB for Windows and 99.2 MB for AppImage.
 
 ```sh
 # Linux x64: dist/linux/
